@@ -1,1 +1,1 @@
-FROM fireflyiii/core:5.7.18
+FROM fireflyiii/core:latest
