@@ -31,10 +31,9 @@ use Carbon\Carbon;
  */
 trait CalculateXOccurrences
 {
-
     /**
-     * Calculates the number of daily occurrences for a recurring transaction, starting at the date, until $count is reached. It will skip
-     * over $skipMod -1 recurrences.
+     * Calculates the number of daily occurrences for a recurring transaction, starting at the date, until $count is
+     * reached. It will skip over $skipMod -1 recurrences.
      *
      * @param Carbon $date
      * @param int    $count
@@ -61,8 +60,8 @@ trait CalculateXOccurrences
     }
 
     /**
-     * Calculates the number of monthly occurrences for a recurring transaction, starting at the date, until $count is reached. It will skip
-     * over $skipMod -1 recurrences.
+     * Calculates the number of monthly occurrences for a recurring transaction, starting at the date, until $count is
+     * reached. It will skip over $skipMod -1 recurrences.
      *
      * @param Carbon $date
      * @param int    $count
@@ -77,7 +76,7 @@ trait CalculateXOccurrences
         $mutator    = clone $date;
         $total      = 0;
         $attempts   = 0;
-        $dayOfMonth = (int) $moment;
+        $dayOfMonth = (int)$moment;
         if ($mutator->day > $dayOfMonth) {
             // day has passed already, add a month.
             $mutator->addMonth();
@@ -98,8 +97,8 @@ trait CalculateXOccurrences
     }
 
     /**
-     * Calculates the number of NDOM occurrences for a recurring transaction, starting at the date, until $count is reached. It will skip
-     * over $skipMod -1 recurrences.
+     * Calculates the number of NDOM occurrences for a recurring transaction, starting at the date, until $count is
+     * reached. It will skip over $skipMod -1 recurrences.
      *
      * @param Carbon $date
      * @param int    $count
@@ -136,8 +135,8 @@ trait CalculateXOccurrences
     }
 
     /**
-     * Calculates the number of weekly occurrences for a recurring transaction, starting at the date, until $count is reached. It will skip
-     * over $skipMod -1 recurrences.
+     * Calculates the number of weekly occurrences for a recurring transaction, starting at the date, until $count is
+     * reached. It will skip over $skipMod -1 recurrences.
      *
      * @param Carbon $date
      * @param int    $count
@@ -155,7 +154,7 @@ trait CalculateXOccurrences
         // monday = 1
         // sunday = 7
         $mutator->addDay(); // always assume today has passed.
-        $dayOfWeek = (int) $moment;
+        $dayOfWeek = (int)$moment;
         if ($mutator->dayOfWeekIso > $dayOfWeek) {
             // day has already passed this week, add one week:
             $mutator->addWeek();
@@ -178,8 +177,8 @@ trait CalculateXOccurrences
     }
 
     /**
-     * Calculates the number of yearly occurrences for a recurring transaction, starting at the date, until $count is reached. It will skip
-     * over $skipMod -1 recurrences.
+     * Calculates the number of yearly occurrences for a recurring transaction, starting at the date, until $count is
+     * reached. It will skip over $skipMod -1 recurrences.
      *
      * @param Carbon $date
      * @param int    $count
@@ -210,6 +209,5 @@ trait CalculateXOccurrences
         }
 
         return $return;
-
     }
 }

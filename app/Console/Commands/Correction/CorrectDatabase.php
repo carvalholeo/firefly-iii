@@ -24,28 +24,21 @@ declare(strict_types=1);
 namespace FireflyIII\Console\Commands\Correction;
 
 use Artisan;
+use FireflyIII\Console\Commands\ShowsFriendlyMessages;
 use Illuminate\Console\Command;
 use Schema;
 
 /**
  * Class CorrectDatabase
  *
- * @codeCoverageIgnore
+
  */
 class CorrectDatabase extends Command
 {
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
+    use ShowsFriendlyMessages;
+
     protected $description = 'Will correct the integrity of your database, if necessary.';
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'firefly-iii:correct-database';
+    protected $signature   = 'firefly-iii:correct-database';
 
     /**
      * Execute the console command.
@@ -54,6 +47,8 @@ class CorrectDatabase extends Command
     {
         // if table does not exist, return false
         if (!Schema::hasTable('users')) {
+            $this->friendlyError('No "users"-table, will not continue.');
+
             return 1;
         }
         $commands = [
@@ -61,6 +56,7 @@ class CorrectDatabase extends Command
             'firefly-iii:create-link-types',
             'firefly-iii:create-access-tokens',
             'firefly-iii:remove-bills',
+            'firefly-iii:fix-amount-pos-neg',
             'firefly-iii:enable-currencies',
             'firefly-iii:fix-transfer-budgets',
             'firefly-iii:fix-uneven-amount',
@@ -75,15 +71,16 @@ class CorrectDatabase extends Command
             'firefly-iii:fix-ob-currencies',
             'firefly-iii:fix-long-descriptions',
             'firefly-iii:fix-recurring-transactions',
-            'firefly-iii:restore-oauth-keys',
+            'firefly-iii:upgrade-group-information',
             'firefly-iii:fix-transaction-types',
             'firefly-iii:fix-frontpage-accounts',
+            // new!
+            'firefly-iii:unify-group-accounts',
+            'firefly-iii:trigger-credit-recalculation',
         ];
         foreach ($commands as $command) {
-            $this->line(sprintf('Now executing %s', $command));
-            Artisan::call($command);
-            $result = Artisan::output();
-            echo $result;
+            $this->friendlyLine(sprintf('Now executing command "%s"', $command));
+            $this->call($command);
         }
 
         return 0;

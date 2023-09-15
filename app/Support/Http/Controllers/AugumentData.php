@@ -37,7 +37,6 @@ use FireflyIII\Repositories\Budget\OperationsRepositoryInterface;
 use FireflyIII\Repositories\Category\CategoryRepositoryInterface;
 use FireflyIII\Support\CacheProperties;
 use Illuminate\Support\Collection;
-use JsonException;
 
 /**
  * Trait AugumentData
@@ -59,7 +58,7 @@ trait AugumentData
         $combined   = [];
         /** @var Account $expenseAccount */
         foreach ($accounts as $expenseAccount) {
-            $collection = new Collection;
+            $collection = new Collection();
             $collection->push($expenseAccount);
 
             $revenue = $repository->findByName($expenseAccount->name, [AccountType::REVENUE]);
@@ -123,7 +122,7 @@ trait AugumentData
         $return     = [];
         foreach ($accountIds as $combinedId) {
             $parts     = explode('-', $combinedId);
-            $accountId = (int) $parts[0];
+            $accountId = (int)$parts[0];
             if (array_key_exists($accountId, $grouped)) {
                 $return[$accountId] = $grouped[$accountId][0]['name'];
             }
@@ -152,7 +151,7 @@ trait AugumentData
                 $return[$budgetId] = $grouped[$budgetId][0]['name'];
             }
         }
-        $return[0] = (string) trans('firefly.no_budget');
+        $return[0] = (string)trans('firefly.no_budget');
 
         return $return;
     }
@@ -173,12 +172,12 @@ trait AugumentData
         $return     = [];
         foreach ($categoryIds as $combinedId) {
             $parts      = explode('-', $combinedId);
-            $categoryId = (int) $parts[0];
+            $categoryId = (int)$parts[0];
             if (array_key_exists($categoryId, $grouped)) {
                 $return[$categoryId] = $grouped[$categoryId][0]['name'];
             }
         }
-        $return[0] = (string) trans('firefly.no_category');
+        $return[0] = (string)trans('firefly.no_category');
 
         return $return;
     }
@@ -200,7 +199,7 @@ trait AugumentData
         /** @var BudgetLimitRepositoryInterface $blRepository */
         $blRepository = app(BudgetLimitRepositoryInterface::class);
         // properties for cache
-        $cache = new CacheProperties;
+        $cache = new CacheProperties();
         $cache->addProperty($start);
         $cache->addProperty($end);
         $cache->addProperty($budget->id);
@@ -221,7 +220,7 @@ trait AugumentData
             $currentStart = clone $entry->start_date;
             $currentEnd   = clone $entry->end_date;
             $expenses     = $opsRepository->sumExpenses($currentStart, $currentEnd, null, $budgetCollection, $currency);
-            $spent        = $expenses[(int) $currency->id]['sum'] ?? '0';
+            $spent        = $expenses[(int)$currency->id]['sum'] ?? '0';
             $entry->spent = $spent;
 
             $limits->push($entry);
@@ -240,7 +239,6 @@ trait AugumentData
      */
     protected function groupByName(array $array): array // filter + group data
     {
-
         // group by opposing account name.
         $grouped = [];
         /** @var array $journal */
@@ -284,7 +282,7 @@ trait AugumentData
         ];
         // loop to support multi currency
         foreach ($journals as $journal) {
-            $currencyId = (int) $journal['currency_id'];
+            $currencyId = (int)$journal['currency_id'];
 
             // if not set, set to zero:
             if (!array_key_exists($currencyId, $sum['per_currency'])) {

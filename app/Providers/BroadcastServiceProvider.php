@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BroadcastServiceProvider.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -26,7 +27,6 @@ use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\ServiceProvider;
 
 /**
- * @codeCoverageIgnore
  * Class BroadcastServiceProvider
  */
 class BroadcastServiceProvider extends ServiceProvider

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * StartFireflySession.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -29,7 +30,7 @@ use Illuminate\Session\Middleware\StartSession;
 /**
  * Class StartFireflySession.
  *
- * @codeCoverageIgnore
+
  */
 class StartFireflySession extends StartSession
 {

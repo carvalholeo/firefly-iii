@@ -30,12 +30,12 @@ use Illuminate\Queue\SerializesModels;
 /**
  * Class AccessTokenCreatedMail
  *
- * @codeCoverageIgnore
+
  */
 class AccessTokenCreatedMail extends Mailable
 {
-
-    use Queueable, SerializesModels;
+    use Queueable;
+    use SerializesModels;
 
     /**
      * AccessTokenCreatedMail constructor.
@@ -53,6 +53,6 @@ class AccessTokenCreatedMail extends Mailable
     {
         return $this
             ->markdown('emails.token-created')
-            ->subject((string) trans('email.access_token_created_subject'));
+            ->subject((string)trans('email.access_token_created_subject'));
     }
 }

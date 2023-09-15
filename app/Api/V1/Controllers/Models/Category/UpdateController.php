@@ -41,7 +41,7 @@ class UpdateController extends Controller
     /**
      * CategoryController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -58,7 +58,7 @@ class UpdateController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/categories/updateCategory
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/categories/updateCategory
      *
      * Update the category.
      *
@@ -80,6 +80,5 @@ class UpdateController extends Controller
         $resource = new Item($category, $transformer, 'categories');
 
         return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
-
     }
 }

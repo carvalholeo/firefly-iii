@@ -32,7 +32,6 @@ use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
  */
 trait AmountCollection
 {
-
     /**
      * Get transactions with a specific amount.
      *
@@ -45,6 +44,20 @@ trait AmountCollection
         $this->query->where(
             static function (EloquentBuilder $q) use ($amount) {
                 $q->where('source.amount', app('steam')->negative($amount));
+            }
+        );
+
+        return $this;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function amountIsNot(string $amount): GroupCollectorInterface
+    {
+        $this->query->where(
+            static function (EloquentBuilder $q) use ($amount) {
+                $q->where('source.amount', '!=', app('steam')->negative($amount));
             }
         );
 
@@ -100,6 +113,25 @@ trait AmountCollection
             static function (EloquentBuilder $q) use ($amount) {
                 $q->whereNotNull('source.foreign_amount');
                 $q->where('source.foreign_amount', app('steam')->negative($amount));
+            }
+        );
+
+        return $this;
+    }
+
+    /**
+     * Get transactions with a specific foreign amount.
+     *
+     * @param string $amount
+     *
+     * @return GroupCollectorInterface
+     */
+    public function foreignAmountIsNot(string $amount): GroupCollectorInterface
+    {
+        $this->query->where(
+            static function (EloquentBuilder $q) use ($amount) {
+                $q->whereNull('source.foreign_amount');
+                $q->orWhere('source.foreign_amount', '!=', app('steam')->negative($amount));
             }
         );
 

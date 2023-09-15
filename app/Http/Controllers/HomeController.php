@@ -1,4 +1,5 @@
 <?php
+
 /**
  * HomeController.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,8 +24,10 @@ declare(strict_types=1);
 namespace FireflyIII\Http\Controllers;
 
 use Carbon\Carbon;
+use Carbon\Exceptions\InvalidFormatException;
 use Exception;
 use FireflyIII\Events\RequestedVersionCheckStatus;
+use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Helpers\Collector\GroupCollectorInterface;
 use FireflyIII\Http\Middleware\Installer;
 use FireflyIII\Models\AccountType;
@@ -34,7 +37,7 @@ use FireflyIII\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class HomeController.
@@ -44,7 +47,7 @@ class HomeController extends Controller
     /**
      * HomeController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -64,15 +67,27 @@ class HomeController extends Controller
      */
     public function dateRange(Request $request): JsonResponse
     {
-        $start         = new Carbon($request->get('start'));
-        $end           = new Carbon($request->get('end'));
+        try {
+            $stringStart = e((string)$request->get('start'));
+            $start       = Carbon::createFromFormat('Y-m-d', $stringStart);
+        } catch (InvalidFormatException $e) {
+            Log::error(sprintf('Start: could not parse date string "%s" so ignore it.', $stringStart));
+            $start = Carbon::now()->startOfMonth();
+        }
+        try {
+            $stringEnd = e((string)$request->get('end'));
+            $end       = Carbon::createFromFormat('Y-m-d', $stringEnd);
+        } catch (InvalidFormatException $e) {
+            Log::error(sprintf('End could not parse date string "%s" so ignore it.', $stringEnd));
+            $end = Carbon::now()->endOfMonth();
+        }
         $label         = $request->get('label');
         $isCustomRange = false;
 
-        Log::debug('Received dateRange', ['start' => $request->get('start'), 'end' => $request->get('end'), 'label' => $request->get('label')]);
+        Log::debug('Received dateRange', ['start' => $stringStart, 'end' => $stringEnd, 'label' => $request->get('label')]);
         // check if the label is "everything" or "Custom range" which will betray
         // a possible problem with the budgets.
-        if ($label === (string) trans('firefly.everything') || $label === (string) trans('firefly.customRange')) {
+        if ($label === (string)trans('firefly.everything') || $label === (string)trans('firefly.customRange')) {
             $isCustomRange = true;
             Log::debug('Range is now marked as "custom".');
         }
@@ -80,7 +95,7 @@ class HomeController extends Controller
         $diff = $start->diffInDays($end) + 1;
 
         if ($diff > 50) {
-            $request->session()->flash('warning', (string) trans('firefly.warning_much_data', ['days' => $diff]));
+            $request->session()->flash('warning', (string)trans('firefly.warning_much_data', ['days' => $diff]));
         }
 
         $request->session()->put('is_custom_range', $isCustomRange);
@@ -99,7 +114,7 @@ class HomeController extends Controller
      * @param AccountRepositoryInterface $repository
      *
      * @return mixed
-     * @throws \FireflyIII\Exceptions\FireflyException
+     * @throws FireflyException
      */
     public function index(AccountRepositoryInterface $repository): mixed
     {
@@ -113,16 +128,18 @@ class HomeController extends Controller
         if (0 === $count) {
             return redirect(route('new-user.index'));
         }
-        $subTitle     = (string) trans('firefly.welcome_back');
+        $subTitle     = (string)trans('firefly.welcome_back');
         $transactions = [];
         $frontPage    = app('preferences')->getFresh('frontPageAccounts', $repository->getAccountsByType([AccountType::ASSET])->pluck('id')->toArray());
         /** @var Carbon $start */
-        $start = session('start', Carbon::now()->startOfMonth());
+        $start = session('start', today(config('app.timezone'))->startOfMonth());
         /** @var Carbon $end */
-        $end = session('end', Carbon::now()->endOfMonth());
-        /** @noinspection NullPointerExceptionInspection */
+        $end      = session('end', today(config('app.timezone'))->endOfMonth());
         $accounts = $repository->getAccountsById($frontPage->data);
         $today    = today(config('app.timezone'));
+
+        // sort frontpage accounts by order
+        $accounts = $accounts->sortBy('order');
 
         Log::debug('Frontpage accounts are ', $frontPage->data);
 

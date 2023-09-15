@@ -1,4 +1,5 @@
 <?php
+
 /**
  * CategoryController.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,7 +24,6 @@ declare(strict_types=1);
 namespace FireflyIII\Http\Controllers\Chart;
 
 use Carbon\Carbon;
-use Exception;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Generator\Chart\Basic\GeneratorInterface;
 use FireflyIII\Http\Controllers\Controller;
@@ -39,14 +39,17 @@ use FireflyIII\Support\Http\Controllers\ChartGeneration;
 use FireflyIII\Support\Http\Controllers\DateCalculation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
-use JsonException;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class CategoryController.
  */
 class CategoryController extends Controller
 {
-    use DateCalculation, AugumentData, ChartGeneration;
+    use DateCalculation;
+    use AugumentData;
+    use ChartGeneration;
 
     /** @var GeneratorInterface Chart generation methods. */
     protected $generator;
@@ -54,7 +57,7 @@ class CategoryController extends Controller
     /**
      * CategoryController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -65,19 +68,19 @@ class CategoryController extends Controller
 
     /**
      * Show an overview for a category for all time, per month/week/year.
-     * See reference nr. 59
+     * TODO test method, for category refactor.
      *
      * @param Category $category
      *
      * @return JsonResponse
      * @throws FireflyException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function all(Category $category): JsonResponse
     {
         // cache results:
-        $cache = new CacheProperties;
+        $cache = new CacheProperties();
         $cache->addProperty('chart.category.all');
         $cache->addProperty($category->id);
         if ($cache->has()) {
@@ -86,7 +89,7 @@ class CategoryController extends Controller
         /** @var CategoryRepositoryInterface $repository */
         $repository = app(CategoryRepositoryInterface::class);
         $start      = $repository->firstUseDate($category) ?? $this->getDate();
-        $range      = app('preferences')->get('viewRange', '1M')->data;
+        $range      = app('navigation')->getViewRange(false);
         $start      = app('navigation')->startOfPeriod($start, $range);
         $end        = $this->getDate();
 
@@ -104,28 +107,21 @@ class CategoryController extends Controller
      */
     private function getDate(): Carbon
     {
-        $carbon = null;
-        try {
-            $carbon = today(config('app.timezone'));
-        } catch (Exception $e) { // @phpstan-ignore-line
-            // @ignoreException
-        }
-
-        return $carbon;
+        return today(config('app.timezone'));
     }
 
     /**
      * Shows the category chart on the front page.
-     * See reference nr. 60
+     * TODO test method for category refactor.
      *
      * @return JsonResponse
      */
     public function frontPage(): JsonResponse
     {
-        $start = session('start', Carbon::now()->startOfMonth());
-        $end   = session('end', Carbon::now()->endOfMonth());
+        $start = session('start', today(config('app.timezone'))->startOfMonth());
+        $end   = session('end', today(config('app.timezone'))->endOfMonth());
         // chart properties for cache:
-        $cache = new CacheProperties;
+        $cache = new CacheProperties();
         $cache->addProperty($start);
         $cache->addProperty($end);
         $cache->addProperty('chart.category.frontpage');
@@ -143,7 +139,7 @@ class CategoryController extends Controller
 
     /**
      * Chart report.
-     * See reference nr. 61
+     * TODO test method for category refactor.
      *
      * @param Category   $category
      * @param Collection $accounts
@@ -154,7 +150,7 @@ class CategoryController extends Controller
      */
     public function reportPeriod(Category $category, Collection $accounts, Carbon $start, Carbon $end): JsonResponse
     {
-        $cache = new CacheProperties;
+        $cache = new CacheProperties();
         $cache->addProperty($start);
         $cache->addProperty($end);
         $cache->addProperty('chart.category.period');
@@ -197,12 +193,11 @@ class CategoryController extends Controller
         if (null !== $category) {
             /** @var OperationsRepositoryInterface $opsRepository */
             $opsRepository = app(OperationsRepositoryInterface::class);
-            $categoryId    = (int) $category->id;
+            $categoryId    = (int)$category->id;
             // this gives us all currencies
             $collection = new Collection([$category]);
             $expenses   = $opsRepository->listExpenses($start, $end, null, $collection);
             $income     = $opsRepository->listIncome($start, $end, null, $collection);
-
         }
         $currencies = array_unique(array_merge(array_keys($income), array_keys($expenses)));
         $periods    = app('navigation')->listOfPeriods($start, $end);
@@ -216,7 +211,7 @@ class CategoryController extends Controller
             $inKey        = sprintf('%d-in', $currencyId);
             $chartData[$outKey]
                           = [
-                'label'           => sprintf('%s (%s)', (string) trans('firefly.spent'), $currencyInfo['currency_name']),
+                'label'           => sprintf('%s (%s)', (string)trans('firefly.spent'), $currencyInfo['currency_name']),
                 'entries'         => [],
                 'type'            => 'bar',
                 'backgroundColor' => 'rgba(219, 68, 55, 0.5)', // red
@@ -224,7 +219,7 @@ class CategoryController extends Controller
 
             $chartData[$inKey]
                 = [
-                'label'           => sprintf('%s (%s)', (string) trans('firefly.earned'), $currencyInfo['currency_name']),
+                'label'           => sprintf('%s (%s)', (string)trans('firefly.earned'), $currencyInfo['currency_name']),
                 'entries'         => [],
                 'type'            => 'bar',
                 'backgroundColor' => 'rgba(0, 141, 76, 0.5)', // green
@@ -259,7 +254,7 @@ class CategoryController extends Controller
 
     /**
      * Chart for period for transactions without a category.
-     * See reference nr. 62
+     * TODO test me.
      *
      * @param Collection $accounts
      * @param Carbon     $start
@@ -269,7 +264,7 @@ class CategoryController extends Controller
      */
     public function reportPeriodNoCategory(Collection $accounts, Carbon $start, Carbon $end): JsonResponse
     {
-        $cache = new CacheProperties;
+        $cache = new CacheProperties();
         $cache->addProperty($start);
         $cache->addProperty($end);
         $cache->addProperty('chart.category.period.no-cat');
@@ -286,26 +281,26 @@ class CategoryController extends Controller
 
     /**
      * Chart for a specific period.
-     * See reference nr. 63
+     * TODO test me, for category refactor.
      *
      * @param Category $category
      * @param Carbon   $date
      *
      * @return JsonResponse
      * @throws FireflyException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function specificPeriod(Category $category, Carbon $date): JsonResponse
     {
-        $range = app('preferences')->get('viewRange', '1M')->data;
+        $range = app('navigation')->getViewRange(false);
         $start = app('navigation')->startOfPeriod($date, $range);
         $end   = session()->get('end');
         if ($end < $start) {
             [$end, $start] = [$start, $end];
         }
 
-        $cache = new CacheProperties;
+        $cache = new CacheProperties();
         $cache->addProperty($start);
         $cache->addProperty($end);
         $cache->addProperty($category->id);

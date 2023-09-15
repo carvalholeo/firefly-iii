@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ConfirmEmailChangeMail.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -31,11 +32,12 @@ use Illuminate\Queue\SerializesModels;
  *
  * Sends message to new address to confirm change.
  *
- * @codeCoverageIgnore
+
  */
 class ConfirmEmailChangeMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable;
+    use SerializesModels;
 
     public string $newEmail;
     public string $oldEmail;
@@ -66,6 +68,6 @@ class ConfirmEmailChangeMail extends Mailable
             //->view('emails.confirm-email-change-html')
             //->text('emails.confirm-email-change-text')
             ->markdown('emails.confirm-email-change')
-            ->subject((string) trans('email.email_change_subject'));
+            ->subject((string)trans('email.email_change_subject'));
     }
 }

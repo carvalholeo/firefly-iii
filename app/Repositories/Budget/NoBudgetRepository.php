@@ -28,6 +28,7 @@ use FireflyIII\Helpers\Collector\GroupCollectorInterface;
 use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\Models\TransactionType;
 use FireflyIII\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
 
 /**
@@ -61,19 +62,19 @@ class NoBudgetRepository implements NoBudgetRepositoryInterface
 
         /** @var array $journal */
         foreach ($journals as $journal) {
-            $currencyId = (int) $journal['currency_id'];
+            $currencyId = (int)$journal['currency_id'];
 
             $data[$currencyId] = $data[$currencyId] ?? [
-                    'id'                      => 0,
-                    'name'                    => sprintf('%s (%s)', trans('firefly.no_budget'), $journal['currency_name']),
-                    'sum'                     => '0',
-                    'currency_id'             => $currencyId,
-                    'currency_code'           => $journal['currency_code'],
-                    'currency_name'           => $journal['currency_name'],
-                    'currency_symbol'         => $journal['currency_symbol'],
-                    'currency_decimal_places' => $journal['currency_decimal_places'],
-                    'entries'                 => [],
-                ];
+                'id'                      => 0,
+                'name'                    => sprintf('%s (%s)', trans('firefly.no_budget'), $journal['currency_name']),
+                'sum'                     => '0',
+                'currency_id'             => $currencyId,
+                'currency_code'           => $journal['currency_code'],
+                'currency_name'           => $journal['currency_name'],
+                'currency_symbol'         => $journal['currency_symbol'],
+                'currency_decimal_places' => $journal['currency_decimal_places'],
+                'entries'                 => [],
+            ];
             $date              = $journal['date']->format($carbonFormat);
 
             if (!array_key_exists($date, $data[$currencyId]['entries'])) {
@@ -83,14 +84,6 @@ class NoBudgetRepository implements NoBudgetRepositoryInterface
         }
 
         return $data;
-    }
-
-    /**
-     * @param User $user
-     */
-    public function setUser(User $user): void
-    {
-        $this->user = $user;
     }
 
     /**
@@ -133,22 +126,31 @@ class NoBudgetRepository implements NoBudgetRepositoryInterface
             /** @var TransactionCurrency $currency */
             $currency = $currencies[$code];
             $return[] = [
-                'currency_id'             => (string) $currency['id'],
+                'currency_id'             => (string)$currency['id'],
                 'currency_code'           => $code,
                 'currency_name'           => $currency['name'],
                 'currency_symbol'         => $currency['symbol'],
                 'currency_decimal_places' => $currency['decimal_places'],
-                'amount'                  => number_format((float) $spent, $currency['decimal_places'], '.', ''),
+                'amount'                  => app('steam')->bcround($spent, $currency['decimal_places']),
             ];
         }
 
         return $return;
     }
 
-    /** @noinspection MoreThanThreeArgumentsInspection */
     /**
-     * See reference nr. 15
-     * See reference nr. 16
+     * @param User|Authenticatable|null $user
+     */
+    public function setUser(User | Authenticatable | null $user): void
+    {
+        if (null !== $user) {
+            $this->user = $user;
+        }
+    }
+
+    /**
+     * TODO this method does not include multi currency. It just counts.
+     * TODO this probably also applies to the other "sumExpenses" methods.
      *
      * @param Carbon                   $start
      * @param Carbon                   $end
@@ -159,7 +161,6 @@ class NoBudgetRepository implements NoBudgetRepositoryInterface
      */
     public function sumExpenses(Carbon $start, Carbon $end, ?Collection $accounts = null, ?TransactionCurrency $currency = null): array
     {
-
         /** @var GroupCollectorInterface $collector */
         $collector = app(GroupCollectorInterface::class);
         $collector->setUser($this->user)->setRange($start, $end)->setTypes([TransactionType::WITHDRAWAL]);
@@ -176,17 +177,16 @@ class NoBudgetRepository implements NoBudgetRepositoryInterface
         $array    = [];
 
         foreach ($journals as $journal) {
-            $currencyId                = (int) $journal['currency_id'];
+            $currencyId                = (int)$journal['currency_id'];
             $array[$currencyId]        = $array[$currencyId] ?? [
-                    'sum'                     => '0',
-                    'currency_id'             => $currencyId,
-                    'currency_name'           => $journal['currency_name'],
-                    'currency_symbol'         => $journal['currency_symbol'],
-                    'currency_code'           => $journal['currency_code'],
-                    'currency_decimal_places' => $journal['currency_decimal_places'],
-                ];
+                'sum'                     => '0',
+                'currency_id'             => $currencyId,
+                'currency_name'           => $journal['currency_name'],
+                'currency_symbol'         => $journal['currency_symbol'],
+                'currency_code'           => $journal['currency_code'],
+                'currency_decimal_places' => $journal['currency_decimal_places'],
+            ];
             $array[$currencyId]['sum'] = bcadd($array[$currencyId]['sum'], app('steam')->negative($journal['amount']));
-
         }
 
         return $array;

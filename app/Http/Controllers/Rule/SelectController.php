@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace FireflyIII\Http\Controllers\Rule;
 
 use Carbon\Carbon;
+use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Http\Controllers\Controller;
 use FireflyIII\Http\Requests\SelectTransactionsRequest;
 use FireflyIII\Http\Requests\TestRuleFormRequest;
@@ -37,8 +38,8 @@ use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
-use Log;
 use Throwable;
 
 /**
@@ -58,7 +59,7 @@ class SelectController extends Controller
 
         $this->middleware(
             function ($request, $next) {
-                app('view')->share('title', (string) trans('firefly.rules'));
+                app('view')->share('title', (string)trans('firefly.rules'));
                 app('view')->share('mainTitleIcon', 'fa-random');
 
                 return $next($request);
@@ -97,7 +98,7 @@ class SelectController extends Controller
         $newRuleEngine->fire();
         $resultCount = $newRuleEngine->getResults();
 
-        session()->flash('success', (string) trans_choice('firefly.applied_rule_selection', $resultCount, ['title' => $rule->title]));
+        session()->flash('success', (string)trans_choice('firefly.applied_rule_selection', $resultCount, ['title' => $rule->title]));
 
         return redirect()->route('rules.index');
     }
@@ -117,9 +118,9 @@ class SelectController extends Controller
             return redirect(route('rules.index'));
         }
         // does the user have shared accounts?
-        $first    = session('first', Carbon::now()->subYear())->format('Y-m-d');
-        $today    = Carbon::now()->format('Y-m-d');
-        $subTitle = (string) trans('firefly.apply_rule_selection', ['title' => $rule->title]);
+        $first    = session('first', today(config('app.timezone'))->subYear())->format('Y-m-d');
+        $today    = today(config('app.timezone'))->format('Y-m-d');
+        $subTitle = (string)trans('firefly.apply_rule_selection', ['title' => $rule->title]);
 
         return view('rules.rule.select-transactions', compact('first', 'today', 'rule', 'subTitle'));
     }
@@ -131,27 +132,31 @@ class SelectController extends Controller
      * @param TestRuleFormRequest $request
      *
      * @return JsonResponse
-     *
+     * @throws FireflyException
      */
     public function testTriggers(TestRuleFormRequest $request): JsonResponse
     {
         // build fake rule
-        $rule         = new Rule;
-        $triggers     = new Collection;
+        $rule         = new Rule();
+        $triggers     = new Collection();
         $rule->strict = '1' === $request->get('strict');
 
         // build trigger array from response
         $textTriggers = $this->getValidTriggerList($request);
 
         // warn if nothing.
-        if (empty($textTriggers)) {
-            return response()->json(['html' => '', 'warning' => (string) trans('firefly.warning_no_valid_triggers')]);
+        if (0 === count($textTriggers)) {
+            return response()->json(['html' => '', 'warning' => (string)trans('firefly.warning_no_valid_triggers')]);
         }
 
         foreach ($textTriggers as $textTrigger) {
-            $trigger                = new RuleTrigger;
-            $trigger->trigger_type  = $textTrigger['type'];
-            $trigger->trigger_value = $textTrigger['value'];
+            $trigger                  = new RuleTrigger();
+            $trigger->trigger_type    = $textTrigger['type'];
+            $trigger->trigger_value   = $textTrigger['value'];
+            $trigger->stop_processing = $textTrigger['stop_processing'];
+            if ($textTrigger['prohibited']) {
+                $trigger->trigger_type = sprintf('-%s', $textTrigger['type']);
+            }
             $triggers->push($trigger);
         }
 
@@ -163,24 +168,25 @@ class SelectController extends Controller
 
         // set rules:
         $newRuleEngine->setRules(new Collection([$rule]));
+        $newRuleEngine->setRefreshTriggers(false);
         $collection = $newRuleEngine->find();
         $collection = $collection->slice(0, 20);
 
         // Warn the user if only a subset of transactions is returned
         $warning = '';
-        if (empty($collection)) {
-            $warning = (string) trans('firefly.warning_no_matching_transactions');
+        if (0 === count($collection)) {
+            $warning = (string)trans('firefly.warning_no_matching_transactions');
         }
 
         // Return json response
         $view = 'ERROR, see logs.';
         try {
             $view = view('list.journals-array-tiny', ['groups' => $collection])->render();
-
-        } catch (Throwable $exception) { // @phpstan-ignore-line
+        } catch (Throwable $exception) {
             Log::error(sprintf('Could not render view in testTriggers(): %s', $exception->getMessage()));
             Log::error($exception->getTraceAsString());
             $view = sprintf('Could not render list.journals-tiny: %s', $exception->getMessage());
+            throw new FireflyException($view, 0, $exception);
         }
 
         return response()->json(['html' => $view, 'warning' => $warning]);
@@ -193,14 +199,14 @@ class SelectController extends Controller
      * @param Rule $rule
      *
      * @return JsonResponse
-     *
+     * @throws FireflyException
      */
     public function testTriggersByRule(Rule $rule): JsonResponse
     {
         $triggers = $rule->ruleTriggers;
 
-        if (empty($triggers)) {
-            return response()->json(['html' => '', 'warning' => (string) trans('firefly.warning_no_valid_triggers')]);
+        if (0 === count($triggers)) {
+            return response()->json(['html' => '', 'warning' => (string)trans('firefly.warning_no_valid_triggers')]);
         }
         // create new rule engine:
         $newRuleEngine = app(RuleEngineInterface::class);
@@ -211,18 +217,19 @@ class SelectController extends Controller
         $collection = $collection->slice(0, 20);
 
         $warning = '';
-        if (empty($collection)) {
-            $warning = (string) trans('firefly.warning_no_matching_transactions');
+        if (0 === count($collection)) {
+            $warning = (string)trans('firefly.warning_no_matching_transactions');
         }
 
         // Return json response
         $view = 'ERROR, see logs.';
         try {
             $view = view('list.journals-array-tiny', ['groups' => $collection])->render();
-
-        } catch (Throwable $exception) { // @phpstan-ignore-line
-            Log::error(sprintf('Could not render view in testTriggersByRule(): %s', $exception->getMessage()));
+        } catch (Throwable $exception) {
+            $message = sprintf('Could not render view in testTriggersByRule(): %s', $exception->getMessage());
+            Log::error($message);
             Log::error($exception->getTraceAsString());
+            throw new FireflyException($message, 0, $exception);
         }
 
         return response()->json(['html' => $view, 'warning' => $warning]);

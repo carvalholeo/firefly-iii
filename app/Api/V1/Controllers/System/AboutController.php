@@ -33,14 +33,13 @@ use League\Fractal\Resource\Item;
 /**
  * Returns basic information about this installation.
  *
- * @codeCoverageIgnore
  * Class AboutController.
  */
 class AboutController extends Controller
 {
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/about/getAbout
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/about/getAbout
      *
      * Returns system information.
      *
@@ -62,12 +61,12 @@ class AboutController extends Controller
             'driver'      => $currentDriver,
         ];
 
-        return response()->json(['data' => $data])->header('Content-Type', self::CONTENT_TYPE);
+        return response()->api(['data' => $data])->header('Content-Type', self::CONTENT_TYPE);
     }
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/about/getCurrentUser
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/about/getCurrentUser
      *
      * Returns information about the user.
      *
@@ -83,6 +82,6 @@ class AboutController extends Controller
 
         $resource = new Item(auth()->user(), $transformer, 'users');
 
-        return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
+        return response()->api($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
     }
 }

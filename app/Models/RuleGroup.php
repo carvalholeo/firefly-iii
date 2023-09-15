@@ -1,4 +1,5 @@
 <?php
+
 /**
  * RuleGroup.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -65,9 +66,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * @method static \Illuminate\Database\Eloquent\Builder|RuleGroup whereUserId($value)
  * @method static Builder|RuleGroup withTrashed()
  * @method static Builder|RuleGroup withoutTrashed()
- * @mixin Eloquent
  * @property int|null          $user_group_id
  * @method static \Illuminate\Database\Eloquent\Builder|RuleGroup whereUserGroupId($value)
+ * @mixin Eloquent
  */
 class RuleGroup extends Model
 {
@@ -102,7 +103,7 @@ class RuleGroup extends Model
     public static function routeBinder(string $value): RuleGroup
     {
         if (auth()->check()) {
-            $ruleGroupId = (int) $value;
+            $ruleGroupId = (int)$value;
             /** @var User $user */
             $user = auth()->user();
             /** @var RuleGroup $ruleGroup */
@@ -111,24 +112,22 @@ class RuleGroup extends Model
                 return $ruleGroup;
             }
         }
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
     }
 
     /**
-     * @codeCoverageIgnore
-     * @return HasMany
-     */
-    public function rules(): HasMany
-    {
-        return $this->hasMany(Rule::class);
-    }
-
-    /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function rules(): HasMany
+    {
+        return $this->hasMany(Rule::class);
     }
 }

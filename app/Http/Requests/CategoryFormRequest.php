@@ -1,4 +1,5 @@
 <?php
+
 /**
  * CategoryFormRequest.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -32,7 +33,8 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class CategoryFormRequest extends FormRequest
 {
-    use ConvertsDataTypes, ChecksLogin;
+    use ConvertsDataTypes;
+    use ChecksLogin;
 
     /**
      * Get information for the controller.

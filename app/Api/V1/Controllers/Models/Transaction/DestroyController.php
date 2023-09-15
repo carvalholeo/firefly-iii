@@ -24,24 +24,29 @@ declare(strict_types=1);
 namespace FireflyIII\Api\V1\Controllers\Models\Transaction;
 
 use FireflyIII\Api\V1\Controllers\Controller;
-use FireflyIII\Events\DestroyedTransactionGroup;
+use FireflyIII\Events\UpdatedAccount;
+use FireflyIII\Models\Account;
+use FireflyIII\Models\Transaction;
 use FireflyIII\Models\TransactionGroup;
 use FireflyIII\Models\TransactionJournal;
 use FireflyIII\Repositories\Journal\JournalRepositoryInterface;
+use FireflyIII\Repositories\TransactionGroup\TransactionGroupRepository;
 use FireflyIII\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class DestroyController
  */
 class DestroyController extends Controller
 {
+    private TransactionGroupRepository $groupRepository;
     private JournalRepositoryInterface $repository;
 
     /**
      * TransactionController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -54,6 +59,9 @@ class DestroyController extends Controller
                 $this->repository = app(JournalRepositoryInterface::class);
                 $this->repository->setUser($admin);
 
+                $this->groupRepository = app(TransactionGroupRepository::class);
+                $this->groupRepository->setUser($admin);
+
                 return $next($request);
             }
         );
@@ -61,39 +69,58 @@ class DestroyController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/transactions/deleteTransaction
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/transactions/deleteTransaction
      *
      * Remove the specified resource from storage.
      *
      * @param TransactionGroup $transactionGroup
      *
      * @return JsonResponse
-     * @codeCoverageIgnore
      */
     public function destroy(TransactionGroup $transactionGroup): JsonResponse
     {
-        $this->repository->destroyGroup($transactionGroup);
-        // trigger just after destruction
-        event(new DestroyedTransactionGroup($transactionGroup));
+        Log::debug(sprintf('Now in %s', __METHOD__));
+        // grab asset account(s) from group:
+        $accounts = [];
+        /** @var TransactionJournal $journal */
+        foreach ($transactionGroup->transactionJournals as $journal) {
+            /** @var Transaction $transaction */
+            foreach ($journal->transactions as $transaction) {
+                $type = $transaction->account->accountType->type;
+                // if is valid liability, trigger event!
+                if (in_array($type, config('firefly.valid_liabilities'), true)) {
+                    $accounts[] = $transaction->account;
+                }
+            }
+        }
+
+        $this->groupRepository->destroy($transactionGroup);
+
         app('preferences')->mark();
+
+        /** @var Account $account */
+        foreach ($accounts as $account) {
+            Log::debug(sprintf('Now going to trigger updated account event for account #%d', $account->id));
+            event(new UpdatedAccount($account));
+        }
 
         return response()->json([], 204);
     }
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/transactions/deleteTransactionJournal
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/transactions/deleteTransactionJournal
      *
      * Remove the specified resource from storage.
      *
      * @param TransactionJournal $transactionJournal
      *
-     * @codeCoverageIgnore
      * @return JsonResponse
      */
     public function destroyJournal(TransactionJournal $transactionJournal): JsonResponse
     {
         $this->repository->destroyJournal($transactionJournal);
+        app('preferences')->mark();
 
         return response()->json([], 204);
     }

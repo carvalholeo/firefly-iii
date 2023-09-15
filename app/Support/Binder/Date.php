@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Date.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,10 +24,10 @@ declare(strict_types=1);
 namespace FireflyIII\Support\Binder;
 
 use Carbon\Carbon;
-use Exception;
+use Carbon\Exceptions\InvalidDateException;
 use FireflyIII\Helpers\Fiscal\FiscalHelperInterface;
 use Illuminate\Routing\Route;
-use Log;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -47,20 +48,20 @@ class Date implements BinderInterface
         $fiscalHelper = app(FiscalHelperInterface::class);
 
         $magicWords = [
-            'currentMonthStart' => Carbon::now()->startOfMonth(),
-            'currentMonthEnd'   => Carbon::now()->endOfMonth(),
-            'currentYearStart'  => Carbon::now()->startOfYear(),
-            'currentYearEnd'    => Carbon::now()->endOfYear(),
+            'currentMonthStart' => today(config('app.timezone'))->startOfMonth(),
+            'currentMonthEnd'   => today(config('app.timezone'))->endOfMonth(),
+            'currentYearStart'  => today(config('app.timezone'))->startOfYear(),
+            'currentYearEnd'    => today(config('app.timezone'))->endOfYear(),
 
-            'previousMonthStart' => Carbon::now()->startOfMonth()->subDay()->startOfMonth(),
-            'previousMonthEnd'   => Carbon::now()->startOfMonth()->subDay()->endOfMonth(),
-            'previousYearStart'  => Carbon::now()->startOfYear()->subDay()->startOfYear(),
-            'previousYearEnd'    => Carbon::now()->startOfYear()->subDay()->endOfYear(),
+            'previousMonthStart' => today(config('app.timezone'))->startOfMonth()->subDay()->startOfMonth(),
+            'previousMonthEnd'   => today(config('app.timezone'))->startOfMonth()->subDay()->endOfMonth(),
+            'previousYearStart'  => today(config('app.timezone'))->startOfYear()->subDay()->startOfYear(),
+            'previousYearEnd'    => today(config('app.timezone'))->startOfYear()->subDay()->endOfYear(),
 
-            'currentFiscalYearStart'  => $fiscalHelper->startOfFiscalYear(Carbon::now()),
-            'currentFiscalYearEnd'    => $fiscalHelper->endOfFiscalYear(Carbon::now()),
-            'previousFiscalYearStart' => $fiscalHelper->startOfFiscalYear(Carbon::now())->subYear(),
-            'previousFiscalYearEnd'   => $fiscalHelper->endOfFiscalYear(Carbon::now())->subYear(),
+            'currentFiscalYearStart'  => $fiscalHelper->startOfFiscalYear(today(config('app.timezone'))),
+            'currentFiscalYearEnd'    => $fiscalHelper->endOfFiscalYear(today(config('app.timezone'))),
+            'previousFiscalYearStart' => $fiscalHelper->startOfFiscalYear(today(config('app.timezone')))->subYear(),
+            'previousFiscalYearEnd'   => $fiscalHelper->endOfFiscalYear(today(config('app.timezone')))->subYear(),
         ];
         if (array_key_exists($value, $magicWords)) {
             $return = $magicWords[$value];
@@ -71,9 +72,10 @@ class Date implements BinderInterface
 
         try {
             $result = new Carbon($value);
-        } catch (Exception $e) { // @phpstan-ignore-line
-            Log::error(sprintf('Could not parse date "%s" for user #%d: %s', $value, auth()->user()->id, $e->getMessage()));
-            throw new NotFoundHttpException;
+        } catch (InvalidDateException $e) {
+            $message = sprintf('Could not parse date "%s" for user #%d: %s', $value, auth()->user()->id, $e->getMessage());
+            Log::error($message);
+            throw new NotFoundHttpException($message, $e);
         }
 
         return $result;

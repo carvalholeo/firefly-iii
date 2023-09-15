@@ -32,9 +32,9 @@ use Illuminate\Support\Facades\Log;
  */
 trait CalculateRangeOccurrences
 {
-
     /**
-     * Get the number of daily occurrences for a recurring transaction until date $end is reached. Will skip every $skipMod-1 occurrences.
+     * Get the number of daily occurrences for a recurring transaction until date $end is reached. Will skip every
+     * $skipMod-1 occurrences.
      *
      * @param Carbon $start
      * @param Carbon $end
@@ -58,7 +58,8 @@ trait CalculateRangeOccurrences
     }
 
     /**
-     * Get the number of daily occurrences for a recurring transaction until date $end is reached. Will skip every $skipMod-1 occurrences.
+     * Get the number of daily occurrences for a recurring transaction until date $end is reached. Will skip every
+     * $skipMod-1 occurrences.
      *
      * @param Carbon $start
      * @param Carbon $end
@@ -72,7 +73,7 @@ trait CalculateRangeOccurrences
     {
         $return     = [];
         $attempts   = 0;
-        $dayOfMonth = (int) $moment;
+        $dayOfMonth = (int)$moment;
         if ($start->day > $dayOfMonth) {
             // day has passed already, add a month.
             $start->addMonth();
@@ -91,7 +92,8 @@ trait CalculateRangeOccurrences
     }
 
     /**
-     * Get the number of daily occurrences for a recurring transaction until date $end is reached. Will skip every $skipMod-1 occurrences.
+     * Get the number of daily occurrences for a recurring transaction until date $end is reached. Will skip every
+     * $skipMod-1 occurrences.
      *
      * @param Carbon $start
      * @param Carbon $end
@@ -123,7 +125,8 @@ trait CalculateRangeOccurrences
     }
 
     /**
-     * Get the number of daily occurrences for a recurring transaction until date $end is reached. Will skip every $skipMod-1 occurrences.
+     * Get the number of daily occurrences for a recurring transaction until date $end is reached. Will skip every
+     * $skipMod-1 occurrences.
      *
      * @param Carbon $start
      * @param Carbon $end
@@ -140,7 +143,7 @@ trait CalculateRangeOccurrences
         Log::debug('Rep is weekly.');
         // monday = 1
         // sunday = 7
-        $dayOfWeek = (int) $moment;
+        $dayOfWeek = (int)$moment;
         Log::debug(sprintf('DoW in repetition is %d, in mutator is %d', $dayOfWeek, $start->dayOfWeekIso));
         if ($start->dayOfWeekIso > $dayOfWeek) {
             // day has already passed this week, add one week:
@@ -167,7 +170,8 @@ trait CalculateRangeOccurrences
     }
 
     /**
-     * Get the number of daily occurrences for a recurring transaction until date $end is reached. Will skip every $skipMod-1 occurrences.
+     * Get the number of daily occurrences for a recurring transaction until date $end is reached. Will skip every
+     * $skipMod-1 occurrences.
      *
      * @param Carbon $start
      * @param Carbon $end
@@ -185,7 +189,6 @@ trait CalculateRangeOccurrences
         $return     = [];
         if ($start > $date) {
             $date->addYear();
-
         }
 
         // is $date between $start and $end?
@@ -201,6 +204,5 @@ trait CalculateRangeOccurrences
         }
 
         return $return;
-
     }
 }

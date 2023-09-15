@@ -1,4 +1,5 @@
 <?php
+
 /**
  * JournalServiceProvider.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -36,7 +37,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 
 /**
- * @codeCoverageIgnore
  * Class JournalServiceProvider.
  */
 class JournalServiceProvider extends ServiceProvider
@@ -68,7 +68,7 @@ class JournalServiceProvider extends ServiceProvider
             static function (Application $app) {
                 /** @var JournalRepositoryInterface $repository */
                 $repository = app(JournalRepository::class);
-                if ($app->auth->check()) { // @phpstan-ignore-line
+                if ($app->auth->check()) { // @phpstan-ignore-line (phpstan does not understand the reference to auth)
                     $repository->setUser(auth()->user());
                 }
 
@@ -82,7 +82,7 @@ class JournalServiceProvider extends ServiceProvider
             static function (Application $app) {
                 /** @var JournalAPIRepositoryInterface $repository */
                 $repository = app(JournalAPIRepository::class);
-                if ($app->auth->check()) { // @phpstan-ignore-line
+                if ($app->auth->check()) { // @phpstan-ignore-line (phpstan does not understand the reference to auth)
                     $repository->setUser(auth()->user());
                 }
 
@@ -96,7 +96,7 @@ class JournalServiceProvider extends ServiceProvider
             static function (Application $app) {
                 /** @var JournalCLIRepositoryInterface $repository */
                 $repository = app(JournalCLIRepository::class);
-                if ($app->auth->check()) { // @phpstan-ignore-line
+                if ($app->auth->check()) { // @phpstan-ignore-line (phpstan does not understand the reference to auth)
                     $repository->setUser(auth()->user());
                 }
 
@@ -115,7 +115,7 @@ class JournalServiceProvider extends ServiceProvider
             static function (Application $app) {
                 /** @var TransactionGroupRepositoryInterface $repository */
                 $repository = app(TransactionGroupRepository::class);
-                if ($app->auth->check()) { // @phpstan-ignore-line
+                if ($app->auth->check()) { // @phpstan-ignore-line (phpstan does not understand the reference to auth)
                     $repository->setUser(auth()->user());
                 }
 
@@ -134,7 +134,7 @@ class JournalServiceProvider extends ServiceProvider
             static function (Application $app) {
                 /** @var GroupCollectorInterface $collector */
                 $collector = app(GroupCollector::class);
-                if ($app->auth->check()) { // @phpstan-ignore-line
+                if ($app->auth->check()) { // @phpstan-ignore-line (phpstan does not understand the reference to auth)
                     $collector->setUser(auth()->user());
                 }
 

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * PiggyBankRepetition.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -25,6 +26,7 @@ namespace FireflyIII\Models;
 use Carbon\Carbon;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -71,7 +73,6 @@ class PiggyBankRepetition extends Model
     protected $fillable = ['piggy_bank_id', 'startdate', 'targetdate', 'currentamount'];
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function piggyBank(): BelongsTo
@@ -80,7 +81,6 @@ class PiggyBankRepetition extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      *
      * @param EloquentBuilder $query
      * @param Carbon          $start
@@ -94,7 +94,6 @@ class PiggyBankRepetition extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      *
      * @param EloquentBuilder $query
      * @param Carbon          $date
@@ -118,12 +117,23 @@ class PiggyBankRepetition extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      *
      * @param mixed $value
      */
     public function setCurrentamountAttribute($value): void
     {
-        $this->attributes['currentamount'] = (string) $value;
+        $this->attributes['currentamount'] = (string)$value;
+    }
+
+    /**
+     * Get the amount
+     *
+     * @return Attribute
+     */
+    protected function currentamount(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => (string)$value,
+        );
     }
 }

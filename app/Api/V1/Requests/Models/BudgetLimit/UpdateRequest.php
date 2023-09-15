@@ -32,11 +32,12 @@ use Illuminate\Validation\Validator;
 /**
  * Class UpdateRequest
  *
- * @codeCoverageIgnore
+
  */
 class UpdateRequest extends FormRequest
 {
-    use ConvertsDataTypes, ChecksLogin;
+    use ConvertsDataTypes;
+    use ChecksLogin;
 
     /**
      * Get all data from the request.
@@ -49,7 +50,7 @@ class UpdateRequest extends FormRequest
             'start'         => ['start', 'date'],
             'end'           => ['end', 'date'],
             'amount'        => ['amount', 'convertString'],
-            'currency_id'   => ['currency_id', 'integer'],
+            'currency_id'   => ['currency_id', 'convertInteger'],
             'currency_code' => ['currency_code', 'convertString'],
         ];
 
@@ -68,7 +69,7 @@ class UpdateRequest extends FormRequest
             'end'           => 'date',
             'amount'        => 'gt:0',
             'currency_id'   => 'numeric|exists:transaction_currencies,id',
-            'currency_code' => 'min:3|max:3|exists:transaction_currencies,code',
+            'currency_code' => 'min:3|max:51|exists:transaction_currencies,code',
         ];
     }
 
@@ -76,7 +77,7 @@ class UpdateRequest extends FormRequest
      * Configure the validator instance with special rules for after the basic validation rules.
      *
      * @param Validator $validator
-     * See reference nr. 72
+     * TODO duplicate code
      *
      * @return void
      */
@@ -90,11 +91,10 @@ class UpdateRequest extends FormRequest
                     $start = new Carbon($data['start']);
                     $end   = new Carbon($data['end']);
                     if ($end->isBefore($start)) {
-                        $validator->errors()->add('end', (string) trans('validation.date_after'));
+                        $validator->errors()->add('end', (string)trans('validation.date_after'));
                     }
                 }
             }
         );
     }
-
 }

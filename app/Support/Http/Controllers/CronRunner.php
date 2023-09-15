@@ -26,13 +26,81 @@ namespace FireflyIII\Support\Http\Controllers;
 use Carbon\Carbon;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Support\Cronjobs\AutoBudgetCronjob;
+use FireflyIII\Support\Cronjobs\BillWarningCronjob;
+use FireflyIII\Support\Cronjobs\ExchangeRatesCronjob;
 use FireflyIII\Support\Cronjobs\RecurringCronjob;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Trait CronRunner
  */
 trait CronRunner
 {
+    /**
+     * @param bool   $force
+     * @param Carbon $date
+     *
+     * @return array
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     */
+    protected function billWarningCronJob(bool $force, Carbon $date): array
+    {
+        /** @var BillWarningCronjob $billWarning */
+        $billWarning = app(BillWarningCronjob::class);
+        $billWarning->setForce($force);
+        $billWarning->setDate($date);
+        try {
+            $billWarning->fire();
+        } catch (FireflyException $e) {
+            return [
+                'job_fired'     => false,
+                'job_succeeded' => false,
+                'job_errored'   => true,
+                'message'       => $e->getMessage(),
+            ];
+        }
+
+        return [
+            'job_fired'     => $billWarning->jobFired,
+            'job_succeeded' => $billWarning->jobSucceeded,
+            'job_errored'   => $billWarning->jobErrored,
+            'message'       => $billWarning->message,
+        ];
+    }
+
+    /**
+     * @param bool   $force
+     * @param Carbon $date
+     *
+     * @return array
+     */
+    protected function exchangeRatesCronJob(bool $force, Carbon $date): array
+    {
+        /** @var ExchangeRatesCronjob $exchangeRates */
+        $exchangeRates = app(ExchangeRatesCronjob::class);
+        $exchangeRates->setForce($force);
+        $exchangeRates->setDate($date);
+        try {
+            $exchangeRates->fire();
+        } catch (FireflyException $e) {
+            return [
+                'job_fired'     => false,
+                'job_succeeded' => false,
+                'job_errored'   => true,
+                'message'       => $e->getMessage(),
+            ];
+        }
+
+        return [
+            'job_fired'     => $exchangeRates->jobFired,
+            'job_succeeded' => $exchangeRates->jobSucceeded,
+            'job_errored'   => $exchangeRates->jobErrored,
+            'message'       => $exchangeRates->message,
+        ];
+    }
+
     /**
      * @param bool   $force
      * @param Carbon $date
@@ -69,6 +137,8 @@ trait CronRunner
      * @param Carbon $date
      *
      * @return array
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     protected function runRecurring(bool $force, Carbon $date): array
     {
@@ -93,8 +163,5 @@ trait CronRunner
             'job_errored'   => $recurring->jobErrored,
             'message'       => $recurring->message,
         ];
-
     }
-
-
 }

@@ -27,6 +27,7 @@ namespace FireflyIII;
 use Eloquent;
 use Exception;
 use FireflyIII\Events\RequestedNewPassword;
+use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Account;
 use FireflyIII\Models\Attachment;
 use FireflyIII\Models\AvailableBudget;
@@ -48,6 +49,10 @@ use FireflyIII\Models\TransactionGroup;
 use FireflyIII\Models\TransactionJournal;
 use FireflyIII\Models\UserGroup;
 use FireflyIII\Models\Webhook;
+use FireflyIII\Notifications\Admin\TestNotification;
+use FireflyIII\Notifications\Admin\UserInvitation;
+use FireflyIII\Notifications\Admin\UserRegistration;
+use FireflyIII\Notifications\Admin\VersionCheckResult;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -57,11 +62,15 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Notifications\DatabaseNotificationCollection;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Notifications\Notification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Laravel\Passport\Client;
 use Laravel\Passport\HasApiTokens;
 use Laravel\Passport\Token;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -113,7 +122,6 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * @method static Builder|User whereRememberToken($value)
  * @method static Builder|User whereReset($value)
  * @method static Builder|User whereUpdatedAt($value)
- * @mixin Eloquent
  * @property string|null                                                          $objectguid
  * @property-read int|null                                                        $accounts_count
  * @property-read int|null                                                        $attachments_count
@@ -156,10 +164,12 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * @property-read int|null                                                        $group_memberships_count
  * @property-read UserGroup|null                                                  $userGroup
  * @method static Builder|User whereUserGroupId($value)
+ * @mixin Eloquent
  */
 class User extends Authenticatable
 {
-    use Notifiable, HasApiTokens;
+    use Notifiable;
+    use HasApiTokens;
 
     /**
      * The attributes that should be cast to native types.
@@ -200,17 +210,16 @@ class User extends Authenticatable
     public static function routeBinder(string $value): User
     {
         if (auth()->check()) {
-            $userId = (int) $value;
+            $userId = (int)$value;
             $user   = self::find($userId);
             if (null !== $user) {
                 return $user;
             }
         }
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
     }
 
     /**
-     * @codeCoverageIgnore
      * Link to accounts.
      *
      * @return HasMany
@@ -221,7 +230,6 @@ class User extends Authenticatable
     }
 
     /**
-     * @codeCoverageIgnore
      * Link to attachments
      *
      * @return HasMany
@@ -232,7 +240,6 @@ class User extends Authenticatable
     }
 
     /**
-     * @codeCoverageIgnore
      * Link to available budgets
      *
      * @return HasMany
@@ -243,7 +250,6 @@ class User extends Authenticatable
     }
 
     /**
-     * @codeCoverageIgnore
      * Link to bills.
      *
      * @return HasMany
@@ -254,7 +260,6 @@ class User extends Authenticatable
     }
 
     /**
-     * @codeCoverageIgnore
      * Link to budgets.
      *
      * @return HasMany
@@ -265,7 +270,6 @@ class User extends Authenticatable
     }
 
     /**
-     * @codeCoverageIgnore
      * Link to categories
      *
      * @return HasMany
@@ -276,7 +280,6 @@ class User extends Authenticatable
     }
 
     /**
-     * @codeCoverageIgnore
      * Link to currency exchange rates
      *
      * @return HasMany
@@ -287,7 +290,6 @@ class User extends Authenticatable
     }
 
     /**
-     * @codeCoverageIgnore
      * Generates access token.
      *
      * @return string
@@ -301,7 +303,23 @@ class User extends Authenticatable
     }
 
     /**
+     * A safe method that returns the user's current administration ID (group ID).
+     *
+     * @return int
+     * @throws FireflyException
+     */
+    public function getAdministrationId(): int
+    {
+        $groupId = (int)$this->user_group_id;
+        if (0 === $groupId) {
+            throw new FireflyException('User has no administration ID.');
+        }
+        return $groupId;
+    }
+
+    /**
      * Get the models LDAP domain.
+     *
      * @return string
      * @deprecated
      *
@@ -313,6 +331,7 @@ class User extends Authenticatable
 
     /**
      * Get the database column name of the domain.
+     *
      * @return string
      * @deprecated
      *
@@ -324,6 +343,7 @@ class User extends Authenticatable
 
     /**
      * Get the models LDAP GUID.
+     *
      * @return string
      * @deprecated
      *
@@ -335,6 +355,7 @@ class User extends Authenticatable
 
     /**
      * Get the models LDAP GUID database column name.
+     *
      * @return string
      * @deprecated
      *
@@ -345,13 +366,83 @@ class User extends Authenticatable
     }
 
     /**
-     * @codeCoverageIgnore
      *
      * @return HasMany
      */
     public function groupMemberships(): HasMany
     {
         return $this->hasMany(GroupMembership::class)->with(['userGroup', 'userRole']);
+    }
+
+    /**
+     * Link to object groups.
+     *
+     * @return HasMany
+     */
+    public function objectGroups(): HasMany
+    {
+        return $this->hasMany(ObjectGroup::class);
+    }
+
+    /**
+     * Link to piggy banks.
+     *
+     * @return HasManyThrough
+     */
+    public function piggyBanks(): HasManyThrough
+    {
+        return $this->hasManyThrough(PiggyBank::class, Account::class);
+    }
+
+    /**
+     * Link to preferences.
+     *
+     * @return HasMany
+     */
+    public function preferences(): HasMany
+    {
+        return $this->hasMany(Preference::class);
+    }
+
+    /**
+     * Link to recurring transactions.
+     *
+     * @return HasMany
+     */
+    public function recurrences(): HasMany
+    {
+        return $this->hasMany(Recurrence::class);
+    }
+
+    /**
+     * Get the notification routing information for the given driver.
+     *
+     * @param string            $driver
+     * @param Notification|null $notification
+     *
+     * @return mixed
+     */
+    public function routeNotificationFor($driver, $notification = null)
+    {
+        if (method_exists($this, $method = 'routeNotificationFor' . Str::studly($driver))) {
+            return $this->{$method}($notification);
+        }
+        $email = $this->email;
+        // see if user has alternative email address:
+        $pref = app('preferences')->getForUser($this, 'remote_guard_alt_email');
+        if (null !== $pref) {
+            $email = $pref->data;
+        }
+        // if user is demo user, send to owner:
+        if ($this->hasRole('demo')) {
+            $email = config('firefly.site_owner');
+        }
+
+        return match ($driver) {
+            'database' => $this->notifications(),
+            'mail'     => $email,
+            default    => null,
+        };
     }
 
     /**
@@ -365,7 +456,6 @@ class User extends Authenticatable
     }
 
     /**
-     * @codeCoverageIgnore
      * Link to roles.
      *
      * @return BelongsToMany
@@ -376,51 +466,33 @@ class User extends Authenticatable
     }
 
     /**
-     * @codeCoverageIgnore
-     * Link to object groups.
+     * Route notifications for the Slack channel.
      *
-     * @return HasMany
+     * @param Notification $notification
+     *
+     * @return string
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
-    public function objectGroups(): HasMany
+    public function routeNotificationForSlack(Notification $notification): string
     {
-        return $this->hasMany(ObjectGroup::class);
+        // this check does not validate if the user is owner, Should be done by notification itself.
+        if ($notification instanceof TestNotification) {
+            return app('fireflyconfig')->get('slack_webhook_url', '')->data;
+        }
+        if ($notification instanceof UserRegistration) {
+            return app('fireflyconfig')->get('slack_webhook_url', '')->data;
+        }
+        if ($notification instanceof VersionCheckResult) {
+            return app('fireflyconfig')->get('slack_webhook_url', '')->data;
+        }
+        if ($notification instanceof UserInvitation) {
+            return app('fireflyconfig')->get('slack_webhook_url', '')->data;
+        }
+        return app('preferences')->getForUser($this, 'slack_webhook_url', '')->data;
     }
 
     /**
-     * @codeCoverageIgnore
-     * Link to piggy banks.
-     *
-     * @return HasManyThrough
-     */
-    public function piggyBanks(): HasManyThrough
-    {
-        return $this->hasManyThrough(PiggyBank::class, Account::class);
-    }
-
-    /**
-     * @codeCoverageIgnore
-     * Link to preferences.
-     *
-     * @return HasMany
-     */
-    public function preferences(): HasMany
-    {
-        return $this->hasMany(Preference::class);
-    }
-
-    /**
-     * @codeCoverageIgnore
-     * Link to recurring transactions.
-     *
-     * @return HasMany
-     */
-    public function recurrences(): HasMany
-    {
-        return $this->hasMany(Recurrence::class);
-    }
-
-    /**
-     * @codeCoverageIgnore
      * Link to rule groups.
      *
      * @return HasMany
@@ -431,7 +503,6 @@ class User extends Authenticatable
     }
 
     /**
-     * @codeCoverageIgnore
      * Link to rules.
      *
      * @return HasMany
@@ -442,7 +513,6 @@ class User extends Authenticatable
     }
 
     /**
-     * @codeCoverageIgnore
      * Send the password reset notification.
      *
      * @param string $token
@@ -454,8 +524,11 @@ class User extends Authenticatable
         event(new RequestedNewPassword($this, $token, $ipAddress));
     }
 
+    // start LDAP related code
+
     /**
      * Set the models LDAP domain.
+     *
      * @param string $domain
      *
      * @return void
@@ -469,6 +542,7 @@ class User extends Authenticatable
 
     /**
      * Set the models LDAP GUID.
+     *
      * @param string $guid
      *
      * @return void
@@ -479,10 +553,7 @@ class User extends Authenticatable
         $this->{$this->getLdapGuidColumn()} = $guid;
     }
 
-    // start LDAP related code
-
     /**
-     * @codeCoverageIgnore
      * Link to tags.
      *
      * @return HasMany
@@ -493,7 +564,6 @@ class User extends Authenticatable
     }
 
     /**
-     * @codeCoverageIgnore
      * Link to transaction groups.
      *
      * @return HasMany
@@ -504,7 +574,6 @@ class User extends Authenticatable
     }
 
     /**
-     * @codeCoverageIgnore
      * Link to transaction journals.
      *
      * @return HasMany
@@ -515,7 +584,6 @@ class User extends Authenticatable
     }
 
     /**
-     * @codeCoverageIgnore
      * Link to transactions.
      *
      * @return HasManyThrough
@@ -526,16 +594,14 @@ class User extends Authenticatable
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function userGroup(): BelongsTo
     {
-        return $this->belongsTo(UserGroup::class,);
+        return $this->belongsTo(UserGroup::class, );
     }
 
     /**
-     * @codeCoverageIgnore
      *
      * Link to webhooks
      *
@@ -545,5 +611,4 @@ class User extends Authenticatable
     {
         return $this->hasMany(Webhook::class);
     }
-    // end LDAP related code
 }

@@ -25,17 +25,16 @@ declare(strict_types=1);
 namespace FireflyIII\Support\Repositories\Recurring;
 
 use Carbon\Carbon;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class CalculateXOccurrencesSince
  */
 trait CalculateXOccurrencesSince
 {
-
     /**
-     * Calculates the number of daily occurrences for a recurring transaction, starting at the date, until $count is reached. It will skip
-     * over $skipMod -1 recurrences.
+     * Calculates the number of daily occurrences for a recurring transaction, starting at the date, until $count is
+     * reached. It will skip over $skipMod -1 recurrences.
      *
      * @param Carbon $date
      * @param Carbon $afterDate
@@ -64,8 +63,8 @@ trait CalculateXOccurrencesSince
     }
 
     /**
-     * Calculates the number of monthly occurrences for a recurring transaction, starting at the date, until $count is reached. It will skip
-     * over $skipMod -1 recurrences.
+     * Calculates the number of monthly occurrences for a recurring transaction, starting at the date, until $count is
+     * reached. It will skip over $skipMod -1 recurrences.
      *
      * @param Carbon $date
      * @param Carbon $afterDate
@@ -82,7 +81,7 @@ trait CalculateXOccurrencesSince
         $mutator    = clone $date;
         $total      = 0;
         $attempts   = 0;
-        $dayOfMonth = (int) $moment;
+        $dayOfMonth = (int)$moment;
         $dayOfMonth = 0 === $dayOfMonth ? 1 : $dayOfMonth;
         if ($mutator->day > $dayOfMonth) {
             Log::debug(sprintf('%d is after %d, add a month. Mutator is now', $mutator->day, $dayOfMonth));
@@ -107,8 +106,8 @@ trait CalculateXOccurrencesSince
     }
 
     /**
-     * Calculates the number of NDOM occurrences for a recurring transaction, starting at the date, until $count is reached. It will skip
-     * over $skipMod -1 recurrences.
+     * Calculates the number of NDOM occurrences for a recurring transaction, starting at the date, until $count is
+     * reached. It will skip over $skipMod -1 recurrences.
      *
      * @param Carbon $date
      * @param Carbon $afterDate
@@ -147,8 +146,8 @@ trait CalculateXOccurrencesSince
     }
 
     /**
-     * Calculates the number of weekly occurrences for a recurring transaction, starting at the date, until $count is reached. It will skip
-     * over $skipMod -1 recurrences.
+     * Calculates the number of weekly occurrences for a recurring transaction, starting at the date, until $count is
+     * reached. It will skip over $skipMod -1 recurrences.
      *
      * @param Carbon $date
      * @param Carbon $afterDate
@@ -169,7 +168,7 @@ trait CalculateXOccurrencesSince
         // sunday = 7
         // Removed assumption today has passed, see issue https://github.com/firefly-iii/firefly-iii/issues/4798
         //$mutator->addDay(); // always assume today has passed.
-        $dayOfWeek = (int) $moment;
+        $dayOfWeek = (int)$moment;
         if ($mutator->dayOfWeekIso > $dayOfWeek) {
             // day has already passed this week, add one week:
             $mutator->addWeek();
@@ -192,8 +191,8 @@ trait CalculateXOccurrencesSince
     }
 
     /**
-     * Calculates the number of yearly occurrences for a recurring transaction, starting at the date, until $count is reached. It will skip
-     * over $skipMod -1 recurrences.
+     * Calculates the number of yearly occurrences for a recurring transaction, starting at the date, until $count is
+     * reached. It will skip over $skipMod -1 recurrences.
      *
      * @param Carbon $date
      * @param Carbon $afterDate
@@ -234,6 +233,5 @@ trait CalculateXOccurrencesSince
         }
 
         return $return;
-
     }
 }

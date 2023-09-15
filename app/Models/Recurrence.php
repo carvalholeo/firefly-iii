@@ -85,9 +85,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * @method static \Illuminate\Database\Eloquent\Builder|Recurrence whereUserId($value)
  * @method static Builder|Recurrence withTrashed()
  * @method static Builder|Recurrence withoutTrashed()
- * @mixin Eloquent
  * @property int|null                                $user_group_id
  * @method static \Illuminate\Database\Eloquent\Builder|Recurrence whereUserGroupId($value)
+ * @mixin Eloquent
  */
 class Recurrence extends Model
 {
@@ -130,7 +130,7 @@ class Recurrence extends Model
     public static function routeBinder(string $value): Recurrence
     {
         if (auth()->check()) {
-            $recurrenceId = (int) $value;
+            $recurrenceId = (int)$value;
             /** @var User $user */
             $user = auth()->user();
             /** @var Recurrence $recurrence */
@@ -139,11 +139,18 @@ class Recurrence extends Model
                 return $recurrence;
             }
         }
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
     }
 
     /**
-     * @codeCoverageIgnore
+     * @return BelongsTo
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
      * @return MorphMany
      */
     public function attachments(): MorphMany
@@ -152,8 +159,7 @@ class Recurrence extends Model
     }
 
     /**
-     * @codeCoverageIgnore
-     * Get all of the notes.
+     * Get all the notes.
      */
     public function notes(): MorphMany
     {
@@ -162,7 +168,6 @@ class Recurrence extends Model
 
     /**
      * @return HasMany
-     * @codeCoverageIgnore
      */
     public function recurrenceMeta(): HasMany
     {
@@ -171,7 +176,6 @@ class Recurrence extends Model
 
     /**
      * @return HasMany
-     * @codeCoverageIgnore
      */
     public function recurrenceRepetitions(): HasMany
     {
@@ -180,7 +184,6 @@ class Recurrence extends Model
 
     /**
      * @return HasMany
-     * @codeCoverageIgnore
      */
     public function recurrenceTransactions(): HasMany
     {
@@ -188,7 +191,6 @@ class Recurrence extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function transactionCurrency(): BelongsTo
@@ -197,21 +199,10 @@ class Recurrence extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function transactionType(): BelongsTo
     {
         return $this->belongsTo(TransactionType::class);
     }
-
-    /**
-     * @codeCoverageIgnore
-     * @return BelongsTo
-     */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
-
 }

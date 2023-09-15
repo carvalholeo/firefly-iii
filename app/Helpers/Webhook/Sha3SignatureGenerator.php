@@ -25,9 +25,8 @@ namespace FireflyIII\Helpers\Webhook;
 
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\WebhookMessage;
+use Illuminate\Support\Facades\Log;
 use JsonException;
-use Log;
-
 
 /**
  * Class Sha3SignatureGenerator
@@ -52,7 +51,7 @@ class Sha3SignatureGenerator implements SignatureGeneratorInterface
             $json = json_encode($message->message, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             Log::error('Could not generate hash.');
-            Log::error(sprintf('JSON value: %s', $message->message));
+            Log::error(sprintf('JSON value: %s', $json));
             Log::error($e->getMessage());
             Log::error($e->getTraceAsString());
             throw new FireflyException('Could not generate JSON for SHA3 hash.', 0, $e);

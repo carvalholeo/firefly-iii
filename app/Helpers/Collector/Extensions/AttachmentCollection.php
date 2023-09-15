@@ -29,7 +29,7 @@ use FireflyIII\Models\Attachment;
 use FireflyIII\Models\TransactionJournal;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Trait AttachmentCollection
@@ -38,6 +38,7 @@ trait AttachmentCollection
 {
     /**
      * @param string $name
+     *
      * @return GroupCollectorInterface
      */
     public function attachmentNameContains(string $name): GroupCollectorInterface
@@ -49,7 +50,10 @@ trait AttachmentCollection
             foreach ($object['transactions'] as $transaction) {
                 /** @var array $attachment */
                 foreach ($transaction['attachments'] as $attachment) {
-                    $result = str_contains(strtolower($attachment['filename']), strtolower($name)) || str_contains(strtolower($attachment['title']), strtolower($name));
+                    $result = str_contains(strtolower($attachment['filename']), strtolower($name)) || str_contains(
+                        strtolower($attachment['title']),
+                        strtolower($name)
+                    );
                     if (true === $result) {
                         return true;
                     }
@@ -72,6 +76,7 @@ trait AttachmentCollection
         Log::debug('Add filter on attachment ID.');
         $this->joinAttachmentTables();
         $this->query->whereNotNull('attachments.attachable_id');
+        $this->query->whereNull('attachments.deleted_at');
 
         return $this;
     }
@@ -88,7 +93,8 @@ trait AttachmentCollection
                         ->where(
                             static function (EloquentBuilder $q1) {
                                 $q1->where('attachments.attachable_type', TransactionJournal::class);
-                                //$q1->where('attachments.uploaded', true);
+                                $q1->where('attachments.uploaded', true);
+                                $q1->whereNull('attachments.deleted_at');
                                 $q1->orWhereNull('attachments.attachable_type');
                             }
                         );
@@ -111,9 +117,10 @@ trait AttachmentCollection
 
     /**
      * @param string $name
+     *
      * @return GroupCollectorInterface
      */
-    public function attachmentNameEnds(string $name): GroupCollectorInterface
+    public function attachmentNameDoesNotContain(string $name): GroupCollectorInterface
     {
         $this->hasAttachments();
         $this->withAttachmentInformation();
@@ -122,7 +129,10 @@ trait AttachmentCollection
             foreach ($object['transactions'] as $transaction) {
                 /** @var array $attachment */
                 foreach ($transaction['attachments'] as $attachment) {
-                    $result = str_ends_with(strtolower($attachment['filename']), strtolower($name)) || str_ends_with(strtolower($attachment['title']), strtolower($name));
+                    $result = !str_contains(strtolower($attachment['filename']), strtolower($name)) && !str_contains(
+                        strtolower($attachment['title']),
+                        strtolower($name)
+                    );
                     if (true === $result) {
                         return true;
                     }
@@ -137,6 +147,97 @@ trait AttachmentCollection
 
     /**
      * @param string $name
+     *
+     * @return GroupCollectorInterface
+     */
+    public function attachmentNameDoesNotEnd(string $name): GroupCollectorInterface
+    {
+        $this->hasAttachments();
+        $this->withAttachmentInformation();
+        $filter              = function (int $index, array $object) use ($name): bool {
+            /** @var array $transaction */
+            foreach ($object['transactions'] as $transaction) {
+                /** @var array $attachment */
+                foreach ($transaction['attachments'] as $attachment) {
+                    $result = !str_ends_with(strtolower($attachment['filename']), strtolower($name)) && !str_ends_with(
+                        strtolower($attachment['title']),
+                        strtolower($name)
+                    );
+                    if (true === $result) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
+        $this->postFilters[] = $filter;
+
+        return $this;
+    }
+
+    /**
+     * @param string $name
+     *
+     * @return GroupCollectorInterface
+     */
+    public function attachmentNameDoesNotStart(string $name): GroupCollectorInterface
+    {
+        $this->hasAttachments();
+        $this->withAttachmentInformation();
+        $filter              = function (int $index, array $object) use ($name): bool {
+            /** @var array $transaction */
+            foreach ($object['transactions'] as $transaction) {
+                /** @var array $attachment */
+                foreach ($transaction['attachments'] as $attachment) {
+                    $result = !str_starts_with(strtolower($attachment['filename']), strtolower($name)) && !str_starts_with(
+                        strtolower($attachment['title']),
+                        strtolower($name)
+                    );
+                    if (true === $result) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
+        $this->postFilters[] = $filter;
+
+        return $this;
+    }
+
+    /**
+     * @param string $name
+     *
+     * @return GroupCollectorInterface
+     */
+    public function attachmentNameEnds(string $name): GroupCollectorInterface
+    {
+        $this->hasAttachments();
+        $this->withAttachmentInformation();
+        $filter              = function (int $index, array $object) use ($name): bool {
+            /** @var array $transaction */
+            foreach ($object['transactions'] as $transaction) {
+                /** @var array $attachment */
+                foreach ($transaction['attachments'] as $attachment) {
+                    $result = str_ends_with(strtolower($attachment['filename']), strtolower($name)) || str_ends_with(
+                        strtolower($attachment['title']),
+                        strtolower($name)
+                    );
+                    if (true === $result) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
+        $this->postFilters[] = $filter;
+
+        return $this;
+    }
+
+    /**
+     * @param string $name
+     *
      * @return GroupCollectorInterface
      */
     public function attachmentNameIs(string $name): GroupCollectorInterface
@@ -163,6 +264,34 @@ trait AttachmentCollection
 
     /**
      * @param string $name
+     *
+     * @return GroupCollectorInterface
+     */
+    public function attachmentNameIsNot(string $name): GroupCollectorInterface
+    {
+        $this->hasAttachments();
+        $this->withAttachmentInformation();
+        $filter              = function (int $index, array $object) use ($name): bool {
+            /** @var array $transaction */
+            foreach ($object['transactions'] as $transaction) {
+                /** @var array $attachment */
+                foreach ($transaction['attachments'] as $attachment) {
+                    $result = $attachment['filename'] !== $name && $attachment['title'] !== $name;
+                    if (true === $result) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
+        $this->postFilters[] = $filter;
+
+        return $this;
+    }
+
+    /**
+     * @param string $name
+     *
      * @return GroupCollectorInterface
      */
     public function attachmentNameStarts(string $name): GroupCollectorInterface
@@ -174,7 +303,10 @@ trait AttachmentCollection
             foreach ($object['transactions'] as $transaction) {
                 /** @var array $attachment */
                 foreach ($transaction['attachments'] as $attachment) {
-                    $result = str_starts_with(strtolower($attachment['filename']), strtolower($name)) || str_starts_with(strtolower($attachment['title']), strtolower($name));
+                    $result = str_starts_with(strtolower($attachment['filename']), strtolower($name)) || str_starts_with(
+                        strtolower($attachment['title']),
+                        strtolower($name)
+                    );
                     if (true === $result) {
                         return true;
                     }
@@ -189,6 +321,7 @@ trait AttachmentCollection
 
     /**
      * @param string $value
+     *
      * @return GroupCollectorInterface
      */
     public function attachmentNotesAre(string $value): GroupCollectorInterface
@@ -200,9 +333,9 @@ trait AttachmentCollection
             foreach ($object['transactions'] as $transaction) {
                 /** @var array $attachment */
                 foreach ($transaction['attachments'] as $attachment) {
-                    /** @var Attachment $object */
+                    /** @var Attachment|null $object */
                     $object = auth()->user()->attachments()->find($attachment['id']);
-                    $notes  = (string) $object->notes()?->first()?->text;
+                    $notes  = (string)$object?->notes()->first()?->text;
                     return $notes !== '' && $notes === $value;
                 }
             }
@@ -215,6 +348,34 @@ trait AttachmentCollection
 
     /**
      * @param string $value
+     *
+     * @return GroupCollectorInterface
+     */
+    public function attachmentNotesAreNot(string $value): GroupCollectorInterface
+    {
+        $this->hasAttachments();
+        $this->withAttachmentInformation();
+        $filter              = function (int $index, array $object) use ($value): bool {
+            /** @var array $transaction */
+            foreach ($object['transactions'] as $transaction) {
+                /** @var array $attachment */
+                foreach ($transaction['attachments'] as $attachment) {
+                    /** @var Attachment|null $object */
+                    $object = auth()->user()->attachments()->find($attachment['id']);
+                    $notes  = (string)$object?->notes()->first()?->text;
+                    return $notes !== '' && $notes !== $value;
+                }
+            }
+            return false;
+        };
+        $this->postFilters[] = $filter;
+
+        return $this;
+    }
+
+    /**
+     * @param string $value
+     *
      * @return GroupCollectorInterface
      */
     public function attachmentNotesContains(string $value): GroupCollectorInterface
@@ -226,9 +387,9 @@ trait AttachmentCollection
             foreach ($object['transactions'] as $transaction) {
                 /** @var array $attachment */
                 foreach ($transaction['attachments'] as $attachment) {
-                    /** @var Attachment $object */
+                    /** @var Attachment|null $object */
                     $object = auth()->user()->attachments()->find($attachment['id']);
-                    $notes  = (string) $object->notes()?->first()?->text;
+                    $notes  = (string)$object?->notes()->first()?->text;
                     return $notes !== '' && str_contains(strtolower($notes), strtolower($value));
                 }
             }
@@ -241,6 +402,88 @@ trait AttachmentCollection
 
     /**
      * @param string $value
+     *
+     * @return GroupCollectorInterface
+     */
+    public function attachmentNotesDoNotContain(string $value): GroupCollectorInterface
+    {
+        $this->hasAttachments();
+        $this->withAttachmentInformation();
+        $filter              = function (int $index, array $object) use ($value): bool {
+            /** @var array $transaction */
+            foreach ($object['transactions'] as $transaction) {
+                /** @var array $attachment */
+                foreach ($transaction['attachments'] as $attachment) {
+                    /** @var Attachment|null $object */
+                    $object = auth()->user()->attachments()->find($attachment['id']);
+                    $notes  = (string)$object?->notes()->first()?->text;
+                    return $notes !== '' && !str_contains(strtolower($notes), strtolower($value));
+                }
+            }
+            return false;
+        };
+        $this->postFilters[] = $filter;
+
+        return $this;
+    }
+
+    /**
+     * @param string $value
+     *
+     * @return GroupCollectorInterface
+     */
+    public function attachmentNotesDoNotEnd(string $value): GroupCollectorInterface
+    {
+        $this->hasAttachments();
+        $this->withAttachmentInformation();
+        $filter              = function (int $index, array $object) use ($value): bool {
+            /** @var array $transaction */
+            foreach ($object['transactions'] as $transaction) {
+                /** @var array $attachment */
+                foreach ($transaction['attachments'] as $attachment) {
+                    /** @var Attachment|null $object */
+                    $object = auth()->user()->attachments()->find($attachment['id']);
+                    $notes  = (string)$object?->notes()->first()?->text;
+                    return $notes !== '' && !str_ends_with(strtolower($notes), strtolower($value));
+                }
+            }
+            return false;
+        };
+        $this->postFilters[] = $filter;
+
+        return $this;
+    }
+
+    /**
+     * @param string $value
+     *
+     * @return GroupCollectorInterface
+     */
+    public function attachmentNotesDoNotStart(string $value): GroupCollectorInterface
+    {
+        $this->hasAttachments();
+        $this->withAttachmentInformation();
+        $filter              = function (int $index, array $object) use ($value): bool {
+            /** @var array $transaction */
+            foreach ($object['transactions'] as $transaction) {
+                /** @var array $attachment */
+                foreach ($transaction['attachments'] as $attachment) {
+                    /** @var Attachment|null $object */
+                    $object = auth()->user()->attachments()->find($attachment['id']);
+                    $notes  = (string)$object?->notes()->first()?->text;
+                    return $notes !== '' && !str_starts_with(strtolower($notes), strtolower($value));
+                }
+            }
+            return false;
+        };
+        $this->postFilters[] = $filter;
+
+        return $this;
+    }
+
+    /**
+     * @param string $value
+     *
      * @return GroupCollectorInterface
      */
     public function attachmentNotesEnds(string $value): GroupCollectorInterface
@@ -252,9 +495,9 @@ trait AttachmentCollection
             foreach ($object['transactions'] as $transaction) {
                 /** @var array $attachment */
                 foreach ($transaction['attachments'] as $attachment) {
-                    /** @var Attachment $object */
+                    /** @var Attachment|null $object */
                     $object = auth()->user()->attachments()->find($attachment['id']);
-                    $notes  = (string) $object->notes()?->first()?->text;
+                    $notes  = (string)$object?->notes()->first()?->text;
                     return $notes !== '' && str_ends_with(strtolower($notes), strtolower($value));
                 }
             }
@@ -267,6 +510,7 @@ trait AttachmentCollection
 
     /**
      * @param string $value
+     *
      * @return GroupCollectorInterface
      */
     public function attachmentNotesStarts(string $value): GroupCollectorInterface
@@ -278,9 +522,9 @@ trait AttachmentCollection
             foreach ($object['transactions'] as $transaction) {
                 /** @var array $attachment */
                 foreach ($transaction['attachments'] as $attachment) {
-                    /** @var Attachment $object */
+                    /** @var Attachment|null $object */
                     $object = auth()->user()->attachments()->find($attachment['id']);
-                    $notes  = (string) $object->notes()?->first()?->text;
+                    $notes  = (string)$object?->notes()->first()?->text;
                     return $notes !== '' && str_starts_with(strtolower($notes), strtolower($value));
                 }
             }

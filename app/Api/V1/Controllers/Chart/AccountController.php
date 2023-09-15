@@ -52,7 +52,7 @@ class AccountController extends Controller
     /**
      * AccountController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -74,7 +74,7 @@ class AccountController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/charts/getChartAccountOverview
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/charts/getChartAccountOverview
      *
      * @param DateRequest $request
      *
@@ -98,7 +98,7 @@ class AccountController extends Controller
         $frontPage  = app('preferences')->get('frontPageAccounts', $defaultSet);
         $default    = app('amount')->getDefaultCurrency();
 
-        if (empty($frontPage->data)) {
+        if (!(is_array($frontPage->data) && count($frontPage->data) > 0)) {
             $frontPage->data = $defaultSet;
             $frontPage->save();
         }
@@ -113,9 +113,9 @@ class AccountController extends Controller
             if (null === $currency) {
                 $currency = $default;
             }
-            $currentSet   = [
+            $currentSet = [
                 'label'                   => $account->name,
-                'currency_id'             => (string) $currency->id,
+                'currency_id'             => (string)$currency->id,
                 'currency_code'           => $currency->code,
                 'currency_symbol'         => $currency->symbol,
                 'currency_decimal_places' => $currency->decimal_places,
@@ -125,13 +125,15 @@ class AccountController extends Controller
                 'yAxisID'                 => 0, // 0, 1, 2
                 'entries'                 => [],
             ];
+            // TODO this code is also present in the V2 chart account controller so this method is due to be deprecated.
             $currentStart = clone $start;
             $range        = app('steam')->balanceInRange($account, $start, clone $end);
-            $previous     = round((float) array_values($range)[0], 12);
+            // 2022-10-11 this method no longer converts to float.
+            $previous = array_values($range)[0];
             while ($currentStart <= $end) {
                 $format   = $currentStart->format('Y-m-d');
                 $label    = $currentStart->toAtomString();
-                $balance  = array_key_exists($format, $range) ? round((float) $range[$format], 12) : $previous;
+                $balance  = array_key_exists($format, $range) ? $range[$format] : $previous;
                 $previous = $balance;
                 $currentStart->addDay();
                 $currentSet['entries'][$label] = $balance;

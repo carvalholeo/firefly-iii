@@ -29,9 +29,9 @@ $(function () {
     drawSpentBars();
     drawBudgetedBars();
 
-    $('.update_ab').on('click', updateAvailableBudget);
-    $('.delete_ab').on('click', deleteAvailableBudget);
-    $('.create_ab_alt').on('click', createAltAvailableBudget);
+    //$('.update_ab').on('click', updateAvailableBudget);
+    //$('.delete_ab').on('click', deleteAvailableBudget);
+    //$('.create_ab_alt').on('click', createAltAvailableBudget);
 
     $('.budget_amount').on('change', updateBudgetedAmount);
     $('.create_bl').on('click', createBudgetLimit);
@@ -79,6 +79,7 @@ $(function () {
 });
 
 function updateBudgetedAmount(e) {
+    console.log('updateBudgetedAmount');
     var input = $(e.currentTarget);
     var budgetId = parseInt(input.data('id'));
     var budgetLimitId = parseInt(input.data('limit'));
@@ -95,7 +96,7 @@ function updateBudgetedAmount(e) {
         }).done(function (data) {
 
             input.prop('disabled', false);
-
+            input.data('limit', data.id);
             // update amount left.
             $('.left_span[data-limit="0"][data-id="' + budgetId + '"]').html(data.left_formatted);
             if (data.left_per_day > 0) {
@@ -113,6 +114,7 @@ function updateBudgetedAmount(e) {
             amount: input.val(),
         }).done(function (data) {
             input.prop('disabled', false);
+            input.data('limit', data.id);
             $('.left_span[data-limit="' + budgetLimitId + '"]').html(data.left_formatted);
             if (data.left_per_day > 0) {
                 $('.left_span[data-limit="' + budgetLimitId + '"]').html(data.left_formatted + '(' + data.left_per_day_formatted + ')');
@@ -127,19 +129,27 @@ function updateBudgetedAmount(e) {
 }
 
 function updateTotalBudgetedAmount(currencyId) {
+    console.log('updateTotalBudgetedAmount');
     // fade info away:
     $('span.budgeted_amount[data-currency="' + currencyId + '"]')
         .fadeTo(100, 0.1, function () {
-            //$(this).fadeTo(500, 1.0);
+        });
+    $('span.available_amount[data-currency="' + currencyId + '"]')
+        .fadeTo(100, 0.1, function () {
         });
 
     // get new amount:
     $.get(totalBudgetedUrl.replace('REPLACEME', currencyId)).done(function (data) {
         // set thing:
+
         $('span.budgeted_amount[data-currency="' + currencyId + '"]')
             .html(data.budgeted_formatted)
             // fade back:
             .fadeTo(300, 1.0);
+
+        // also set available amount:
+        $('span.available_amount[data-currency="' + currencyId + '"]')
+            .html(data.available_formatted).fadeTo(300, 1.0);
 
         // set bar:
         var pct = parseFloat(data.percentage);
@@ -214,7 +224,6 @@ function deleteBudgetLimit(e) {
     var url = deleteBudgetLimitUrl.replace('REPLACEME', budgetLimitId.toString());
     $.post(url, {_token: token}).then(function () {
         $('.bl_entry[data-budget-limit-id="' + budgetLimitId + '"]').remove();
-        
     });
     return false;
 }

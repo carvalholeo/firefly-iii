@@ -31,8 +31,8 @@ use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use FireflyIII\Repositories\Currency\CurrencyRepositoryInterface;
 use FireflyIII\Support\CacheProperties;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use JsonException;
-use Log;
 
 /**
  * Trait ChartGeneration
@@ -52,7 +52,6 @@ trait ChartGeneration
      */
     protected function accountBalanceChart(Collection $accounts, Carbon $start, Carbon $end): array // chart helper method.
     {
-
         // chart properties for cache:
         $cache = new CacheProperties();
         $cache->addProperty($start);
@@ -76,8 +75,8 @@ trait ChartGeneration
         $chartData = [];
         /** @var Account $account */
         foreach ($accounts as $account) {
-            // See reference nr. 33
-            $currency = $repository->find((int) $accountRepos->getMetaValue($account, 'currency_id'));
+            // TODO we can use getAccountCurrency instead.
+            $currency = $repository->find((int)$accountRepos->getMetaValue($account, 'currency_id'));
             if (null === $currency) {
                 $currency = $default;
             }
@@ -92,7 +91,7 @@ trait ChartGeneration
             $previous     = array_values($range)[0];
             while ($currentStart <= $end) {
                 $format   = $currentStart->format('Y-m-d');
-                $label    = trim($currentStart->isoFormat((string) trans('config.month_and_day_js', [], $locale)));
+                $label    = trim($currentStart->isoFormat((string)trans('config.month_and_day_js', [], $locale)));
                 $balance  = $range[$format] ?? $previous;
                 $previous = $balance;
                 $currentStart->addDay();

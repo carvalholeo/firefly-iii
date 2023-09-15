@@ -1,4 +1,5 @@
 <?php
+
 /**
  * SearchServiceProvider.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -28,7 +29,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 
 /**
- * @codeCoverageIgnore
  * Class SearchServiceProvider.
  */
 class SearchServiceProvider extends ServiceProvider
@@ -50,7 +50,7 @@ class SearchServiceProvider extends ServiceProvider
             function (Application $app) {
                 /** @var OperatorQuerySearch $search */
                 $search = app(OperatorQuerySearch::class);
-                if ($app->auth->check()) { // @phpstan-ignore-line
+                if ($app->auth->check()) { // @phpstan-ignore-line (phpstan does not understand the reference to auth)
                     $search->setUser(auth()->user());
                 }
 

@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Support\Request;
 
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Trait AppendsLocationData
@@ -240,13 +240,12 @@ trait AppendsLocationData
         $zoomLevelKey = $this->getLocationKey($prefix, 'zoom_level');
 
         return (
-                   null === $this->get($longitudeKey)
-                   && null === $this->get($latitudeKey)
-                   && null === $this->get($zoomLevelKey))
-               && ('PUT' === $this->method()
+            null === $this->get($longitudeKey)
+            && null === $this->get($latitudeKey)
+            && null === $this->get($zoomLevelKey))
+               && (
+                   'PUT' === $this->method()
                    || ('POST' === $this->method() && $this->routeIs('*.update'))
                );
-
     }
-
 }

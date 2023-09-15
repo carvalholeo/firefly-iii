@@ -54,7 +54,7 @@ class ListController extends Controller
     /**
      * AccountController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -71,18 +71,17 @@ class ListController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/accounts/listAttachmentByAccount
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/accounts/listAttachmentByAccount
      *
      * @param Account $account
      *
      * @return JsonResponse
-     * @codeCoverageIgnore
      * @throws FireflyException
      */
     public function attachments(Account $account): JsonResponse
     {
         $manager    = $this->getManager();
-        $pageSize   = (int) app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize   = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
         $collection = $this->repository->getAttachments($account);
 
         $count       = $collection->count();
@@ -104,13 +103,12 @@ class ListController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/accounts/listPiggyBankByAccount
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/accounts/listPiggyBankByAccount
      *
      * @param Account $account
      *
      * @return JsonResponse
      * @throws FireflyException
-     * @codeCoverageIgnore
      */
     public function piggyBanks(Account $account): JsonResponse
     {
@@ -118,7 +116,7 @@ class ListController extends Controller
         $manager = $this->getManager();
 
         // types to get, page size:
-        $pageSize = (int) app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
 
         // get list of budgets. Count it and split it.
         $collection = $this->repository->getPiggyBanks($account);
@@ -127,7 +125,7 @@ class ListController extends Controller
 
         // make paginator:
         $paginator = new LengthAwarePaginator($piggyBanks, $count, $pageSize, $this->parameters->get('page'));
-        $paginator->setPath(route('api.v1.accounts.piggy_banks', [$account->id]) . $this->buildParams());
+        $paginator->setPath(route('api.v1.accounts.piggy-banks', [$account->id]) . $this->buildParams());
 
         /** @var PiggyBankTransformer $transformer */
         $transformer = app(PiggyBankTransformer::class);
@@ -137,16 +135,14 @@ class ListController extends Controller
         $resource->setPaginator(new IlluminatePaginatorAdapter($paginator));
 
         return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
-
     }
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/accounts/listTransactionByAccount
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/accounts/listTransactionByAccount
      *
      * Show all transaction groups related to the account.
      *
-     * @codeCoverageIgnore
      *
      * @param Request $request
      * @param Account $account
@@ -156,7 +152,7 @@ class ListController extends Controller
      */
     public function transactions(Request $request, Account $account): JsonResponse
     {
-        $pageSize = (int) app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
         $type     = $request->get('type') ?? 'default';
         $this->parameters->set('type', $type);
 

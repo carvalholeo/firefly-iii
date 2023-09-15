@@ -19,8 +19,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/** @noinspection MultipleReturnStatementsInspection */
-
 declare(strict_types=1);
 
 namespace FireflyIII\Factory;
@@ -28,7 +26,7 @@ namespace FireflyIII\Factory;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\TransactionCurrency;
 use Illuminate\Database\QueryException;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class TransactionCurrencyFactory
@@ -43,13 +41,18 @@ class TransactionCurrencyFactory
      */
     public function create(array $data): TransactionCurrency
     {
+        $data['code']           = e($data['code']);
+        $data['symbol']         = e($data['symbol']);
+        $data['name']           = e($data['name']);
+        $data['decimal_places'] = (int)$data['decimal_places'];
+        $data['enabled']        = (bool)$data['enabled'];
         // if the code already exists (deleted)
         // force delete it and then create the transaction:
         $count = TransactionCurrency::withTrashed()->whereCode($data['code'])->count();
         if (1 === $count) {
             $old = TransactionCurrency::withTrashed()->whereCode($data['code'])->first();
             $old->forceDelete();
-            Log::warning(sprintf('Force deleted old currency with ID #%d and code "%s".', $old->id, $data['code']));
+            app('log')->warning(sprintf('Force deleted old currency with ID #%d and code "%s".', $old->id, $data['code']));
         }
 
         try {
@@ -66,6 +69,7 @@ class TransactionCurrencyFactory
         } catch (QueryException $e) {
             $result = null;
             Log::error(sprintf('Could not create new currency: %s', $e->getMessage()));
+            Log::error($e->getTraceAsString());
             throw new FireflyException('400004: Could not store new currency.', 0, $e);
         }
 
@@ -80,8 +84,8 @@ class TransactionCurrencyFactory
      */
     public function find(?int $currencyId, ?string $currencyCode): ?TransactionCurrency
     {
-        $currencyCode = (string) $currencyCode;
-        $currencyId   = (int) $currencyId;
+        $currencyCode = (string)e($currencyCode);
+        $currencyId   = (int)$currencyId;
 
         if ('' === $currencyCode && 0 === $currencyId) {
             Log::debug('Cannot find anything on empty currency code and empty currency ID!');
@@ -95,7 +99,7 @@ class TransactionCurrencyFactory
             if (null !== $currency) {
                 return $currency;
             }
-            Log::warning(sprintf('Currency ID is %d but found nothing!', $currencyId));
+            app('log')->warning(sprintf('Currency ID is %d but found nothing!', $currencyId));
         }
         // then by code:
         if ('' !== $currencyCode) {
@@ -103,9 +107,9 @@ class TransactionCurrencyFactory
             if (null !== $currency) {
                 return $currency;
             }
-            Log::warning(sprintf('Currency code is %d but found nothing!', $currencyCode));
+            app('log')->warning(sprintf('Currency code is %d but found nothing!', $currencyCode));
         }
-        Log::warning('Found nothing for currency.');
+        app('log')->warning('Found nothing for currency.');
 
         return null;
     }

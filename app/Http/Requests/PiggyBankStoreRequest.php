@@ -1,4 +1,5 @@
 <?php
+
 /**
  * PiggyBankStoreRequest.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -31,7 +32,8 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class PiggyBankStoreRequest extends FormRequest
 {
-    use ConvertsDataTypes, ChecksLogin;
+    use ConvertsDataTypes;
+    use ChecksLogin;
 
     /**
      * Returns the data required by the controller.
@@ -43,7 +45,7 @@ class PiggyBankStoreRequest extends FormRequest
         return [
             'name'               => $this->convertString('name'),
             'startdate'          => $this->getCarbonDate('startdate'),
-            'account_id'         => $this->integer('account_id'),
+            'account_id'         => $this->convertInteger('account_id'),
             'targetamount'       => $this->convertString('targetamount'),
             'targetdate'         => $this->getCarbonDate('targetdate'),
             'notes'              => $this->stringWithNewlines('notes'),

@@ -18,7 +18,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-/** @noinspection MultipleReturnStatementsInspection */
 
 declare(strict_types=1);
 
@@ -30,16 +29,17 @@ use FireflyIII\Models\Recurrence;
 use FireflyIII\Services\Internal\Support\RecurringTransactionTrait;
 use FireflyIII\Services\Internal\Support\TransactionTypeTrait;
 use FireflyIII\User;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\MessageBag;
-use Log;
+use JsonException;
 
 /**
  * Class RecurrenceFactory
  */
 class RecurrenceFactory
 {
-
-    use TransactionTypeTrait, RecurringTransactionTrait;
+    use TransactionTypeTrait;
+    use RecurringTransactionTrait;
 
     private MessageBag $errors;
     private User       $user;
@@ -47,11 +47,11 @@ class RecurrenceFactory
     /**
      * Constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
-        $this->errors = new MessageBag;
+        $this->errors = new MessageBag();
     }
 
     /**
@@ -59,6 +59,7 @@ class RecurrenceFactory
      *
      * @return Recurrence
      * @throws FireflyException
+     * @throws JsonException
      */
     public function create(array $data): Recurrence
     {
@@ -84,7 +85,7 @@ class RecurrenceFactory
             $firstDate = $data['recurrence']['first_date'];
         }
         if (array_key_exists('nr_of_repetitions', $data['recurrence'])) {
-            $repetitions = (int) $data['recurrence']['nr_of_repetitions'];
+            $repetitions = (int)$data['recurrence']['nr_of_repetitions'];
         }
         if (array_key_exists('repeat_until', $data['recurrence'])) {
             $repeatUntil = $data['recurrence']['repeat_until'];
@@ -106,6 +107,7 @@ class RecurrenceFactory
         $recurrence = new Recurrence(
             [
                 'user_id'             => $this->user->id,
+                'user_group_id'       => $this->user->user_group_id,
                 'transaction_type_id' => $type->id,
                 'title'               => $title,
                 'description'         => $description,
@@ -120,21 +122,19 @@ class RecurrenceFactory
         $recurrence->save();
 
         if (array_key_exists('notes', $data['recurrence'])) {
-            $this->updateNote($recurrence, (string) $data['recurrence']['notes']);
-
+            $this->updateNote($recurrence, (string)$data['recurrence']['notes']);
         }
 
         $this->createRepetitions($recurrence, $data['repetitions'] ?? []);
         try {
             $this->createTransactions($recurrence, $data['transactions'] ?? []);
-
         } catch (FireflyException $e) {
             Log::error($e->getMessage());
+            Log::error($e->getTraceAsString());
             $recurrence->forceDelete();
             $message = sprintf('Could not create recurring transaction: %s', $e->getMessage());
             $this->errors->add('store', $message);
             throw new FireflyException($message, 0, $e);
-
         }
 
 
@@ -156,6 +156,4 @@ class RecurrenceFactory
     {
         $this->user = $user;
     }
-
-
 }

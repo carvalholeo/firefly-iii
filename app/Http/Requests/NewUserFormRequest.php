@@ -1,4 +1,5 @@
 <?php
+
 /**
  * NewUserFormRequest.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -29,11 +30,12 @@ use Illuminate\Foundation\Http\FormRequest;
 /**
  * Class NewUserFormRequest.
  *
- * @codeCoverageIgnore
+
  */
 class NewUserFormRequest extends FormRequest
 {
-    use ConvertsDataTypes, ChecksLogin;
+    use ConvertsDataTypes;
+    use ChecksLogin;
 
     /**
      * Rules for this request.

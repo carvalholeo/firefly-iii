@@ -45,7 +45,7 @@ class ShowController extends Controller
     /**
      * RuleController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -65,20 +65,19 @@ class ShowController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/rules/listRule
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/rules/listRule
      *
      * List all of them.
      *
      * @return JsonResponse
      * @throws FireflyException
-     * @codeCoverageIgnore
      */
     public function index(): JsonResponse
     {
         $manager = $this->getManager();
 
         // types to get, page size:
-        $pageSize = (int) app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
 
         // get list of budgets. Count it and split it.
         $collection = $this->ruleRepository->getAll();
@@ -97,19 +96,17 @@ class ShowController extends Controller
         $resource->setPaginator(new IlluminatePaginatorAdapter($paginator));
 
         return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
-
     }
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/rules/getRule
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/rules/getRule
      *
      * List single resource.
      *
      * @param Rule $rule
      *
      * @return JsonResponse
-     * @codeCoverageIgnore
      */
     public function show(Rule $rule): JsonResponse
     {
@@ -121,6 +118,5 @@ class ShowController extends Controller
         $resource = new Item($rule, $transformer, 'rules');
 
         return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
-
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * UpdatedGroupEventHandler.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -22,6 +23,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Handlers\Events;
 
+use FireflyIII\Enums\WebhookTrigger;
 use FireflyIII\Events\RequestedSendWebhookMessages;
 use FireflyIII\Events\UpdatedTransactionGroup;
 use FireflyIII\Generator\Webhook\MessageGeneratorInterface;
@@ -29,12 +31,11 @@ use FireflyIII\Models\Account;
 use FireflyIII\Models\Transaction;
 use FireflyIII\Models\TransactionJournal;
 use FireflyIII\Models\TransactionType;
-use FireflyIII\Models\Webhook;
 use FireflyIII\Repositories\RuleGroup\RuleGroupRepositoryInterface;
 use FireflyIII\Services\Internal\Support\CreditRecalculateService;
 use FireflyIII\TransactionRules\Engine\RuleEngineInterface;
 use Illuminate\Support\Collection;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class UpdatedGroupEventHandler
@@ -106,10 +107,10 @@ class UpdatedGroupEventHandler
         $engine = app(MessageGeneratorInterface::class);
         $engine->setUser($user);
         $engine->setObjects(new Collection([$group]));
-        $engine->setTrigger(Webhook::TRIGGER_UPDATE_TRANSACTION);
+        $engine->setTrigger(WebhookTrigger::UPDATE_TRANSACTION->value);
         $engine->generateMessages();
 
-        event(new RequestedSendWebhookMessages);
+        event(new RequestedSendWebhookMessages());
     }
 
     /**
@@ -124,7 +125,7 @@ class UpdatedGroupEventHandler
             return;
         }
         // first journal:
-        /** @var TransactionJournal $first */
+        /** @var TransactionJournal|null $first */
         $first = $group->transactionJournals()
                        ->orderBy('transaction_journals.date', 'DESC')
                        ->orderBy('transaction_journals.order', 'ASC')
@@ -133,7 +134,7 @@ class UpdatedGroupEventHandler
                        ->first();
 
         if (null === $first) {
-            Log::warning(sprintf('Group #%d has no transaction journals.', $group->id));
+            app('log')->warning(sprintf('Group #%d has no transaction journals.', $group->id));
             return;
         }
 
@@ -154,6 +155,5 @@ class UpdatedGroupEventHandler
             Transaction::whereIn('transaction_journal_id', $all)
                        ->where('amount', '>', 0)->update(['account_id' => $destAccount->id]);
         }
-
     }
 }

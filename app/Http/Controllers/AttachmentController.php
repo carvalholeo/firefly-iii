@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AttachmentController.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -40,14 +41,13 @@ use Illuminate\View\View;
  */
 class AttachmentController extends Controller
 {
-
     /** @var AttachmentRepositoryInterface Attachment repository */
     private $repository;
 
     /**
      * AttachmentController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -57,7 +57,7 @@ class AttachmentController extends Controller
         $this->middleware(
             function ($request, $next) {
                 app('view')->share('mainTitleIcon', 'fa-paperclip');
-                app('view')->share('title', (string) trans('firefly.attachments'));
+                app('view')->share('title', (string)trans('firefly.attachments'));
                 $this->repository = app(AttachmentRepositoryInterface::class);
 
                 return $next($request);
@@ -74,7 +74,7 @@ class AttachmentController extends Controller
      */
     public function delete(Attachment $attachment)
     {
-        $subTitle = (string) trans('firefly.delete_attachment', ['name' => $attachment->filename]);
+        $subTitle = (string)trans('firefly.delete_attachment', ['name' => $attachment->filename]);
 
         // put previous url in session
         $this->rememberPreviousUrl('attachments.delete.url');
@@ -96,7 +96,7 @@ class AttachmentController extends Controller
 
         $this->repository->destroy($attachment);
 
-        $request->session()->flash('success', (string) trans('firefly.attachment_deleted', ['name' => $name]));
+        $request->session()->flash('success', (string)trans('firefly.attachment_deleted', ['name' => $name]));
         app('preferences')->mark();
 
         return redirect($this->getPreviousUrl('attachments.delete.url'));
@@ -146,7 +146,7 @@ class AttachmentController extends Controller
     public function edit(Request $request, Attachment $attachment)
     {
         $subTitleIcon = 'fa-pencil';
-        $subTitle     = (string) trans('firefly.edit_attachment', ['name' => $attachment->filename]);
+        $subTitle     = (string)trans('firefly.edit_attachment', ['name' => $attachment->filename]);
 
         // put previous url in session if not redirect from store (not "return_to_edit").
         if (true !== session('attachments.edit.fromUpdate')) {
@@ -193,16 +193,14 @@ class AttachmentController extends Controller
         $data = $request->getAttachmentData();
         $this->repository->update($attachment, $data);
 
-        $request->session()->flash('success', (string) trans('firefly.attachment_updated', ['name' => $attachment->filename]));
+        $request->session()->flash('success', (string)trans('firefly.attachment_updated', ['name' => $attachment->filename]));
         app('preferences')->mark();
 
         $redirect = redirect($this->getPreviousUrl('attachments.edit.url'));
-        if (1 === (int) $request->get('return_to_edit')) {
-
+        if (1 === (int)$request->get('return_to_edit')) {
             $request->session()->put('attachments.edit.fromUpdate', true);
 
             $redirect = redirect(route('attachments.edit', [$attachment->id]))->withInput(['return_to_edit' => 1]);
-
         }
 
         // redirect to previous URL.

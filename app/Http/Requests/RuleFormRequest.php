@@ -1,4 +1,5 @@
 <?php
+
 /**
  * RuleFormRequest.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -33,7 +34,9 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class RuleFormRequest extends FormRequest
 {
-    use ConvertsDataTypes, GetRuleConfiguration, ChecksLogin;
+    use ConvertsDataTypes;
+    use GetRuleConfiguration;
+    use ChecksLogin;
 
     /**
      * Get all data for controller.
@@ -45,7 +48,7 @@ class RuleFormRequest extends FormRequest
     {
         return [
             'title'           => $this->convertString('title'),
-            'rule_group_id'   => $this->integer('rule_group_id'),
+            'rule_group_id'   => $this->convertInteger('rule_group_id'),
             'active'          => $this->boolean('active'),
             'trigger'         => $this->convertString('trigger'),
             'description'     => $this->stringWithNewlines('description'),
@@ -66,15 +69,48 @@ class RuleFormRequest extends FormRequest
         if (is_array($triggerData)) {
             foreach ($triggerData as $trigger) {
                 $stopProcessing = $trigger['stop_processing'] ?? '0';
-                $return[]       = [
+                $prohibited     = $trigger['prohibited'] ?? '0';
+                $set            = [
                     'type'            => $trigger['type'] ?? 'invalid',
                     'value'           => $trigger['value'] ?? '',
-                    'stop_processing' => 1 === (int) $stopProcessing,
+                    'stop_processing' => 1 === (int)$stopProcessing,
+                    'prohibited'      => 1 === (int)$prohibited,
                 ];
+                $set            = self::replaceAmountTrigger($set);
+                $return[]       = $set;
             }
         }
 
         return $return;
+    }
+
+    /**
+     * @param array $array
+     *
+     * @return array
+     */
+    public static function replaceAmountTrigger(array $array): array
+    {
+        // do some sneaky search and replace.
+        $amountFields = [
+            'amount_is',
+            'amount',
+            'amount_exactly',
+            'amount_less',
+            'amount_max',
+            'amount_more',
+            'amount_min',
+            'foreign_amount_is',
+            'foreign_amount',
+            'foreign_amount_less',
+            'foreign_amount_max',
+            'foreign_amount_more',
+            'foreign_amount_min',
+        ];
+        if (in_array($array['type'], $amountFields, true) && '0' === $array['value']) {
+            $array['value'] = '0.00';
+        }
+        return $array;
     }
 
     /**
@@ -90,7 +126,7 @@ class RuleFormRequest extends FormRequest
                 $return[]       = [
                     'type'            => $action['type'] ?? 'invalid',
                     'value'           => $action['value'] ?? '',
-                    'stop_processing' => 1 === (int) $stopProcessing,
+                    'stop_processing' => 1 === (int)$stopProcessing,
                 ];
             }
         }
@@ -122,9 +158,9 @@ class RuleFormRequest extends FormRequest
             'rule_group_id'    => 'required|belongsToUser:rule_groups',
             'trigger'          => 'required|in:store-journal,update-journal',
             'triggers.*.type'  => 'required|in:' . implode(',', $validTriggers),
-            'triggers.*.value' => sprintf('required_if:triggers.*.type,%s|min:1|ruleTriggerValue', $contextTriggers),
+            'triggers.*.value' => sprintf('required_if:triggers.*.type,%s|max:1024|min:1|ruleTriggerValue', $contextTriggers),
             'actions.*.type'   => 'required|in:' . implode(',', $validActions),
-            'actions.*.value'  => sprintf('required_if:actions.*.type,%s|min:0|max:255|ruleActionValue', $contextActions),
+            'actions.*.value'  => sprintf('required_if:actions.*.type,%s|min:0|max:1024|ruleActionValue', $contextActions),
             'strict'           => 'in:0,1',
         ];
 

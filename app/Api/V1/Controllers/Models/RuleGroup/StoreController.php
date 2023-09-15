@@ -37,14 +37,13 @@ use League\Fractal\Resource\Item;
  */
 class StoreController extends Controller
 {
-
     private AccountRepositoryInterface   $accountRepository;
     private RuleGroupRepositoryInterface $ruleGroupRepository;
 
     /**
      * RuleGroupController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -67,7 +66,7 @@ class StoreController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/rule_groups/storeRuleGroup
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/rule_groups/storeRuleGroup
      *
      * Store new object.
      *
@@ -87,6 +86,5 @@ class StoreController extends Controller
         $resource = new Item($ruleGroup, $transformer, 'rule_groups');
 
         return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
-
     }
 }

@@ -27,6 +27,7 @@ use Carbon\Carbon;
 use FireflyIII\Helpers\Collector\GroupCollectorInterface;
 use FireflyIII\Models\TransactionType;
 use FireflyIII\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
 
 /**
@@ -60,34 +61,43 @@ class NoCategoryRepository implements NoCategoryRepositoryInterface
         $array    = [];
 
         foreach ($journals as $journal) {
-            $currencyId         = (int) $journal['currency_id'];
+            $currencyId         = (int)$journal['currency_id'];
             $array[$currencyId] = $array[$currencyId] ?? [
-                    'categories'              => [],
-                    'currency_id'             => $currencyId,
-                    'currency_name'           => $journal['currency_name'],
-                    'currency_symbol'         => $journal['currency_symbol'],
-                    'currency_code'           => $journal['currency_code'],
-                    'currency_decimal_places' => $journal['currency_decimal_places'],
-                ];
+                'categories'              => [],
+                'currency_id'             => $currencyId,
+                'currency_name'           => $journal['currency_name'],
+                'currency_symbol'         => $journal['currency_symbol'],
+                'currency_code'           => $journal['currency_code'],
+                'currency_decimal_places' => $journal['currency_decimal_places'],
+            ];
             // info about the non-existent category:
             $array[$currencyId]['categories'][0] = $array[$currencyId]['categories'][0] ?? [
-                    'id'                   => 0,
-                    'name'                 => (string) trans('firefly.noCategory'),
-                    'transaction_journals' => [],
-                ];
+                'id'                   => 0,
+                'name'                 => (string)trans('firefly.noCategory'),
+                'transaction_journals' => [],
+            ];
 
             // add journal to array:
             // only a subset of the fields.
-            $journalId = (int) $journal['transaction_journal_id'];
+            $journalId = (int)$journal['transaction_journal_id'];
             $array[$currencyId]['categories'][0]['transaction_journals'][$journalId]
                        = [
                 'amount' => app('steam')->negative($journal['amount']),
                 'date'   => $journal['date'],
             ];
-
         }
 
         return $array;
+    }
+
+    /**
+     * @param User|Authenticatable|null $user
+     */
+    public function setUser(User | Authenticatable | null $user): void
+    {
+        if (null !== $user) {
+            $this->user = $user;
+        }
     }
 
     /**
@@ -113,42 +123,33 @@ class NoCategoryRepository implements NoCategoryRepositoryInterface
         $array    = [];
 
         foreach ($journals as $journal) {
-            $currencyId         = (int) $journal['currency_id'];
+            $currencyId         = (int)$journal['currency_id'];
             $array[$currencyId] = $array[$currencyId] ?? [
-                    'categories'              => [],
-                    'currency_id'             => $currencyId,
-                    'currency_name'           => $journal['currency_name'],
-                    'currency_symbol'         => $journal['currency_symbol'],
-                    'currency_code'           => $journal['currency_code'],
-                    'currency_decimal_places' => $journal['currency_decimal_places'],
-                ];
+                'categories'              => [],
+                'currency_id'             => $currencyId,
+                'currency_name'           => $journal['currency_name'],
+                'currency_symbol'         => $journal['currency_symbol'],
+                'currency_code'           => $journal['currency_code'],
+                'currency_decimal_places' => $journal['currency_decimal_places'],
+            ];
 
             // info about the non-existent category:
             $array[$currencyId]['categories'][0] = $array[$currencyId]['categories'][0] ?? [
-                    'id'                   => 0,
-                    'name'                 => (string) trans('firefly.noCategory'),
-                    'transaction_journals' => [],
-                ];
+                'id'                   => 0,
+                'name'                 => (string)trans('firefly.noCategory'),
+                'transaction_journals' => [],
+            ];
             // add journal to array:
             // only a subset of the fields.
-            $journalId = (int) $journal['transaction_journal_id'];
+            $journalId = (int)$journal['transaction_journal_id'];
             $array[$currencyId]['categories'][0]['transaction_journals'][$journalId]
                        = [
                 'amount' => app('steam')->positive($journal['amount']),
                 'date'   => $journal['date'],
             ];
-
         }
 
         return $array;
-    }
-
-    /**
-     * @param User $user
-     */
-    public function setUser(User $user): void
-    {
-        $this->user = $user;
     }
 
     /**
@@ -173,15 +174,15 @@ class NoCategoryRepository implements NoCategoryRepositoryInterface
         $array    = [];
 
         foreach ($journals as $journal) {
-            $currencyId                = (int) $journal['currency_id'];
+            $currencyId                = (int)$journal['currency_id'];
             $array[$currencyId]        = $array[$currencyId] ?? [
-                    'sum'                     => '0',
-                    'currency_id'             => $currencyId,
-                    'currency_name'           => $journal['currency_name'],
-                    'currency_symbol'         => $journal['currency_symbol'],
-                    'currency_code'           => $journal['currency_code'],
-                    'currency_decimal_places' => $journal['currency_decimal_places'],
-                ];
+                'sum'                     => '0',
+                'currency_id'             => $currencyId,
+                'currency_name'           => $journal['currency_name'],
+                'currency_symbol'         => $journal['currency_symbol'],
+                'currency_code'           => $journal['currency_code'],
+                'currency_decimal_places' => $journal['currency_decimal_places'],
+            ];
             $array[$currencyId]['sum'] = bcadd($array[$currencyId]['sum'], app('steam')->negative($journal['amount'] ?? '0'));
         }
 
@@ -210,15 +211,15 @@ class NoCategoryRepository implements NoCategoryRepositoryInterface
         $array    = [];
 
         foreach ($journals as $journal) {
-            $currencyId                = (int) $journal['currency_id'];
+            $currencyId                = (int)$journal['currency_id'];
             $array[$currencyId]        = $array[$currencyId] ?? [
-                    'sum'                     => '0',
-                    'currency_id'             => $currencyId,
-                    'currency_name'           => $journal['currency_name'],
-                    'currency_symbol'         => $journal['currency_symbol'],
-                    'currency_code'           => $journal['currency_code'],
-                    'currency_decimal_places' => $journal['currency_decimal_places'],
-                ];
+                'sum'                     => '0',
+                'currency_id'             => $currencyId,
+                'currency_name'           => $journal['currency_name'],
+                'currency_symbol'         => $journal['currency_symbol'],
+                'currency_code'           => $journal['currency_code'],
+                'currency_decimal_places' => $journal['currency_decimal_places'],
+            ];
             $array[$currencyId]['sum'] = bcadd($array[$currencyId]['sum'], app('steam')->positive($journal['amount']));
         }
 
@@ -241,15 +242,15 @@ class NoCategoryRepository implements NoCategoryRepositoryInterface
         $array    = [];
 
         foreach ($journals as $journal) {
-            $currencyId                = (int) $journal['currency_id'];
+            $currencyId                = (int)$journal['currency_id'];
             $array[$currencyId]        = $array[$currencyId] ?? [
-                    'sum'                     => '0',
-                    'currency_id'             => $currencyId,
-                    'currency_name'           => $journal['currency_name'],
-                    'currency_symbol'         => $journal['currency_symbol'],
-                    'currency_code'           => $journal['currency_code'],
-                    'currency_decimal_places' => $journal['currency_decimal_places'],
-                ];
+                'sum'                     => '0',
+                'currency_id'             => $currencyId,
+                'currency_name'           => $journal['currency_name'],
+                'currency_symbol'         => $journal['currency_symbol'],
+                'currency_code'           => $journal['currency_code'],
+                'currency_decimal_places' => $journal['currency_decimal_places'],
+            ];
             $array[$currencyId]['sum'] = bcadd($array[$currencyId]['sum'], app('steam')->positive($journal['amount']));
         }
 

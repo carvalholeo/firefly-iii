@@ -1,4 +1,5 @@
 <?php
+
 /**
  * PiggyBankEvent.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -24,6 +25,7 @@ namespace FireflyIII\Models;
 
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -71,7 +73,6 @@ class PiggyBankEvent extends Model
     protected $hidden = ['amount_encrypted'];
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function piggyBank(): BelongsTo
@@ -80,21 +81,31 @@ class PiggyBankEvent extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      *
      * @param mixed $value
      */
     public function setAmountAttribute($value): void
     {
-        $this->attributes['amount'] = (string) $value;
+        $this->attributes['amount'] = (string)$value;
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function transactionJournal(): BelongsTo
     {
         return $this->belongsTo(TransactionJournal::class);
+    }
+
+    /**
+     * Get the amount
+     *
+     * @return Attribute
+     */
+    protected function amount(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => (string)$value,
+        );
     }
 }

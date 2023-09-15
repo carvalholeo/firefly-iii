@@ -24,8 +24,11 @@ declare(strict_types=1);
 namespace FireflyIII\Support\Request;
 
 use Carbon\Carbon;
+use Carbon\Exceptions\InvalidDateException;
 use Carbon\Exceptions\InvalidFormatException;
-use Log;
+use FireflyIII\Repositories\Administration\Account\AccountRepositoryInterface;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Trait ConvertsDataTypes
@@ -39,10 +42,21 @@ trait ConvertsDataTypes
      *
      * @return int
      */
-    public function integer(string $field): int
+    public function convertInteger(string $field): int
     {
-        return (int) $this->get($field);
+        return (int)$this->get($field);
     }
+
+    /**
+     * Abstract method that always exists in the Request classes that use this
+     * trait, OR a stub needs to be added by any other class that uses this train.
+     *
+     * @param string     $key
+     * @param mixed|null $default
+     *
+     * @return mixed
+     */
+    abstract public function get(string $key, mixed $default = null): mixed;
 
     /**
      * Return string value.
@@ -53,7 +67,11 @@ trait ConvertsDataTypes
      */
     public function convertString(string $field): string
     {
-        return $this->clearString((string) ($this->get($field) ?? ''), false);
+        $entry = $this->get($field);
+        if (!is_scalar($entry)) {
+            return '';
+        }
+        return $this->clearString((string)$entry, false);
     }
 
     /**
@@ -67,7 +85,13 @@ trait ConvertsDataTypes
         if (null === $string) {
             return null;
         }
-        $search       = [
+        if ('' === $string) {
+            return '';
+        }
+        $search  = [
+            "\0", // NUL
+            "\f", // form feed
+            "\v", // vertical tab
             "\u{0001}", // start of heading
             "\u{0002}", // start of text
             "\u{0003}", // end of text
@@ -114,12 +138,53 @@ trait ConvertsDataTypes
             "\u{3000}", // ideographic space
             "\u{FEFF}", // zero width no -break space
         ];
-        $replace      = "\x20"; // plain old normal space
-        $string       = str_replace($search, $replace, $string);
+        $replace = "\x20"; // plain old normal space
+        $string  = str_replace($search, $replace, $string);
+
         $secondSearch = $keepNewlines ? ["\r"] : ["\r", "\n", "\t", "\036", "\025"];
         $string       = str_replace($secondSearch, '', $string);
 
+        // clear zalgo text (TODO also in API v2)
+        $string = preg_replace('/(\pM{2})\pM+/u', '\1', $string);
+        if (null === $string) {
+            return null;
+        }
+        if ('' === $string) {
+            return '';
+        }
         return trim($string);
+    }
+
+    /**
+     * TODO duplicate, see SelectTransactionsRequest
+     *
+     * Validate list of accounts. This one is for V2 endpoints, so it searches for groups, not users.
+     *
+     * @return Collection
+     */
+    public function getAccountList(): Collection
+    {
+        // fixed
+        /** @var AccountRepositoryInterface $repository */
+        $repository = app(AccountRepositoryInterface::class);
+
+        // set administration ID
+        // group ID
+        $administrationId = auth()->user()->getAdministrationId();
+        $repository->setAdministrationId($administrationId);
+
+        $set        = $this->get('accounts');
+        $collection = new Collection();
+        if (is_array($set)) {
+            foreach ($set as $accountId) {
+                $account = $repository->find((int)$accountId);
+                if (null !== $account) {
+                    $collection->push($account);
+                }
+            }
+        }
+
+        return $collection;
     }
 
     /**
@@ -131,7 +196,7 @@ trait ConvertsDataTypes
      */
     public function stringWithNewlines(string $field): string
     {
-        return $this->clearString((string) ($this->get($field) ?? ''));
+        return $this->clearString((string)($this->get($field) ?? ''));
     }
 
     /**
@@ -185,6 +250,66 @@ trait ConvertsDataTypes
      *
      * @return Carbon|null
      */
+    protected function convertDateTime(?string $string): ?Carbon
+    {
+        $value = $this->get($string);
+        if (null === $value) {
+            return null;
+        }
+        if ('' === $value) {
+            return null;
+        }
+        if (10 === strlen($value)) {
+            // probably a date format.
+            try {
+                $carbon = Carbon::createFromFormat('Y-m-d', $value);
+            } catch (InvalidDateException $e) {
+                Log::error(sprintf('[1] "%s" is not a valid date: %s', $value, $e->getMessage()));
+                return null;
+            } catch (InvalidFormatException $e) {
+                Log::error(sprintf('[2] "%s" is of an invalid format: %s', $value, $e->getMessage()));
+
+                return null;
+            }
+            return $carbon;
+        }
+        // is an atom string, I hope?
+        try {
+            $carbon = Carbon::parse($value);
+        } catch (InvalidDateException $e) {
+            Log::error(sprintf('[3] "%s" is not a valid date or time: %s', $value, $e->getMessage()));
+
+            return null;
+        } catch (InvalidFormatException $e) {
+            Log::error(sprintf('[4] "%s" is of an invalid format: %s', $value, $e->getMessage()));
+
+            return null;
+        }
+        return $carbon;
+    }
+
+    /**
+     * Return floating value.
+     *
+     * @param string $field
+     *
+     * @return float|null
+     */
+    protected function convertFloat(string $field): ?float
+    {
+        $res = $this->get($field);
+        if (null === $res) {
+            return null;
+        }
+
+        return (float)$res;
+    }
+
+    /**
+     * @param string|null $string
+     *
+     * @return Carbon|null
+     */
     protected function dateFromValue(?string $string): ?Carbon
     {
         if (null === $string) {
@@ -195,7 +320,7 @@ trait ConvertsDataTypes
         }
         $carbon = null;
         try {
-            $carbon = new Carbon($string);
+            $carbon = new Carbon($string, config('app.timezone'));
         } catch (InvalidFormatException $e) {
             // @ignoreException
         }
@@ -207,23 +332,6 @@ trait ConvertsDataTypes
         Log::debug(sprintf('Date object: %s (%s)', $carbon->toW3cString(), $carbon->getTimezone()));
 
         return $carbon;
-    }
-
-    /**
-     * Return floating value.
-     *
-     * @param string $field
-     *
-     * @return float|null
-     */
-    protected function float(string $field): ?float
-    {
-        $res = $this->get($field);
-        if (null === $res) {
-            return null;
-        }
-
-        return (float) $res;
     }
 
     /**
@@ -248,6 +356,16 @@ trait ConvertsDataTypes
     }
 
     /**
+     * Abstract method that always exists in the Request classes that use this
+     * trait, OR a stub needs to be added by any other class that uses this train.
+     *
+     * @param mixed $key
+     *
+     * @return mixed
+     */
+    abstract public function has($key);
+
+    /**
      * Return date or NULL.
      *
      * @param string $field
@@ -258,7 +376,7 @@ trait ConvertsDataTypes
     {
         $result = null;
         try {
-            $result = $this->get($field) ? new Carbon($this->get($field)) : null;
+            $result = $this->get($field) ? new Carbon($this->get($field), config('app.timezone')) : null;
         } catch (InvalidFormatException $e) {
             // @ignoreException
         }
@@ -285,7 +403,7 @@ trait ConvertsDataTypes
             return null;
         }
 
-        return (int) $string;
+        return (int)$string;
     }
 
     /**
@@ -301,12 +419,11 @@ trait ConvertsDataTypes
             return null;
         }
 
-        $value = (string) $this->get($field);
+        $value = (string)$this->get($field);
         if ('' === $value) {
             return null;
         }
 
-        return (int) $value;
+        return (int)$value;
     }
-
 }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BillRepositoryInterface.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -26,6 +27,7 @@ use Carbon\Carbon;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Bill;
 use FireflyIII\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
@@ -34,7 +36,6 @@ use Illuminate\Support\Collection;
  */
 interface BillRepositoryInterface
 {
-
     /**
      * @param string $query
      * @param int    $limit
@@ -123,47 +124,6 @@ interface BillRepositoryInterface
      * @return Collection
      */
     public function getBillsForAccounts(Collection $accounts): Collection;
-
-    /**
-     * Get the total amount of money paid for the users active bills in the date range given.
-     *
-     * @param Carbon $start
-     * @param Carbon $end
-     *
-     * @return string
-     */
-    public function getBillsPaidInRange(Carbon $start, Carbon $end): string;
-
-    /**
-     * Get the total amount of money paid for the users active bills in the date range given,
-     * grouped per currency.
-     *
-     * @param Carbon $start
-     * @param Carbon $end
-     *
-     * @return array
-     */
-    public function getBillsPaidInRangePerCurrency(Carbon $start, Carbon $end): array;
-
-    /**
-     * Get the total amount of money due for the users active bills in the date range given.
-     *
-     * @param Carbon $start
-     * @param Carbon $end
-     *
-     * @return string
-     */
-    public function getBillsUnpaidInRange(Carbon $start, Carbon $end): string;
-
-    /**
-     * Get the total amount of money due for the users active bills in the date range given.
-     *
-     * @param Carbon $start
-     * @param Carbon $end
-     *
-     * @return array
-     */
-    public function getBillsUnpaidInRangePerCurrency(Carbon $start, Carbon $end): array;
 
     /**
      * Get all bills with these ID's.
@@ -305,9 +265,9 @@ interface BillRepositoryInterface
     public function setOrder(Bill $bill, int $order): void;
 
     /**
-     * @param User $user
+     * @param User|Authenticatable|null $user
      */
-    public function setUser(User $user);
+    public function setUser(User | Authenticatable | null $user): void;
 
     /**
      * @param array $data
@@ -316,6 +276,26 @@ interface BillRepositoryInterface
      * @throws FireflyException
      */
     public function store(array $data): Bill;
+
+    /**
+     * Collect multi-currency of sum of bills already paid.
+     *
+     * @param Carbon $start
+     * @param Carbon $end
+     *
+     * @return array
+     */
+    public function sumPaidInRange(Carbon $start, Carbon $end): array;
+
+    /**
+     * Collect multi-currency of sum of bills yet to pay.
+     *
+     * @param Carbon $start
+     * @param Carbon $end
+     *
+     * @return array
+     */
+    public function sumUnpaidInRange(Carbon $start, Carbon $end): array;
 
     /**
      * @param Bill $bill

@@ -34,7 +34,8 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class TestRequest extends FormRequest
 {
-    use ConvertsDataTypes, ChecksLogin;
+    use ConvertsDataTypes;
+    use ChecksLogin;
 
     /**
      * @return array
@@ -55,8 +56,7 @@ class TestRequest extends FormRequest
      */
     private function getPage(): int
     {
-        return 0 === (int) $this->query('page') ? 1 : (int) $this->query('page');
-
+        return 0 === (int)$this->query('page') ? 1 : (int)$this->query('page');
     }
 
     /**
@@ -84,10 +84,9 @@ class TestRequest extends FormRequest
     {
         return [
             'start'      => 'date',
-            'end'        => 'date|after:start',
+            'end'        => 'date|after_or_equal:start',
             'accounts'   => '',
             'accounts.*' => 'required|exists:accounts,id|belongsToUser:accounts',
         ];
     }
-
 }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * VerifyCsrfToken.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -27,7 +28,7 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken as Middleware;
 /**
  * Class VerifyCsrfToken.
  *
- * @codeCoverageIgnore
+
  */
 class VerifyCsrfToken extends Middleware
 {

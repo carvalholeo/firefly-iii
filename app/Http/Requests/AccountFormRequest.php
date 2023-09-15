@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AccountFormRequest.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -24,18 +25,24 @@ namespace FireflyIII\Http\Requests;
 
 use FireflyIII\Models\Account;
 use FireflyIII\Models\Location;
+use FireflyIII\Models\UserRole;
 use FireflyIII\Rules\UniqueIban;
 use FireflyIII\Support\Request\AppendsLocationData;
 use FireflyIII\Support\Request\ChecksLogin;
 use FireflyIII\Support\Request\ConvertsDataTypes;
+use FireflyIII\Validation\Administration\ValidatesAdministrationAccess;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 /**
  * Class AccountFormRequest.
  */
 class AccountFormRequest extends FormRequest
 {
-    use ConvertsDataTypes, AppendsLocationData, ChecksLogin;
+    use ConvertsDataTypes;
+    use AppendsLocationData;
+    use ChecksLogin;
+    use ValidatesAdministrationAccess;
 
     /**
      * Get all data.
@@ -45,10 +52,11 @@ class AccountFormRequest extends FormRequest
     public function getAccountData(): array
     {
         $data = [
+            'administration_id'       => $this->convertInteger('administration_id'),
             'name'                    => $this->convertString('name'),
             'active'                  => $this->boolean('active'),
             'account_type_name'       => $this->convertString('objectType'),
-            'currency_id'             => $this->integer('currency_id'),
+            'currency_id'             => $this->convertInteger('currency_id'),
             'virtual_balance'         => $this->convertString('virtual_balance'),
             'iban'                    => $this->convertString('iban'),
             'BIC'                     => $this->convertString('BIC'),
@@ -64,6 +72,9 @@ class AccountFormRequest extends FormRequest
             'include_net_worth'       => '1',
             'liability_direction'     => $this->convertString('liability_direction'),
         ];
+        if (0 === $data['administration_id']) {
+            $data['administration_id'] = auth()->user()->getAdministrationId();
+        }
 
         $data = $this->appendLocationData($data, 'location');
         if (false === $this->boolean('include_net_worth')) {
@@ -77,9 +88,10 @@ class AccountFormRequest extends FormRequest
         // that could have been selected.
         if ('liabilities' === $data['account_type_name']) {
             $data['account_type_name'] = null;
-            $data['account_type_id']   = $this->integer('liability_type_id');
+            $data['account_type_id']   = $this->convertInteger('liability_type_id');
             if ('' !== $data['opening_balance']) {
-                $data['opening_balance'] = app('steam')->negative($data['opening_balance']);
+                // opening balance is always positive for liabilities
+                $data['opening_balance'] = app('steam')->positive($data['opening_balance']);
             }
         }
 
@@ -97,7 +109,8 @@ class AccountFormRequest extends FormRequest
         $types          = implode(',', array_keys(config('firefly.subTitlesByIdentifier')));
         $ccPaymentTypes = implode(',', array_keys(config('firefly.ccTypes')));
         $rules          = [
-            'name'                               => 'required|min:1|uniqueAccountForUser',
+            'administration_id'                  => 'min:1|max:16777216|numeric',
+            'name'                               => 'required|max:1024|min:1|uniqueAccountForUser',
             'opening_balance'                    => 'numeric|nullable|max:1000000000',
             'opening_balance_date'               => 'date|required_with:opening_balance|nullable',
             'iban'                               => ['iban', 'nullable', new UniqueIban(null, $this->convertString('objectType'))],
@@ -120,10 +133,27 @@ class AccountFormRequest extends FormRequest
         if (null !== $account) {
             // add rules:
             $rules['id']   = 'belongsToUser:accounts';
-            $rules['name'] = 'required|min:1|uniqueAccountForUser:' . $account->id;
+            $rules['name'] = 'required|max:1024|min:1|uniqueAccountForUser:' . $account->id;
             $rules['iban'] = ['iban', 'nullable', new UniqueIban($account, $account->accountType->type)];
         }
 
         return $rules;
+    }
+
+    /**
+     * Configure the validator instance with special rules for after the basic validation rules.
+     *
+     * @param Validator $validator
+     *
+     * @return void
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(
+            function (Validator $validator) {
+                // validate if the account can access this administration
+                $this->validateAdministration($validator, [UserRole::CHANGE_TRANSACTIONS]);
+            }
+        );
     }
 }

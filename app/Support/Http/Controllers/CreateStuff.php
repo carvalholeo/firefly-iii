@@ -28,9 +28,8 @@ use FireflyIII\Http\Requests\NewUserFormRequest;
 use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use FireflyIII\User;
+use Illuminate\Support\Facades\Log;
 use Laravel\Passport\Passport;
-use Log;
-use phpseclib\Crypt\RSA as LegacyRSA;
 use phpseclib3\Crypt\RSA;
 
 /**
@@ -39,7 +38,6 @@ use phpseclib3\Crypt\RSA;
  */
 trait CreateStuff
 {
-
     /**
      * Creates an asset account.
      *
@@ -61,7 +59,7 @@ trait CreateStuff
             'active'               => true,
             'account_role'         => 'defaultAsset',
             'opening_balance'      => $request->input('bank_balance'),
-            'opening_balance_date' => new Carbon,
+            'opening_balance_date' => new Carbon(),
             'currency_id'          => $currency->id,
         ];
 
@@ -83,7 +81,7 @@ trait CreateStuff
         /** @var AccountRepositoryInterface $repository */
         $repository   = app(AccountRepositoryInterface::class);
         $assetAccount = [
-            'name'                 => (string) trans('firefly.cash_wallet', [], $language),
+            'name'                 => (string)trans('firefly.cash_wallet', [], $language),
             'iban'                 => null,
             'account_type_name'    => 'asset',
             'virtual_balance'      => 0,
@@ -114,21 +112,7 @@ trait CreateStuff
             return;
         }
 
-        // switch on class existence.
-        $keys = [];
-        Log::info(sprintf('PHP version is %s', phpversion()));
-        if (class_exists(LegacyRSA::class)) {
-            // PHP 7
-            Log::info('Will run PHP7 code.');
-            $keys = (new LegacyRSA)->createKey(4096);
-        }
-
-        if (!class_exists(LegacyRSA::class)) {
-            // PHP 8
-            Log::info('Will run PHP8 code.');
-            $keys = RSA::createKey(4096);
-        }
-
+        $keys = RSA::createKey(4096);
 
         Log::alert('NO OAuth keys were found. They have been created.');
 
@@ -150,7 +134,7 @@ trait CreateStuff
         /** @var AccountRepositoryInterface $repository */
         $repository     = app(AccountRepositoryInterface::class);
         $savingsAccount = [
-            'name'                 => (string) trans('firefly.new_savings_account', ['bank_name' => $request->get('bank_name')], $language),
+            'name'                 => (string)trans('firefly.new_savings_account', ['bank_name' => $request->get('bank_name')], $language),
             'iban'                 => null,
             'account_type_name'    => 'asset',
             'account_type_id'      => null,
@@ -158,7 +142,7 @@ trait CreateStuff
             'active'               => true,
             'account_role'         => 'savingAsset',
             'opening_balance'      => $request->input('savings_balance'),
-            'opening_balance_date' => new Carbon,
+            'opening_balance_date' => new Carbon(),
             'currency_id'          => $currency->id,
         ];
         $repository->store($savingsAccount);
@@ -182,5 +166,4 @@ trait CreateStuff
             ]
         );
     }
-
 }

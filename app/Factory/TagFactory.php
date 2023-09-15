@@ -18,7 +18,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-/** @noinspection MultipleReturnStatementsInspection */
 
 declare(strict_types=1);
 
@@ -27,7 +26,7 @@ namespace FireflyIII\Factory;
 use FireflyIII\Models\Location;
 use FireflyIII\Models\Tag;
 use FireflyIII\User;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class TagFactory
@@ -46,7 +45,7 @@ class TagFactory
         $tag = trim($tag);
         Log::debug(sprintf('Now in TagFactory::findOrCreate("%s")', $tag));
 
-        /** @var Tag $dbTag */
+        /** @var Tag|null $dbTag */
         $dbTag = $this->user->tags()->where('tag', $tag)->first();
         if (null !== $dbTag) {
             Log::debug(sprintf('Tag exists (#%d), return it.', $dbTag->id));
@@ -80,23 +79,24 @@ class TagFactory
      */
     public function create(array $data): ?Tag
     {
-        $zoomLevel = 0 === (int) $data['zoom_level'] ? null : (int) $data['zoom_level'];
-        $latitude  = 0.0 === (float) $data['latitude'] ? null : (float) $data['latitude'];
-        $longitude = 0.0 === (float) $data['longitude'] ? null : (float) $data['longitude'];
+        $zoomLevel = 0 === (int)$data['zoom_level'] ? null : (int)$data['zoom_level'];
+        $latitude  = 0.0 === (float)$data['latitude'] ? null : (float)$data['latitude'];   // intentional float
+        $longitude = 0.0 === (float)$data['longitude'] ? null : (float)$data['longitude']; // intentional float
         $array     = [
-            'user_id'     => $this->user->id,
-            'tag'         => trim($data['tag']),
-            'tagMode'     => 'nothing',
-            'date'        => $data['date'],
-            'description' => $data['description'],
-            'latitude'    => null,
-            'longitude'   => null,
-            'zoomLevel'   => null,
+            'user_id'       => $this->user->id,
+            'user_group_id' => $this->user->user_group_id,
+            'tag'           => trim($data['tag']),
+            'tagMode'       => 'nothing',
+            'date'          => $data['date'],
+            'description'   => $data['description'],
+            'latitude'      => null,
+            'longitude'     => null,
+            'zoomLevel'     => null,
         ];
         $tag       = Tag::create($array);
         if (null !== $tag && null !== $latitude && null !== $longitude) {
             // create location object.
-            $location             = new Location;
+            $location             = new Location();
             $location->latitude   = $latitude;
             $location->longitude  = $longitude;
             $location->zoom_level = $zoomLevel;
@@ -114,5 +114,4 @@ class TagFactory
     {
         $this->user = $user;
     }
-
 }

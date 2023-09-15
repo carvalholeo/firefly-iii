@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AccountRepositoryInterface.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -30,6 +31,7 @@ use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\Models\TransactionGroup;
 use FireflyIII\Models\TransactionJournal;
 use FireflyIII\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
 
 /**
@@ -301,9 +303,9 @@ interface AccountRepositoryInterface
     public function searchAccountNr(string $query, array $types, int $limit): Collection;
 
     /**
-     * @param User $user
+     * @param User|Authenticatable|null $user
      */
-    public function setUser(User $user);
+    public function setUser(User | Authenticatable | null $user): void;
 
     /**
      * @param array $data

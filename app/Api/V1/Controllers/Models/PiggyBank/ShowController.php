@@ -44,7 +44,7 @@ class ShowController extends Controller
     /**
      * Constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -61,19 +61,18 @@ class ShowController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/piggy_banks/listPiggyBank
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/piggy_banks/listPiggyBank
      *
      * List all of them.
      *
      * @return JsonResponse
      * @throws FireflyException
-     * @codeCoverageIgnore
      */
     public function index(): JsonResponse
     {
         $manager = $this->getManager();
         // types to get, page size:
-        $pageSize = (int) app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
 
         // get list of budgets. Count it and split it.
         $collection = $this->repository->getPiggyBanks();
@@ -82,7 +81,7 @@ class ShowController extends Controller
 
         // make paginator:
         $paginator = new LengthAwarePaginator($piggyBanks, $count, $pageSize, $this->parameters->get('page'));
-        $paginator->setPath(route('api.v1.piggy_banks.index') . $this->buildParams());
+        $paginator->setPath(route('api.v1.piggy-banks.index') . $this->buildParams());
 
         /** @var PiggyBankTransformer $transformer */
         $transformer = app(PiggyBankTransformer::class);
@@ -92,19 +91,17 @@ class ShowController extends Controller
         $resource->setPaginator(new IlluminatePaginatorAdapter($paginator));
 
         return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
-
     }
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/piggy_banks/getPiggyBank
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/piggy_banks/getPiggyBank
      *
      * List single resource.
      *
      * @param PiggyBank $piggyBank
      *
      * @return JsonResponse
-     * @codeCoverageIgnore
      */
     public function show(PiggyBank $piggyBank): JsonResponse
     {
@@ -117,6 +114,5 @@ class ShowController extends Controller
         $resource = new Item($piggyBank, $transformer, 'piggy_banks');
 
         return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
-
     }
 }

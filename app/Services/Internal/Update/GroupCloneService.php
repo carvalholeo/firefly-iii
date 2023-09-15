@@ -23,7 +23,6 @@ declare(strict_types=1);
 
 namespace FireflyIII\Services\Internal\Update;
 
-use Carbon\Carbon;
 use FireflyIII\Factory\PiggyBankEventFactory;
 use FireflyIII\Models\Budget;
 use FireflyIII\Models\Category;
@@ -50,7 +49,7 @@ class GroupCloneService
         $newGroup = $group->replicate();
         $newGroup->save();
         foreach ($group->transactionJournals as $journal) {
-            $this->cloneJournal($journal, $newGroup, (int) $group->id);
+            $this->cloneJournal($journal, $newGroup, (int)$group->id);
         }
 
         return $newGroup;
@@ -65,7 +64,7 @@ class GroupCloneService
     {
         $newJournal                       = $journal->replicate();
         $newJournal->transaction_group_id = $newGroup->id;
-        $newJournal->date                 = Carbon::now();
+        $newJournal->date                 = today(config('app.timezone'));
         $newJournal->save();
 
         foreach ($journal->transactions as $transaction) {
@@ -105,12 +104,12 @@ class GroupCloneService
         // add note saying "cloned".
 
         // add relation.
-        // clone linked piggy banks
+        // TODO clone ALL linked piggy banks
         /** @var PiggyBankEvent $event */
-        $event =  $journal->piggyBankEvents()->first();
-        if(null !== $event) {
+        $event = $journal->piggyBankEvents()->first();
+        if (null !== $event) {
             $piggyBank = $event->piggyBank;
-            $factory = app(PiggyBankEventFactory::class);
+            $factory   = app(PiggyBankEventFactory::class);
             $factory->create($newJournal, $piggyBank);
         }
     }
@@ -136,11 +135,11 @@ class GroupCloneService
     {
         $newNote              = $note->replicate();
         $newNote->text        .= sprintf(
-            "\n\n%s", trans('firefly.clones_journal_x', ['description' => $newJournal->description, 'id' => $oldGroupId])
+            "\n\n%s",
+            trans('firefly.clones_journal_x', ['description' => $newJournal->description, 'id' => $oldGroupId])
         );
         $newNote->noteable_id = $newJournal->id;
         $newNote->save();
-
     }
 
     /**

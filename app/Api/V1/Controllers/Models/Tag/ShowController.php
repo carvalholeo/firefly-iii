@@ -45,7 +45,7 @@ class ShowController extends Controller
     /**
      * TagController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -65,19 +65,18 @@ class ShowController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/tags/listTag
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/tags/listTag
      *
      * List all of them.
      *
      * @return JsonResponse
      * @throws FireflyException
-     * @codeCoverageIgnore
      */
     public function index(): JsonResponse
     {
         $manager = $this->getManager();
         // types to get, page size:
-        $pageSize = (int) app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
 
         // get list of budgets. Count it and split it.
         $collection = $this->repository->get();
@@ -100,14 +99,13 @@ class ShowController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/tags/getTag
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/tags/getTag
      *
      * List single resource.
      *
      * @param Tag $tag
      *
      * @return JsonResponse
-     * @codeCoverageIgnore
      */
     public function show(Tag $tag): JsonResponse
     {
@@ -119,6 +117,5 @@ class ShowController extends Controller
         $resource = new Item($tag, $transformer, 'tags');
 
         return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
-
     }
 }

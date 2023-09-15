@@ -1,4 +1,5 @@
 <?php
+
 /**
  * CurrencyServiceProvider.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -28,7 +29,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 
 /**
- * @codeCoverageIgnore
  * Class CurrencyServiceProvider.
  */
 class CurrencyServiceProvider extends ServiceProvider
@@ -50,6 +50,7 @@ class CurrencyServiceProvider extends ServiceProvider
             function (Application $app) {
                 /** @var CurrencyRepository $repository */
                 $repository = app(CurrencyRepository::class);
+                // phpstan does not get the reference to auth
                 if ($app->auth->check()) { // @phpstan-ignore-line
                     $repository->setUser(auth()->user());
                 }

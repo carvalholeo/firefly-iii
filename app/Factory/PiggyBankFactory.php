@@ -1,4 +1,5 @@
 <?php
+
 /**
  * PiggyBankFactory.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -18,7 +19,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-/** @noinspection MultipleReturnStatementsInspection */
 declare(strict_types=1);
 
 namespace FireflyIII\Factory;
@@ -41,8 +41,8 @@ class PiggyBankFactory
      */
     public function find(?int $piggyBankId, ?string $piggyBankName): ?PiggyBank
     {
-        $piggyBankId   = (int) $piggyBankId;
-        $piggyBankName = (string) $piggyBankName;
+        $piggyBankId   = (int)$piggyBankId;
+        $piggyBankName = (string)$piggyBankName;
         if ('' === $piggyBankName && 0 === $piggyBankId) {
             return null;
         }
@@ -65,7 +65,6 @@ class PiggyBankFactory
         }
 
         return null;
-
     }
 
     /**
@@ -84,7 +83,5 @@ class PiggyBankFactory
     public function setUser(User $user): void
     {
         $this->user = $user;
-
     }
-
 }

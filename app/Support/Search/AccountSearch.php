@@ -25,9 +25,9 @@ declare(strict_types=1);
 namespace FireflyIII\Support\Search;
 
 use FireflyIII\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use JsonException;
 
 /**
  * Class AccountSearch
@@ -59,7 +59,6 @@ class AccountSearch implements GenericSearchInterface
      */
     public function search(): Collection
     {
-
         $searchQuery   = $this->user->accounts()
                                     ->leftJoin('account_types', 'accounts.account_type_id', '=', 'account_types.id')
                                     ->leftJoin('account_meta', 'accounts.id', '=', 'account_meta.account_id')
@@ -86,7 +85,7 @@ class AccountSearch implements GenericSearchInterface
                 );
                 break;
             case self::SEARCH_ID:
-                $searchQuery->where('accounts.id', '=', (int) $originalQuery);
+                $searchQuery->where('accounts.id', '=', (int)$originalQuery);
                 break;
             case self::SEARCH_NAME:
                 $searchQuery->where('accounts.name', 'LIKE', $like);
@@ -134,11 +133,14 @@ class AccountSearch implements GenericSearchInterface
     }
 
     /**
-     * @param User $user
+     * @param User|Authenticatable|null $user
+     *
+     * @return void
      */
-    public function setUser(User $user): void
+    public function setUser(User | Authenticatable | null $user): void
     {
-        $this->user = $user;
+        if (null !== $user) {
+            $this->user = $user;
+        }
     }
-
 }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * MassEditJournalRequest.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -28,7 +29,7 @@ use Illuminate\Foundation\Http\FormRequest;
 /**
  * Class MassEditJournalRequest.
  *
- * @codeCoverageIgnore
+
  */
 class MassEditJournalRequest extends FormRequest
 {
@@ -44,7 +45,7 @@ class MassEditJournalRequest extends FormRequest
         // fixed
 
         return [
-            'description.*'    => 'required|min:1,max:255',
+            'description.*'    => 'required|min:1|max:255',
             'source_id.*'      => 'numeric|belongsToUser:accounts,id',
             'destination_id.*' => 'numeric|belongsToUser:accounts,id',
             'journals.*'       => 'numeric|belongsToUser:transaction_journals,id',

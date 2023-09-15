@@ -32,11 +32,12 @@ use Illuminate\Validation\Validator;
 /**
  * Class Request
  *
- * @codeCoverageIgnore
+
  */
 class Request extends FormRequest
 {
-    use ConvertsDataTypes, ChecksLogin;
+    use ConvertsDataTypes;
+    use ChecksLogin;
 
     /**
      * Get all data from the request.
@@ -47,7 +48,7 @@ class Request extends FormRequest
     {
         // this is the way:
         $fields = [
-            'currency_id'   => ['currency_id', 'integer'],
+            'currency_id'   => ['currency_id', 'convertInteger'],
             'currency_code' => ['currency_code', 'convertString'],
             'amount'        => ['amount', 'convertString'],
             'start'         => ['start', 'date'],
@@ -66,7 +67,7 @@ class Request extends FormRequest
     {
         return [
             'currency_id'   => 'numeric|exists:transaction_currencies,id',
-            'currency_code' => 'min:3|max:3|exists:transaction_currencies,code',
+            'currency_code' => 'min:3|max:51|exists:transaction_currencies,code',
             'amount'        => 'numeric|gt:0',
             'start'         => 'date',
             'end'           => 'date',
@@ -90,7 +91,7 @@ class Request extends FormRequest
                     $start = new Carbon($data['start']);
                     $end   = new Carbon($data['end']);
                     if ($end->isBefore($start)) {
-                        $validator->errors()->add('end', (string) trans('validation.date_after'));
+                        $validator->errors()->add('end', (string)trans('validation.date_after'));
                     }
                 }
             }

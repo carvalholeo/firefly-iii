@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace FireflyIII\Api\V1\Controllers\Models\BudgetLimit;
 
 use FireflyIII\Api\V1\Controllers\Controller;
-use FireflyIII\Api\V1\Requests\Data\DateRequest;
+use FireflyIII\Api\V1\Requests\Data\SameDateRequest;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Budget;
 use FireflyIII\Models\BudgetLimit;
@@ -50,7 +50,7 @@ class ShowController extends Controller
     /**
      * BudgetLimitController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -71,7 +71,7 @@ class ShowController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/budgets/listBudgetLimitByBudget
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/budgets/listBudgetLimitByBudget
      *
      * Display a listing of the budget limits for this budget.
      *
@@ -80,13 +80,12 @@ class ShowController extends Controller
      *
      * @return JsonResponse
      * @throws FireflyException
-     * @codeCoverageIgnore
      */
     public function index(Request $request, Budget $budget): JsonResponse
     {
         $manager = $this->getManager();
         $manager->parseIncludes('budget');
-        $pageSize     = (int) app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize     = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
         $collection   = $this->blRepository->getBudgetLimits($budget, $this->parameters->get('start'), $this->parameters->get('end'));
         $count        = $collection->count();
         $budgetLimits = $collection->slice(($this->parameters->get('page') - 1) * $pageSize, $pageSize);
@@ -105,21 +104,20 @@ class ShowController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/budgets/listBudgetLimit
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/budgets/listBudgetLimit
      *
      * Display a listing of the budget limits for this budget.
      *
-     * @param DateRequest $request
+     * @param SameDateRequest $request
      *
      * @return JsonResponse
      * @throws FireflyException
-     * @codeCoverageIgnore
      */
-    public function indexAll(DateRequest $request): JsonResponse
+    public function indexAll(SameDateRequest $request): JsonResponse
     {
         $manager = $this->getManager();
         $manager->parseIncludes('budget');
-        $pageSize     = (int) app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize     = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
         $collection   = $this->blRepository->getAllBudgetLimits($this->parameters->get('start'), $this->parameters->get('end'));
         $count        = $collection->count();
         $budgetLimits = $collection->slice(($this->parameters->get('page') - 1) * $pageSize, $pageSize);
@@ -138,7 +136,7 @@ class ShowController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/budgets/getBudgetLimit
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/budgets/getBudgetLimit
      *
      * @param Request     $request
      * @param Budget      $budget
@@ -149,7 +147,7 @@ class ShowController extends Controller
      */
     public function show(Request $request, Budget $budget, BudgetLimit $budgetLimit): JsonResponse
     {
-        if ((int) $budget->id !== (int) $budgetLimit->budget_id) {
+        if ((int)$budget->id !== (int)$budgetLimit->budget_id) {
             throw new FireflyException('20028: The budget limit does not belong to the budget.');
         }
         // continue!
@@ -163,5 +161,4 @@ class ShowController extends Controller
 
         return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
     }
-
 }

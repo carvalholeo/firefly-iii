@@ -1,4 +1,5 @@
 <?php
+
 /**
  * CurrencyForm.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -25,7 +26,6 @@ namespace FireflyIII\Support\Facades;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @codeCoverageIgnore
  * Class CurrencyForm.
  *
  */

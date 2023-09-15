@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Steam.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -24,14 +25,18 @@ namespace FireflyIII\Support;
 
 use Carbon\Carbon;
 use DB;
+use Exception;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Account;
 use FireflyIII\Models\Transaction;
 use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
+use FireflyIII\Support\Http\Api\ExchangeRateConverter;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use JsonException;
-use Log;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use stdClass;
 use Str;
 use ValueError;
@@ -39,11 +44,10 @@ use ValueError;
 /**
  * Class Steam.
  *
- * @codeCoverageIgnore
+
  */
 class Steam
 {
-
     /**
      * @param Account $account
      * @param Carbon  $date
@@ -52,19 +56,11 @@ class Steam
      */
     public function balanceIgnoreVirtual(Account $account, Carbon $date): string
     {
-        // abuse chart properties:
-        $cache = new CacheProperties;
-        $cache->addProperty($account->id);
-        $cache->addProperty('balance-no-virtual');
-        $cache->addProperty($date);
-        if ($cache->has()) {
-            return $cache->get();
-        }
         /** @var AccountRepositoryInterface $repository */
         $repository = app(AccountRepositoryInterface::class);
         $repository->setUser($account->user);
 
-        $currencyId    = (int) $repository->getMetaValue($account, 'currency_id');
+        $currencyId    = (int)$repository->getMetaValue($account, 'currency_id');
         $transactions  = $account->transactions()
                                  ->leftJoin('transaction_journals', 'transaction_journals.id', '=', 'transactions.transaction_journal_id')
                                  ->where('transaction_journals.date', '<=', $date->format('Y-m-d 23:59:59'))
@@ -81,11 +77,7 @@ class Steam
                                 ->get(['transactions.foreign_amount'])->toArray();
 
         $foreignBalance = $this->sumTransactions($transactions, 'foreign_amount');
-        $balance        = bcadd($nativeBalance, $foreignBalance);
-
-        $cache->store($balance);
-
-        return $balance;
+        return bcadd($nativeBalance, $foreignBalance);
     }
 
     /**
@@ -99,7 +91,7 @@ class Steam
         $sum = '0';
         /** @var array $transaction */
         foreach ($transactions as $transaction) {
-            $value = (string) ($transaction[$key] ?? '0');
+            $value = (string)($transaction[$key] ?? '0');
             $value = '' === $value ? '0' : $value;
             $sum   = bcadd($sum, $value);
         }
@@ -123,8 +115,7 @@ class Steam
      */
     public function balanceInRange(Account $account, Carbon $start, Carbon $end, ?TransactionCurrency $currency = null): array
     {
-        // abuse chart properties:
-        $cache = new CacheProperties;
+        $cache = new CacheProperties();
         $cache->addProperty($account->id);
         $cache->addProperty('balance-in-range');
         $cache->addProperty($currency ? $currency->id : 0);
@@ -146,7 +137,7 @@ class Steam
             $repository->setUser($account->user);
             $currency = $repository->getAccountCurrency($account) ?? app('amount')->getDefaultCurrencyByUser($account->user);
         }
-        $currencyId = (int) $currency->id;
+        $currencyId = (int)$currency->id;
 
         $start->addDay();
 
@@ -161,12 +152,12 @@ class Steam
                        ->orderBy('transaction_journals.date', 'ASC')
                        ->whereNull('transaction_journals.deleted_at')
                        ->get(
-                           [  // @phpstan-ignore-line
-                              'transaction_journals.date',
-                              'transactions.transaction_currency_id',
-                              DB::raw('SUM(transactions.amount) AS modified'),
-                              'transactions.foreign_currency_id',
-                              DB::raw('SUM(transactions.foreign_amount) AS modified_foreign'),
+                           [
+                               'transaction_journals.date',
+                               'transactions.transaction_currency_id',
+                               DB::raw('SUM(transactions.amount) AS modified'),
+                               'transactions.foreign_currency_id',
+                               DB::raw('SUM(transactions.foreign_amount) AS modified_foreign'),
                            ]
                        );
 
@@ -174,14 +165,14 @@ class Steam
         /** @var Transaction $entry */
         foreach ($set as $entry) {
             // normal amount and foreign amount
-            $modified        = null === $entry->modified ? '0' : (string) $entry->modified;
-            $foreignModified = null === $entry->modified_foreign ? '0' : (string) $entry->modified_foreign;
+            $modified        = null === $entry->modified ? '0' : (string)$entry->modified;
+            $foreignModified = null === $entry->modified_foreign ? '0' : (string)$entry->modified_foreign;
             $amount          = '0';
-            if ($currencyId === (int) $entry->transaction_currency_id || 0 === $currencyId) {
+            if ($currencyId === (int)$entry->transaction_currency_id || 0 === $currencyId) {
                 // use normal amount:
                 $amount = $modified;
             }
-            if ($currencyId === (int) $entry->foreign_currency_id) {
+            if ($currencyId === (int)$entry->foreign_currency_id) {
                 // use foreign amount:
                 $amount = $foreignModified;
             }
@@ -206,12 +197,11 @@ class Steam
      *
      * @return string
      * @throws FireflyException
-     * @throws JsonException
      */
     public function balance(Account $account, Carbon $date, ?TransactionCurrency $currency = null): string
     {
         // abuse chart properties:
-        $cache = new CacheProperties;
+        $cache = new CacheProperties();
         $cache->addProperty($account->id);
         $cache->addProperty('balance');
         $cache->addProperty($date);
@@ -240,8 +230,246 @@ class Steam
                                   ->get(['transactions.foreign_amount'])->toArray();
         $foreignBalance = $this->sumTransactions($transactions, 'foreign_amount');
         $balance        = bcadd($nativeBalance, $foreignBalance);
-        $virtual        = null === $account->virtual_balance ? '0' : (string) $account->virtual_balance;
+        $virtual        = null === $account->virtual_balance ? '0' : (string)$account->virtual_balance;
         $balance        = bcadd($balance, $virtual);
+
+        $cache->store($balance);
+
+        return $balance;
+    }
+
+    /**
+     * @param Account $account
+     * @param Carbon  $start
+     * @param Carbon  $end
+     *
+     * @return array
+     * @throws FireflyException
+     */
+    public function balanceInRangeConverted(Account $account, Carbon $start, Carbon $end, TransactionCurrency $native): array
+    {
+
+        $cache = new CacheProperties();
+        $cache->addProperty($account->id);
+        $cache->addProperty('balance-in-range-converted');
+        $cache->addProperty($native->id);
+        $cache->addProperty($start);
+        $cache->addProperty($end);
+        if ($cache->has()) {
+            return $cache->get();
+        }
+        app('log')->debug(sprintf('balanceInRangeConverted for account #%d to %s', $account->id, $native->code));
+        $start->subDay();
+        $end->addDay();
+        $balances             = [];
+        $formatted            = $start->format('Y-m-d');
+        $currencies           = [];
+        $startBalance         = $this->balanceConverted($account, $start, $native); // already converted to native amount
+        $balances[$formatted] = $startBalance;
+
+        app('log')->debug(sprintf('Start balance on %s is %s', $formatted, $startBalance));
+
+        $converter = new ExchangeRateConverter();
+
+        // not sure why this is happening:
+        $start->addDay();
+
+        // grab all transactions between start and end:
+        $set = $account->transactions()
+                       ->leftJoin('transaction_journals', 'transactions.transaction_journal_id', '=', 'transaction_journals.id')
+                       ->where('transaction_journals.date', '>=', $start->format('Y-m-d 00:00:00'))
+                       ->where('transaction_journals.date', '<=', $end->format('Y-m-d  23:59:59'))
+                       ->orderBy('transaction_journals.date', 'ASC')
+                       ->whereNull('transaction_journals.deleted_at')
+                       ->get(
+                           [
+                               'transaction_journals.date',
+                               'transactions.transaction_currency_id',
+                               'transactions.amount',
+                               'transactions.foreign_currency_id',
+                               'transactions.foreign_amount',
+                           ]
+                       )->toArray();
+
+        // loop the set and convert if necessary:
+        $currentBalance = $startBalance;
+        /** @var Transaction $transaction */
+        foreach ($set as $transaction) {
+            $day    = Carbon::createFromFormat('Y-m-d H:i:s', $transaction['date'], config('app.timezone'));
+            $format = $day->format('Y-m-d');
+            // if the transaction is in the expected currency, change nothing.
+            if ((int)$transaction['transaction_currency_id'] === (int)$native->id) {
+                // change the current balance, set it to today, continue the loop.
+                $currentBalance    = bcadd($currentBalance, $transaction['amount']);
+                $balances[$format] = $currentBalance;
+                app('log')->debug(sprintf('%s: transaction in %s, new balance is %s.', $format, $native->code, $currentBalance));
+                continue;
+            }
+            // if foreign currency is in the expected currency, do nothing:
+            if ((int)$transaction['foreign_currency_id'] === (int)$native->id) {
+                $currentBalance    = bcadd($currentBalance, $transaction['foreign_amount']);
+                $balances[$format] = $currentBalance;
+                app('log')->debug(sprintf('%s: transaction in %s (foreign), new balance is %s.', $format, $native->code, $currentBalance));
+                continue;
+            }
+            // otherwise, convert 'amount' to the necessary currency:
+            $currencyId = (int)$transaction['transaction_currency_id'];
+            $currency   = $currencies[$currencyId] ?? TransactionCurrency::find($currencyId);
+
+
+            $rate              = $converter->getCurrencyRate($currency, $native, $day);
+            $convertedAmount   = bcmul($transaction['amount'], $rate);
+            $currentBalance    = bcadd($currentBalance, $convertedAmount);
+            $balances[$format] = $currentBalance;
+
+            app('log')->debug(sprintf(
+                '%s: transaction in %s(!). Conversion rate is %s. %s %s = %s %s',
+                $format,
+                $currency->code,
+                $rate,
+                $currency->code,
+                $transaction['amount'],
+                $native->code,
+                $convertedAmount
+            ));
+
+
+        }
+
+        $cache->store($balances);
+
+        return $balances;
+    }
+
+    /**
+     * Gets balance at the end of current month by default. Returns the balance converted
+     * to the indicated currency ($native).
+     *
+     * @param Account             $account
+     * @param Carbon              $date
+     * @param TransactionCurrency $native
+     *
+     * @return string
+     * @throws FireflyException
+     */
+    public function balanceConverted(Account $account, Carbon $date, TransactionCurrency $native): string
+    {
+        app('log')->debug(sprintf('Now in balanceConverted (%s) for account #%d, converting to %s', $date->format('Y-m-d'), $account->id, $native->code));
+        // abuse chart properties:
+        $cache = new CacheProperties();
+        $cache->addProperty($account->id);
+        $cache->addProperty('balance');
+        $cache->addProperty($date);
+        $cache->addProperty($native->id);
+        if ($cache->has()) {
+            // return $cache->get();
+        }
+        /** @var AccountRepositoryInterface $repository */
+        $repository = app(AccountRepositoryInterface::class);
+        $currency   = $repository->getAccountCurrency($account);
+        if (null === $currency) {
+            throw new FireflyException('Cannot get converted account balance: no currency found for account.');
+        }
+        if ((int)$native->id === (int)$currency->id) {
+            return $this->balance($account, $date);
+        }
+        /**
+         * selection of transactions
+         * 1: all normal transactions. No foreign currency info. In $currency. Need conversion.
+         * 2: all normal transactions. No foreign currency info. In $native. Need NO conversion.
+         * 3: all normal transactions. No foreign currency info. In neither currency. Need conversion.
+         * Then, select everything with foreign currency info:
+         * 4. All transactions with foreign currency info in $native. Normal currency value is ignored. Do not need conversion.
+         * 5. All transactions with foreign currency info NOT in $native, but currency info in $currency. Need conversion.
+         * 6. All transactions with foreign currency info NOT in $native, and currency info NOT in $currency. Need conversion.
+         *
+         */
+
+        $new      = [];
+        $existing = [];
+        // 1
+        $new[] = $account->transactions()
+                         ->leftJoin('transaction_journals', 'transaction_journals.id', '=', 'transactions.transaction_journal_id')
+                         ->where('transaction_journals.date', '<=', $date->format('Y-m-d 23:59:59'))
+                         ->where('transactions.transaction_currency_id', $currency->id)
+                         ->whereNull('transactions.foreign_currency_id')
+                         ->get(['transaction_journals.date', 'transactions.amount'])->toArray();
+        app('log')->debug(sprintf('%d transaction(s) in set #1', count($new[0])));
+        // 2
+        $existing[] = $account->transactions()
+                              ->leftJoin('transaction_journals', 'transaction_journals.id', '=', 'transactions.transaction_journal_id')
+                              ->where('transaction_journals.date', '<=', $date->format('Y-m-d 23:59:59'))
+                              ->where('transactions.transaction_currency_id', $native->id)
+                              ->whereNull('transactions.foreign_currency_id')
+                              ->get(['transactions.amount'])->toArray();
+        app('log')->debug(sprintf('%d transaction(s) in set #2', count($existing[0])));
+        // 3
+        $new[] = $account->transactions()
+                         ->leftJoin('transaction_journals', 'transaction_journals.id', '=', 'transactions.transaction_journal_id')
+                         ->where('transaction_journals.date', '<=', $date->format('Y-m-d 23:59:59'))
+                         ->where('transactions.transaction_currency_id', '!=', $currency->id)
+                         ->where('transactions.transaction_currency_id', '!=', $native->id)
+                         ->whereNull('transactions.foreign_currency_id')
+                         ->get(['transaction_journals.date', 'transactions.amount'])->toArray();
+        app('log')->debug(sprintf('%d transactions in set #3', count($new[1])));
+        // 4
+        $existing[] = $account->transactions()
+                              ->leftJoin('transaction_journals', 'transaction_journals.id', '=', 'transactions.transaction_journal_id')
+                              ->where('transaction_journals.date', '<=', $date->format('Y-m-d 23:59:59'))
+                              ->where('transactions.foreign_currency_id', $native->id)
+                              ->whereNotNull('transactions.foreign_amount')
+                              ->get(['transactions.foreign_amount'])->toArray();
+        app('log')->debug(sprintf('%d transactions in set #4', count($existing[1])));
+        // 5
+        $new[] = $account->transactions()
+                         ->leftJoin('transaction_journals', 'transaction_journals.id', '=', 'transactions.transaction_journal_id')
+                         ->where('transaction_journals.date', '<=', $date->format('Y-m-d 23:59:59'))
+                         ->where('transactions.transaction_currency_id', $currency->id)
+                         ->where('transactions.foreign_currency_id', '!=', $native->id)
+                         ->whereNotNull('transactions.foreign_amount')
+                         ->get(['transaction_journals.date', 'transactions.amount'])->toArray();
+        app('log')->debug(sprintf('%d transactions in set #5', count($new[2])));
+        // 6
+        $new[] = $account->transactions()
+                         ->leftJoin('transaction_journals', 'transaction_journals.id', '=', 'transactions.transaction_journal_id')
+                         ->where('transaction_journals.date', '<=', $date->format('Y-m-d 23:59:59'))
+                         ->where('transactions.transaction_currency_id', '!=', $currency->id)
+                         ->where('transactions.foreign_currency_id', '!=', $native->id)
+                         ->whereNotNull('transactions.foreign_amount')
+                         ->get(['transaction_journals.date', 'transactions.amount'])->toArray();
+        app('log')->debug(sprintf('%d transactions in set #6', count($new[3])));
+
+        // process both sets of transactions. Of course, no need to convert set "existing".
+        $balance = $this->sumTransactions($existing[0], 'amount');
+        $balance = bcadd($balance, $this->sumTransactions($existing[1], 'foreign_amount'));
+        //app('log')->debug(sprintf('Balance from set #2 and #4 is %f', $balance));
+
+        // need to convert the others. All sets use the "amount" value as their base (that's easy)
+        // but we need to convert each transaction separately because the date difference may
+        // incur huge currency changes.
+        $converter = new ExchangeRateConverter();
+        foreach ($new as $index => $set) {
+            foreach ($set as $transaction) {
+                $date            = Carbon::createFromFormat('Y-m-d H:i:s', $transaction['date']);
+                $rate            = $converter->getCurrencyRate($currency, $native, $date);
+                $convertedAmount = bcmul($transaction['amount'], $rate);
+                $balance         = bcadd($balance, $convertedAmount);
+                //                app('log')->debug(sprintf('Date: %s, rate: %s, amount: %s %s, new: %s %s',
+                //                                          $date->format('Y-m-d'),
+                //                                          $rate,
+                //                                          $currency->code,
+                //                                          $transaction['amount'],
+                //                                          $native->code,
+                //                                          $convertedAmount
+                //                                  ));
+            }
+            //app('log')->debug(sprintf('Balance from new set #%d is %f', $index, $balance));
+        }
+
+        // add virtual balance (also needs conversion)
+        $virtual = null === $account->virtual_balance ? '0' : (string)$account->virtual_balance;
+        $virtual = $converter->convert($currency, $native, $account->created_at, $virtual);
+        $balance = bcadd($balance, $virtual);
 
         $cache->store($balance);
 
@@ -255,13 +483,13 @@ class Steam
      * @param Carbon     $date
      *
      * @return array
-     * @throws JsonException
+     * @throws FireflyException
      */
     public function balancesByAccounts(Collection $accounts, Carbon $date): array
     {
         $ids = $accounts->pluck('id')->toArray();
         // cache this property.
-        $cache = new CacheProperties;
+        $cache = new CacheProperties();
         $cache->addProperty($ids);
         $cache->addProperty('balances');
         $cache->addProperty($date);
@@ -282,19 +510,57 @@ class Steam
     }
 
     /**
+     * This method always ignores the virtual balance.
+     *
+     * @param Collection $accounts
+     * @param Carbon     $date
+     *
+     * @return array
+     * @throws FireflyException
+     */
+    public function balancesByAccountsConverted(Collection $accounts, Carbon $date): array
+    {
+        $ids = $accounts->pluck('id')->toArray();
+        // cache this property.
+        $cache = new CacheProperties();
+        $cache->addProperty($ids);
+        $cache->addProperty('balances-converted');
+        $cache->addProperty($date);
+        if ($cache->has()) {
+            // return $cache->get();
+        }
+
+
+        // need to do this per account.
+        $result = [];
+        /** @var Account $account */
+        foreach ($accounts as $account) {
+            $default = app('amount')->getDefaultCurrencyByUser($account->user);
+            $result[(int)$account->id]
+                     = [
+                'balance'        => $this->balance($account, $date),
+                'native_balance' => $this->balanceConverted($account, $date, $default),
+            ];
+        }
+
+        $cache->store($result);
+
+        return $result;
+    }
+
+    /**
      * Same as above, but also groups per currency.
      *
      * @param Collection $accounts
      * @param Carbon     $date
      *
      * @return array
-     * @throws JsonException
      */
     public function balancesPerCurrencyByAccounts(Collection $accounts, Carbon $date): array
     {
         $ids = $accounts->pluck('id')->toArray();
         // cache this property.
-        $cache = new CacheProperties;
+        $cache = new CacheProperties();
         $cache->addProperty($ids);
         $cache->addProperty('balances-per-currency');
         $cache->addProperty($date);
@@ -323,7 +589,7 @@ class Steam
     public function balancePerCurrency(Account $account, Carbon $date): array
     {
         // abuse chart properties:
-        $cache = new CacheProperties;
+        $cache = new CacheProperties();
         $cache->addProperty($account->id);
         $cache->addProperty('balance-per-currency');
         $cache->addProperty($date);
@@ -334,15 +600,48 @@ class Steam
                             ->leftJoin('transaction_journals', 'transaction_journals.id', '=', 'transactions.transaction_journal_id')
                             ->where('transaction_journals.date', '<=', $date->format('Y-m-d 23:59:59'))
                             ->groupBy('transactions.transaction_currency_id');
-        $balances = $query->get(['transactions.transaction_currency_id', DB::raw('SUM(transactions.amount) as sum_for_currency')]); // @phpstan-ignore-line
+        $balances = $query->get(['transactions.transaction_currency_id', DB::raw('SUM(transactions.amount) as sum_for_currency')]);
         $return   = [];
         /** @var stdClass $entry */
         foreach ($balances as $entry) {
-            $return[(int) $entry->transaction_currency_id] = $entry->sum_for_currency;
+            $return[(int)$entry->transaction_currency_id] = (string)$entry->sum_for_currency;
         }
         $cache->store($return);
 
         return $return;
+    }
+
+    /**
+     * https://stackoverflow.com/questions/1642614/how-to-ceil-floor-and-round-bcmath-numbers
+     *
+     * @param null|string $number
+     * @param int         $precision
+     *
+     * @return string
+     */
+    public function bcround(?string $number, int $precision = 0): string
+    {
+        if (null === $number) {
+            return '0';
+        }
+        if ('' === trim($number)) {
+            return '0';
+        }
+        // if the number contains "E", it's in scientific notation, so we need to convert it to a normal number first.
+        if (false !== stripos($number, 'e')) {
+            $number = sprintf('%.12f', $number);
+        }
+
+        // Log::debug(sprintf('Trying bcround("%s",%d)', $number, $precision));
+        if (str_contains($number, '.')) {
+            if ($number[0] !== '-') {
+                return bcadd($number, '0.' . str_repeat('0', $precision) . '5', $precision);
+            }
+
+            return bcsub($number, '0.' . str_repeat('0', $precision) . '5', $precision);
+        }
+
+        return $number;
     }
 
     /**
@@ -401,7 +700,26 @@ class Steam
             "\x20", // plain old normal space
         ];
 
+        // clear zalgo text
+        $string = preg_replace('/(\pM{2})\pM+/u', '\1', $string);
+
         return str_replace($search, '', $string);
+    }
+
+    /**
+     * @param string $ipAddress
+     *
+     * @return string
+     * @throws FireflyException
+     */
+    public function getHostName(string $ipAddress): string
+    {
+        try {
+            $hostName = gethostbyaddr($ipAddress);
+        } catch (Exception $e) { // intentional generic exception
+            throw new FireflyException($e->getMessage(), 0, $e);
+        }
+        return $hostName;
     }
 
     /**
@@ -416,12 +734,12 @@ class Steam
         $set = auth()->user()->transactions()
                      ->whereIn('transactions.account_id', $accounts)
                      ->groupBy(['transactions.account_id', 'transaction_journals.user_id'])
-                     ->get(['transactions.account_id', DB::raw('MAX(transaction_journals.date) AS max_date')]); // @phpstan-ignore-line
+                     ->get(['transactions.account_id', DB::raw('MAX(transaction_journals.date) AS max_date')]);
 
         foreach ($set as $entry) {
             $date = new Carbon($entry->max_date, config('app.timezone'));
             $date->setTimezone(config('app.timezone'));
-            $list[(int) $entry->account_id] = $date;
+            $list[(int)$entry->account_id] = $date;
         }
 
         return $list;
@@ -432,8 +750,8 @@ class Steam
      *
      * @return string
      * @throws FireflyException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function getLocale(): string // get preference
     {
@@ -455,8 +773,8 @@ class Steam
      *
      * @return string
      * @throws FireflyException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function getLanguage(): string // get preference
     {
@@ -552,6 +870,7 @@ class Steam
      * Additionally fixed a problem with PHP <= 5.2.x with big integers
      *
      * @param string $value
+     *
      * @return string
      */
     public function floatalize(string $value): string
@@ -566,11 +885,13 @@ class Steam
             $post   = strlen(substr($number, strpos($number, '.') + 1));
             $mantis = substr($value, strpos($value, 'E') + 1);
             if ($mantis < 0) {
-                $post += abs((int) $mantis);
+                $post += abs((int)$mantis);
             }
-            return number_format((float) $value, $post, '.', '');
+            // TODO careless float could break financial math.
+            return number_format((float)$value, $post, '.', '');
         }
-        return number_format((float) $value, 0, '.', '');
+        // TODO careless float could break financial math.
+        return number_format((float)$value, 0, '.', '');
     }
 
     /**
@@ -600,24 +921,24 @@ class Steam
             // has a K in it, remove the K and multiply by 1024.
             $bytes = bcmul(rtrim($string, 'k'), '1024');
 
-            return (int) $bytes;
+            return (int)$bytes;
         }
 
         if (false !== stripos($string, 'm')) {
             // has a M in it, remove the M and multiply by 1048576.
             $bytes = bcmul(rtrim($string, 'm'), '1048576');
 
-            return (int) $bytes;
+            return (int)$bytes;
         }
 
         if (false !== stripos($string, 'g')) {
             // has a G in it, remove the G and multiply by (1024)^3.
             $bytes = bcmul(rtrim($string, 'g'), '1073741824');
 
-            return (int) $bytes;
+            return (int)$bytes;
         }
 
-        return (int) $string;
+        return (int)$string;
     }
 
     /**

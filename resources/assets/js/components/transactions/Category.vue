@@ -26,6 +26,7 @@
     <div class="col-sm-12">
       <div class="input-group">
         <input
+            spellcheck="false"
             ref="input"
             :value="value"
             autocomplete="off"
@@ -166,7 +167,7 @@ export default {
       this.$emit('input', this.name.name);
     },
     handleEnter: function (e) {
-// See reference nr. 1
+      // TODO feels sloppy
       if (e.keyCode === 13) {
         //e.preventDefault();
       }

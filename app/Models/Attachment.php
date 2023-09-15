@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Attachment.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -77,9 +78,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * @method static \Illuminate\Database\Eloquent\Builder|Attachment whereUserId($value)
  * @method static Builder|Attachment withTrashed()
  * @method static Builder|Attachment withoutTrashed()
- * @mixin Eloquent
  * @property int|null            $user_group_id
  * @method static \Illuminate\Database\Eloquent\Builder|Attachment whereUserGroupId($value)
+ * @mixin Eloquent
  */
 class Attachment extends Model
 {
@@ -111,7 +112,7 @@ class Attachment extends Model
     public static function routeBinder(string $value): Attachment
     {
         if (auth()->check()) {
-            $attachmentId = (int) $value;
+            $attachmentId = (int)$value;
             /** @var User $user */
             $user = auth()->user();
             /** @var Attachment $attachment */
@@ -120,13 +121,20 @@ class Attachment extends Model
                 return $attachment;
             }
         }
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
+    }
+
+    /**
+     * @return BelongsTo
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     /**
      * Get all of the owning attachable models.
      *
-     * @codeCoverageIgnore
      *
      * @return MorphTo
      */
@@ -138,29 +146,18 @@ class Attachment extends Model
     /**
      * Returns the expected filename for this attachment.
      *
-     * @codeCoverageIgnore
      * @return string
      */
     public function fileName(): string
     {
-        return sprintf('at-%s.data', (string) $this->id);
+        return sprintf('at-%s.data', (string)$this->id);
     }
 
     /**
-     * @codeCoverageIgnore
      * Get all of the notes.
      */
     public function notes(): MorphMany
     {
         return $this->morphMany(Note::class, 'noteable');
-    }
-
-    /**
-     * @codeCoverageIgnore
-     * @return BelongsTo
-     */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
     }
 }

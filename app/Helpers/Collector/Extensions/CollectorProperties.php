@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Helpers\Collector\Extensions;
 
+use FireflyIII\Models\UserGroup;
 use FireflyIII\User;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -32,21 +33,30 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 trait CollectorProperties
 {
-    private array   $fields;
-    private array   $stringFields;
-    private bool    $hasAccountInfo;
-    private bool    $hasBillInformation;
-    private bool    $hasBudgetInformation;
-    private bool    $hasCatInformation;
-    private bool    $hasJoinedAttTables;
-    private bool    $hasJoinedMetaTables;
-    private bool    $hasJoinedTagTables;
-    private bool    $hasNotesInformation;
-    private array   $integerFields;
-    private ?int    $limit;
-    private ?int    $page;
-    private array   $postFilters;
+    public const TEST = 'Test';
+    private bool $expandGroupSearch;
+    private array $fields;
+    private bool $hasAccountInfo;
+    private bool $hasBillInformation;
+    private bool $hasBudgetInformation;
+    private bool $hasCatInformation;
+    private bool $hasJoinedAttTables;
+    private bool $hasJoinedMetaTables;
+    private bool $hasJoinedTagTables;
+    private bool $hasNotesInformation;
+    private array $integerFields;
+    private ?int $limit;
+    private ?int $page;
+    private array $postFilters;
     private HasMany $query;
-    private int     $total;
-    private ?User   $user;
+    private array $stringFields;
+    /*
+     * This array is used to collect ALL tags the user may search for (using 'setTags').
+     * This way the user can call 'setTags' multiple times and get a joined result.
+     *
+     */
+    private array $tags;
+    private int $total;
+    private ?User $user;
+    private ?UserGroup $userGroup;
 }

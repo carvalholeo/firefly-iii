@@ -1,4 +1,5 @@
 <?php
+
 /**
  * UserFormRequest.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -29,11 +30,12 @@ use Illuminate\Foundation\Http\FormRequest;
 /**
  * Class UserFormRequest.
  *
- * @codeCoverageIgnore
+
  */
 class UserFormRequest extends FormRequest
 {
-    use ConvertsDataTypes, ChecksLogin;
+    use ConvertsDataTypes;
+    use ChecksLogin;
 
     /**
      * Get data for controller.
@@ -44,10 +46,10 @@ class UserFormRequest extends FormRequest
     {
         return [
             'email'        => $this->convertString('email'),
-            'blocked'      => 1 === $this->integer('blocked'),
+            'blocked'      => 1 === $this->convertInteger('blocked'),
             'blocked_code' => $this->convertString('blocked_code'),
             'password'     => $this->convertString('password'),
-            'is_owner'     => 1 === $this->integer('is_owner'),
+            'is_owner'     => 1 === $this->convertInteger('is_owner'),
         ];
     }
 

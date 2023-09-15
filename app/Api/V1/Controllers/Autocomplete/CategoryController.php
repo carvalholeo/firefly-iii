@@ -57,7 +57,7 @@ class CategoryController extends Controller
 
     /**
      * Documentation for this endpoint is at:
-     * https://api-docs.firefly-iii.org/#/autocomplete/getCategoriesAC
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/autocomplete/getCategoriesAC
      *
      * @param AutocompleteRequest $request
      *
@@ -70,7 +70,7 @@ class CategoryController extends Controller
         $filtered = $result->map(
             static function (Category $item) {
                 return [
-                    'id'   => (string) $item->id,
+                    'id'   => (string)$item->id,
                     'name' => $item->name,
                 ];
             }

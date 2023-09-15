@@ -1,4 +1,5 @@
 <?php
+
 /**
  * FiscalHelper.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,8 +24,8 @@ declare(strict_types=1);
 namespace FireflyIII\Helpers\Fiscal;
 
 use Carbon\Carbon;
-use FireflyIII\Exceptions\FireflyException;
-use Log;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class FiscalHelper.
@@ -39,20 +40,19 @@ class FiscalHelper implements FiscalHelperInterface
      */
     public function __construct()
     {
-        $this->useCustomFiscalYear = app('preferences')->get('customFiscalYear', false)->data;
+        $this->useCustomFiscalYear = (bool)app('preferences')->get('customFiscalYear', false)->data;
     }
 
     /**
      * @param Carbon $date
      *
      * @return Carbon date object
-     * @throws FireflyException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function endOfFiscalYear(Carbon $date): Carbon
     {
-        Log::debug(sprintf('Now in endOfFiscalYear(%s).', $date->format('Y-m-d')));
+        // Log::debug(sprintf('Now in endOfFiscalYear(%s).', $date->format('Y-m-d')));
         $endDate = $this->startOfFiscalYear($date);
         if (true === $this->useCustomFiscalYear) {
             // add 1 year and sub 1 day
@@ -62,7 +62,7 @@ class FiscalHelper implements FiscalHelperInterface
         if (false === $this->useCustomFiscalYear) {
             $endDate->endOfYear();
         }
-        Log::debug(sprintf('Result of endOfFiscalYear(%s) = %s', $date->format('Y-m-d'), $endDate->format('Y-m-d')));
+        // Log::debug(sprintf('Result of endOfFiscalYear(%s) = %s', $date->format('Y-m-d'), $endDate->format('Y-m-d')));
 
         return $endDate;
     }
@@ -71,9 +71,8 @@ class FiscalHelper implements FiscalHelperInterface
      * @param Carbon $date
      *
      * @return Carbon date object
-     * @throws FireflyException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function startOfFiscalYear(Carbon $date): Carbon
     {
@@ -82,7 +81,7 @@ class FiscalHelper implements FiscalHelperInterface
         if (true === $this->useCustomFiscalYear) {
             $prefStartStr = app('preferences')->get('fiscalYearStart', '01-01')->data;
             [$mth, $day] = explode('-', $prefStartStr);
-            $startDate->day((int) $day)->month((int) $mth);
+            $startDate->day((int)$day)->month((int)$mth);
 
             // if start date is after passed date, sub 1 year.
             if ($startDate > $date) {
@@ -93,7 +92,7 @@ class FiscalHelper implements FiscalHelperInterface
             $startDate->startOfYear();
         }
 
-        Log::debug(sprintf('Result of startOfFiscalYear(%s) = %s', $date->format('Y-m-d'), $startDate->format('Y-m-d')));
+        // Log::debug(sprintf('Result of startOfFiscalYear(%s) = %s', $date->format('Y-m-d'), $startDate->format('Y-m-d')));
 
         return $startDate;
     }

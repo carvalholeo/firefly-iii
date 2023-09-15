@@ -23,9 +23,9 @@ import axios from 'axios'
 import {setupCache} from 'axios-cache-adapter'
 
 const cache = setupCache({
-                           maxAge: 15 * 60 * 1000,
-                           exclude: { query: false }
-                         })
+  maxAge: 15 * 60 * 1000,
+  exclude: {query: false}
+})
 
 // Be careful when using SSR for cross-request state pollution
 // due to creating a Singleton instance here;
@@ -34,7 +34,7 @@ const cache = setupCache({
 // "export default () => {}" function below (which runs individually
 // for each client)
 
-const url = process.env.DEBUGGING ? 'https://firefly.sd.home' : '/';
+const url = process.env.DEBUGGING ? 'https://firefly.sd.local' : '/';
 const api = axios.create({baseURL: url, withCredentials: true, adapter: cache.adapter});
 
 export default boot(({app}) => {

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 2016_06_16_000001_create_users_table.php
  * Copyright (c) 2019 james@firefly-iii.org.
@@ -21,6 +22,7 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
 
 /**
@@ -30,6 +32,9 @@ use Illuminate\Database\Schema\Blueprint;
  */
 class CreateUsersTable extends Migration
 {
+    private const TABLE_ALREADY_EXISTS = 'If this table exists already (see the error message), this is not a problem. Other errors? Please open a discussion on GitHub.';
+    private const TABLE_ERROR          = 'Could not create table "%s": %s';
+
     /**
      * Reverse the migrations.
      */
@@ -41,24 +46,28 @@ class CreateUsersTable extends Migration
     /**
      * Run the migrations.
      *
-     * @SuppressWarnings(PHPMD.ShortMethodName)
      */
     public function up(): void
     {
         if (!Schema::hasTable('users')) {
-            Schema::create(
-                'users',
-                static function (Blueprint $table) {
-                    $table->increments('id');
-                    $table->timestamps();
-                    $table->string('email', 255);
-                    $table->string('password', 60);
-                    $table->string('remember_token', 100)->nullable();
-                    $table->string('reset', 32)->nullable();
-                    $table->tinyInteger('blocked', false, true)->default('0');
-                    $table->string('blocked_code', 25)->nullable();
-                }
-            );
+            try {
+                Schema::create(
+                    'users',
+                    static function (Blueprint $table) {
+                        $table->increments('id');
+                        $table->timestamps();
+                        $table->string('email', 255);
+                        $table->string('password', 60);
+                        $table->string('remember_token', 100)->nullable();
+                        $table->string('reset', 32)->nullable();
+                        $table->tinyInteger('blocked', false, true)->default('0');
+                        $table->string('blocked_code', 25)->nullable();
+                    }
+                );
+            } catch (QueryException $e) {
+                app('log')->error(sprintf(self::TABLE_ERROR, 'users', $e->getMessage()));
+                app('log')->error(self::TABLE_ALREADY_EXISTS);
+            }
         }
     }
 }

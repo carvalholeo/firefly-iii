@@ -35,9 +35,9 @@ use FireflyIII\Support\Http\Api\TransactionFilter;
 use FireflyIII\Transformers\TransactionGroupTransformer;
 use FireflyIII\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use League\Fractal\Resource\Item;
-use Log;
 use Validator;
 
 /**
@@ -52,7 +52,7 @@ class StoreController extends Controller
     /**
      * TransactionController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -72,7 +72,7 @@ class StoreController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/transactions/storeTransaction
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/transactions/storeTransaction
      *
      * Store a new transaction.
      *
@@ -93,16 +93,17 @@ class StoreController extends Controller
         try {
             $transactionGroup = $this->groupRepository->store($data);
         } catch (DuplicateTransactionException $e) {
-            Log::warning('Caught a duplicate transaction. Return error message.');
+            app('log')->warning('Caught a duplicate transaction. Return error message.');
             $validator = Validator::make(
-                ['transactions' => [['description' => $e->getMessage()]]], ['transactions.0.description' => new IsDuplicateTransaction]
+                ['transactions' => [['description' => $e->getMessage()]]],
+                ['transactions.0.description' => new IsDuplicateTransaction()]
             );
             throw new ValidationException($validator, 0, $e);
         } catch (FireflyException $e) {
-            Log::warning('Caught an exception. Return error message.');
+            app('log')->warning('Caught an exception. Return error message.');
             Log::error($e->getMessage());
             $message   = sprintf('Internal exception: %s', $e->getMessage());
-            $validator = Validator::make(['transactions' => [['description' => $message]]], ['transactions.0.description' => new IsDuplicateTransaction]);
+            $validator = Validator::make(['transactions' => [['description' => $message]]], ['transactions.0.description' => new IsDuplicateTransaction()]);
             throw new ValidationException($validator, 0, $e);
         }
         app('preferences')->mark();

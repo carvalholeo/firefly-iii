@@ -19,7 +19,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/** @noinspection MoreThanThreeArgumentsInspection */
 declare(strict_types=1);
 
 namespace FireflyIII\Http\Controllers\Chart;
@@ -42,7 +41,8 @@ use Illuminate\Support\Collection;
  */
 class BudgetReportController extends Controller
 {
-    use AugumentData, TransactionCalculation;
+    use AugumentData;
+    use TransactionCalculation;
 
     /** @var GeneratorInterface Chart generation methods. */
     private $generator;
@@ -53,7 +53,7 @@ class BudgetReportController extends Controller
     /**
      * BudgetReportController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -88,10 +88,10 @@ class BudgetReportController extends Controller
             foreach ($currency['budgets'] as $budget) {
                 $title          = sprintf('%s (%s)', $budget['name'], $currency['currency_name']);
                 $result[$title] = $result[$title] ?? [
-                        'amount'          => '0',
-                        'currency_symbol' => $currency['currency_symbol'],
-                        'currency_code'   => $currency['currency_code'],
-                    ];
+                    'amount'          => '0',
+                    'currency_symbol' => $currency['currency_symbol'],
+                    'currency_code'   => $currency['currency_code'],
+                ];
                 foreach ($budget['transaction_journals'] as $journal) {
                     $amount                   = app('steam')->positive($journal['amount']);
                     $result[$title]['amount'] = bcadd($result[$title]['amount'], $amount);
@@ -125,10 +125,10 @@ class BudgetReportController extends Controller
                     $categoryName   = $journal['category_name'] ?? trans('firefly.no_category');
                     $title          = sprintf('%s (%s)', $categoryName, $currency['currency_name']);
                     $result[$title] = $result[$title] ?? [
-                            'amount'          => '0',
-                            'currency_symbol' => $currency['currency_symbol'],
-                            'currency_code'   => $currency['currency_code'],
-                        ];
+                        'amount'          => '0',
+                        'currency_symbol' => $currency['currency_symbol'],
+                        'currency_code'   => $currency['currency_code'],
+                    ];
 
                     $amount                   = app('steam')->positive($journal['amount']);
                     $result[$title]['amount'] = bcadd($result[$title]['amount'], $amount);
@@ -162,10 +162,10 @@ class BudgetReportController extends Controller
                 foreach ($budget['transaction_journals'] as $journal) {
                     $title          = sprintf('%s (%s)', $journal['destination_account_name'], $currency['currency_name']);
                     $result[$title] = $result[$title] ?? [
-                            'amount'          => '0',
-                            'currency_symbol' => $currency['currency_symbol'],
-                            'currency_code'   => $currency['currency_code'],
-                        ];
+                        'amount'          => '0',
+                        'currency_symbol' => $currency['currency_symbol'],
+                        'currency_code'   => $currency['currency_code'],
+                    ];
 
                     $amount                   = app('steam')->positive($journal['amount']);
                     $result[$title]['amount'] = bcadd($result[$title]['amount'], $amount);
@@ -199,17 +199,17 @@ class BudgetReportController extends Controller
             // add things to chart Data for each currency:
             $spentKey             = sprintf('%d-spent', $currency['currency_id']);
             $chartData[$spentKey] = $chartData[$spentKey] ?? [
-                    'label'           => sprintf(
-                        '%s (%s)',
-                        (string) trans('firefly.spent_in_specific_budget', ['budget' => $budget->name]),
-                        $currency['currency_name']
-                    ),
-                    'type'            => 'bar',
-                    'currency_symbol' => $currency['currency_symbol'],
-                    'currency_code'   => $currency['currency_code'],
-                    'currency_id'     => $currency['currency_id'],
-                    'entries'         => $this->makeEntries($start, $end),
-                ];
+                'label'           => sprintf(
+                    '%s (%s)',
+                    (string)trans('firefly.spent_in_specific_budget', ['budget' => $budget->name]),
+                    $currency['currency_name']
+                ),
+                'type'            => 'bar',
+                'currency_symbol' => $currency['currency_symbol'],
+                'currency_code'   => $currency['currency_code'],
+                'currency_id'     => $currency['currency_id'],
+                'entries'         => $this->makeEntries($start, $end),
+            ];
 
             foreach ($currency['budgets'] as $currentBudget) {
                 foreach ($currentBudget['transaction_journals'] as $journal) {
@@ -270,10 +270,10 @@ class BudgetReportController extends Controller
                 foreach ($budget['transaction_journals'] as $journal) {
                     $title          = sprintf('%s (%s)', $journal['source_account_name'], $currency['currency_name']);
                     $result[$title] = $result[$title] ?? [
-                            'amount'          => '0',
-                            'currency_symbol' => $currency['currency_symbol'],
-                            'currency_code'   => $currency['currency_code'],
-                        ];
+                        'amount'          => '0',
+                        'currency_symbol' => $currency['currency_symbol'],
+                        'currency_code'   => $currency['currency_code'],
+                    ];
 
                     $amount                   = app('steam')->positive($journal['amount']);
                     $result[$title]['amount'] = bcadd($result[$title]['amount'], $amount);

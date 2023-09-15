@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Api\V1\Requests\Models\ObjectGroup;
 
+use FireflyIII\Models\ObjectGroup;
 use FireflyIII\Support\Request\ChecksLogin;
 use FireflyIII\Support\Request\ConvertsDataTypes;
 use Illuminate\Foundation\Http\FormRequest;
@@ -31,11 +32,12 @@ use Illuminate\Foundation\Http\FormRequest;
 /**
  * Class UpdateRequest
  *
- * @codeCoverageIgnore
+
  */
 class UpdateRequest extends FormRequest
 {
-    use ConvertsDataTypes, ChecksLogin;
+    use ConvertsDataTypes;
+    use ChecksLogin;
 
     /**
      * @return array
@@ -44,7 +46,7 @@ class UpdateRequest extends FormRequest
     {
         $fields = [
             'title' => ['title', 'convertString'],
-            'order' => ['order', 'integer'],
+            'order' => ['order', 'convertInteger'],
         ];
 
         return $this->getAllData($fields);
@@ -57,10 +59,11 @@ class UpdateRequest extends FormRequest
      */
     public function rules(): array
     {
+        /** @var ObjectGroup $objectGroup */
         $objectGroup = $this->route()->parameter('objectGroup');
 
         return [
-            'title' => sprintf('min:1|uniqueObjectGroup:%d', $objectGroup->id),
+            'title' => sprintf('max:1024|min:1|uniqueObjectGroup:%d', $objectGroup->id),
             'order' => 'numeric',
         ];
     }

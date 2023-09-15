@@ -29,8 +29,8 @@ use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\User;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Auth\Factory as Auth;
-use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class Authenticate
@@ -42,7 +42,7 @@ class Authenticate
      *
      * @var Auth
      */
-    protected $auth;
+    protected Auth $auth;
 
     /**
      * Create a new middleware instance.
@@ -87,53 +87,63 @@ class Authenticate
      */
     protected function authenticate($request, array $guards)
     {
-
-        if (empty($guards)) {
-            try {
-                // go for default guard:
+        if (0 === count($guards)) {
+            // go for default guard:
+            /** @noinspection PhpUndefinedMethodInspection */
+            if ($this->auth->check()) {
+                // do an extra check on user object.
                 /** @noinspection PhpUndefinedMethodInspection */
-                if ($this->auth->check()) {
-
-                    // do an extra check on user object.
-                    /** @noinspection PhpUndefinedMethodInspection */
-                    /** @var User $user */
-                    $user = $this->auth->authenticate();
-                    if (1 === (int) $user->blocked) {
-                        $message = (string) trans('firefly.block_account_logout');
-                        if ('email_changed' === $user->blocked_code) {
-                            $message = (string) trans('firefly.email_changed_logout');
-                        }
-                        app('session')->flash('logoutMessage', $message);
-                        /** @noinspection PhpUndefinedMethodInspection */
-                        $this->auth->logout();
-
-                        throw new AuthenticationException('Blocked account.', $guards);
-                    }
-                }
-            } catch (QueryException $e) {
-
-                throw new FireflyException(
-                    sprintf(
-                        'It seems the database has not yet been initialized. Did you run the correct upgrade or installation commands? Error: %s',
-                        $e->getMessage()
-                    ), 0, $e
-                );
-
+                /** @var User $user */
+                $user = $this->auth->authenticate();
+                $this->validateBlockedUser($user, $guards);
             }
 
             /** @noinspection PhpUndefinedMethodInspection */
             return $this->auth->authenticate();
         }
 
-
         foreach ($guards as $guard) {
-            if ($this->auth->guard($guard)->check()) {
-                /** @noinspection PhpVoidFunctionResultUsedInspection */
+            if ('api' !== $guard) {
+                $this->auth->guard($guard)->authenticate();
+            }
+            $result = $this->auth->guard($guard)->check();
+            if ($result) {
+                $user = $this->auth->guard($guard)->user();
+                $this->validateBlockedUser($user, $guards);
+                // According to PHPstan the method returns void, but we'll see.
                 return $this->auth->shouldUse($guard); // @phpstan-ignore-line
             }
         }
 
         throw new AuthenticationException('Unauthenticated.', $guards);
+    }
 
+    /**
+     * @param User|null $user
+     * @param array     $guards
+     *
+     * @return void
+     * @throws AuthenticationException
+     */
+    private function validateBlockedUser(?User $user, array $guards): void
+    {
+        if (null === $user) {
+            Log::warning('User is null, throw exception?');
+        }
+        if (null !== $user) {
+            // Log::debug(get_class($user));
+            if (1 === (int)$user->blocked) {
+                $message = (string)trans('firefly.block_account_logout');
+                if ('email_changed' === $user->blocked_code) {
+                    $message = (string)trans('firefly.email_changed_logout');
+                }
+                Log::warning('User is blocked, cannot use authentication method.');
+                app('session')->flash('logoutMessage', $message);
+                /** @noinspection PhpUndefinedMethodInspection */
+                $this->auth->logout(); // @phpstan-ignore-line (thinks function is undefined)
+
+                throw new AuthenticationException('Blocked account.', $guards);
+            }
+        }
     }
 }

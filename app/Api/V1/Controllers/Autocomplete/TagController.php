@@ -57,7 +57,7 @@ class TagController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/autocomplete/getTagAC
+     * * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/autocomplete/getTagAC
      *
      * @param AutocompleteRequest $request
      *
@@ -72,7 +72,7 @@ class TagController extends Controller
         /** @var Tag $tag */
         foreach ($result as $tag) {
             $array[] = [
-                'id'   => (string) $tag->id,
+                'id'   => (string)$tag->id,
                 'name' => $tag->tag,
                 'tag'  => $tag->tag,
             ];

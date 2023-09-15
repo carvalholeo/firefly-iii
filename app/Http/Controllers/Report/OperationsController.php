@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OperationsController.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,12 +24,12 @@ declare(strict_types=1);
 namespace FireflyIII\Http\Controllers\Report;
 
 use Carbon\Carbon;
+use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Http\Controllers\Controller;
 use FireflyIII\Repositories\Account\AccountTaskerInterface;
 use FireflyIII\Support\CacheProperties;
 use Illuminate\Support\Collection;
-use JsonException;
-use Log;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
@@ -36,14 +37,13 @@ use Throwable;
  */
 class OperationsController extends Controller
 {
-
     /** @var AccountTaskerInterface Some specific account things. */
     private $tasker;
 
     /**
      * OperationsController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -67,11 +67,12 @@ class OperationsController extends Controller
      * @param Carbon     $end
      *
      * @return mixed|string
+     * @throws FireflyException
      */
     public function expenses(Collection $accounts, Carbon $start, Carbon $end)
     {
         // chart properties for cache:
-        $cache = new CacheProperties;
+        $cache = new CacheProperties();
         $cache->addProperty($start);
         $cache->addProperty($end);
         $cache->addProperty('expense-report');
@@ -83,10 +84,11 @@ class OperationsController extends Controller
         $type   = 'expense-entry';
         try {
             $result = view('reports.partials.income-expenses', compact('report', 'type'))->render();
-
-        } catch (Throwable $e) { // @phpstan-ignore-line
-            Log::debug(sprintf('Could not render reports.partials.income-expense: %s', $e->getMessage()));
+        } catch (Throwable $e) {
+            Log::error(sprintf('Could not render reports.partials.income-expense: %s', $e->getMessage()));
+            Log::error($e->getTraceAsString());
             $result = 'Could not render view.';
+            throw new FireflyException($result, 0, $e);
         }
 
         $cache->store($result);
@@ -102,11 +104,12 @@ class OperationsController extends Controller
      * @param Carbon     $end
      *
      * @return string
+     * @throws FireflyException
      */
     public function income(Collection $accounts, Carbon $start, Carbon $end): string
     {
         // chart properties for cache:
-        $cache = new CacheProperties;
+        $cache = new CacheProperties();
         $cache->addProperty($start);
         $cache->addProperty($end);
         $cache->addProperty('income-report');
@@ -118,10 +121,11 @@ class OperationsController extends Controller
         $type   = 'income-entry';
         try {
             $result = view('reports.partials.income-expenses', compact('report', 'type'))->render();
-
-        } catch (Throwable $e) { // @phpstan-ignore-line
-            Log::debug(sprintf('Could not render reports.partials.income-expenses: %s', $e->getMessage()));
+        } catch (Throwable $e) {
+            Log::error(sprintf('Could not render reports.partials.income-expenses: %s', $e->getMessage()));
+            Log::error($e->getTraceAsString());
             $result = 'Could not render view.';
+            throw new FireflyException($result, 0, $e);
         }
 
         $cache->store($result);
@@ -137,11 +141,12 @@ class OperationsController extends Controller
      * @param Carbon     $end
      *
      * @return mixed|string
+     * @throws FireflyException
      */
     public function operations(Collection $accounts, Carbon $start, Carbon $end)
     {
         // chart properties for cache:
-        $cache = new CacheProperties;
+        $cache = new CacheProperties();
         $cache->addProperty($start);
         $cache->addProperty($end);
         $cache->addProperty('inc-exp-report');
@@ -159,23 +164,25 @@ class OperationsController extends Controller
         foreach ($keys as $currencyId) {
             $currencyInfo             = $incomes['sums'][$currencyId] ?? $expenses['sums'][$currencyId];
             $sums[$currencyId]        = $sums[$currencyId] ?? [
-                    'currency_id'             => $currencyId,
-                    'currency_name'           => $currencyInfo['currency_name'],
-                    'currency_code'           => $currencyInfo['currency_code'],
-                    'currency_symbol'         => $currencyInfo['currency_symbol'],
-                    'currency_decimal_places' => $currencyInfo['currency_decimal_places'],
-                    'in'                      => $incomes['sums'][$currencyId]['sum'] ?? '0',
-                    'out'                     => $expenses['sums'][$currencyId]['sum'] ?? '0',
-                    'sum'                     => '0',
-                ];
+                'currency_id'             => $currencyId,
+                'currency_name'           => $currencyInfo['currency_name'],
+                'currency_code'           => $currencyInfo['currency_code'],
+                'currency_symbol'         => $currencyInfo['currency_symbol'],
+                'currency_decimal_places' => $currencyInfo['currency_decimal_places'],
+                'in'                      => $incomes['sums'][$currencyId]['sum'] ?? '0',
+                'out'                     => $expenses['sums'][$currencyId]['sum'] ?? '0',
+                'sum'                     => '0',
+            ];
             $sums[$currencyId]['sum'] = bcadd($sums[$currencyId]['in'], $sums[$currencyId]['out']);
         }
 
         try {
             $result = view('reports.partials.operations', compact('sums'))->render();
-        } catch (Throwable $e) { // @phpstan-ignore-line
-            Log::debug(sprintf('Could not render reports.partials.operations: %s', $e->getMessage()));
+        } catch (Throwable $e) {
+            Log::error(sprintf('Could not render reports.partials.operations: %s', $e->getMessage()));
+            Log::error($e->getTraceAsString());
             $result = 'Could not render view.';
+            throw new FireflyException($result, 0, $e);
         }
         $cache->store($result);
 

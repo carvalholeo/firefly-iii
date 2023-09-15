@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BudgetFactory.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -18,7 +19,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-/** @noinspection MultipleReturnStatementsInspection */
 declare(strict_types=1);
 
 namespace FireflyIII\Factory;
@@ -41,8 +41,8 @@ class BudgetFactory
      */
     public function find(?int $budgetId, ?string $budgetName): ?Budget
     {
-        $budgetId   = (int) $budgetId;
-        $budgetName = (string) $budgetName;
+        $budgetId   = (int)$budgetId;
+        $budgetName = (string)$budgetName;
 
         if (0 === $budgetId && '' === $budgetName) {
             return null;
@@ -84,5 +84,4 @@ class BudgetFactory
     {
         $this->user = $user;
     }
-
 }

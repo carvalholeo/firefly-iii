@@ -1,4 +1,5 @@
 <?php
+
 /**
  * PiggyBankUpdateRequest.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -32,7 +33,8 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class PiggyBankUpdateRequest extends FormRequest
 {
-    use ConvertsDataTypes, ChecksLogin;
+    use ConvertsDataTypes;
+    use ChecksLogin;
 
     /**
      * Returns the data required by the controller.
@@ -44,8 +46,8 @@ class PiggyBankUpdateRequest extends FormRequest
         return [
             'name'               => $this->convertString('name'),
             'startdate'          => $this->getCarbonDate('startdate'),
-            'account_id'         => $this->integer('account_id'),
-            'targetamount'       => $this->convertString('targetamount'),
+            'account_id'         => $this->convertInteger('account_id'),
+            'targetamount'       => trim($this->convertString('targetamount')),
             'targetdate'         => $this->getCarbonDate('targetdate'),
             'notes'              => $this->stringWithNewlines('notes'),
             'object_group_title' => $this->convertString('object_group'),
@@ -68,7 +70,7 @@ class PiggyBankUpdateRequest extends FormRequest
             'targetamount' => 'nullable|numeric|max:1000000000',
             'startdate'    => 'date',
             'targetdate'   => 'date|nullable',
-            'order'        => 'integer|min:1',
+            'order'        => 'integer|max:65536|min:1',
             'object_group' => 'min:0|max:255',
         ];
     }

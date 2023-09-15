@@ -31,11 +31,12 @@ use Illuminate\Foundation\Http\FormRequest;
 /**
  * Class StoreRequest
  *
- * @codeCoverageIgnore
+
  */
 class StoreRequest extends FormRequest
 {
-    use ConvertsDataTypes, ChecksLogin;
+    use ConvertsDataTypes;
+    use ChecksLogin;
 
     /**
      * Get all data from the request.
@@ -49,7 +50,7 @@ class StoreRequest extends FormRequest
             'title'           => $this->convertString('title'),
             'notes'           => $this->stringWithNewlines('notes'),
             'attachable_type' => $this->convertString('attachable_type'),
-            'attachable_id'   => $this->integer('attachable_id'),
+            'attachable_id'   => $this->convertInteger('attachable_id'),
         ];
     }
 
@@ -62,10 +63,10 @@ class StoreRequest extends FormRequest
     {
         $models = config('firefly.valid_attachment_models');
         $models = array_map(
-
             static function (string $className) {
                 return str_replace('FireflyIII\\Models\\', '', $className);
-            }, $models
+            },
+            $models
         );
         $models = implode(',', $models);
         $model  = $this->convertString('attachable_type');

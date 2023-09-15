@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Rule.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -73,9 +74,10 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * @method static \Illuminate\Database\Eloquent\Builder|Rule whereUserId($value)
  * @method static Builder|Rule withTrashed()
  * @method static Builder|Rule withoutTrashed()
- * @mixin Eloquent
  * @property int|null                     $user_group_id
  * @method static \Illuminate\Database\Eloquent\Builder|Rule whereUserGroupId($value)
+ * @property-read \FireflyIII\Models\UserGroup|null $userGroup
+ * @mixin Eloquent
  */
 class Rule extends Model
 {
@@ -111,7 +113,7 @@ class Rule extends Model
     public static function routeBinder(string $value): Rule
     {
         if (auth()->check()) {
-            $ruleId = (int) $value;
+            $ruleId = (int)$value;
             /** @var User $user */
             $user = auth()->user();
             /** @var Rule $rule */
@@ -120,11 +122,18 @@ class Rule extends Model
                 return $rule;
             }
         }
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
     }
 
     /**
-     * @codeCoverageIgnore
+     * @return BelongsTo
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
      * @return HasMany
      */
     public function ruleActions(): HasMany
@@ -133,7 +142,6 @@ class Rule extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function ruleGroup(): BelongsTo
@@ -142,7 +150,6 @@ class Rule extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return HasMany
      */
     public function ruleTriggers(): HasMany
@@ -153,7 +160,7 @@ class Rule extends Model
     /**
      * @param mixed $value
      *
-     * @codeCoverageIgnore
+
      */
     public function setDescriptionAttribute($value): void
     {
@@ -161,11 +168,10 @@ class Rule extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
-    public function user(): BelongsTo
+    public function userGroup(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(UserGroup::class);
     }
 }

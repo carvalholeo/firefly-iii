@@ -29,6 +29,8 @@ use FireflyIII\Api\V1\Requests\Data\Export\ExportRequest;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Support\Export\ExportDataGenerator;
 use Illuminate\Http\Response as LaravelResponse;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class ExportController
@@ -55,7 +57,7 @@ class ExportController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/data/exportAccounts
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/data/exportAccounts
      *
      * @param ExportRequest $request
      *
@@ -67,7 +69,6 @@ class ExportController extends Controller
         $this->exporter->setExportAccounts(true);
 
         return $this->returnExport('accounts');
-
     }
 
     /**
@@ -75,6 +76,8 @@ class ExportController extends Controller
      *
      * @return LaravelResponse
      * @throws FireflyException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     private function returnExport(string $key): LaravelResponse
     {
@@ -93,14 +96,14 @@ class ExportController extends Controller
             ->header('Expires', '0')
             ->header('Cache-Control', 'must-revalidate, post-check=0, pre-check=0')
             ->header('Pragma', 'public')
-            ->header('Content-Length', (string) strlen($data[$key]));
+            ->header('Content-Length', (string)strlen($data[$key]));
 
         return $response;
     }
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/data/exportBills
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/data/exportBills
      *
      * @param ExportRequest $request
      *
@@ -116,7 +119,7 @@ class ExportController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/data/exportBudgets
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/data/exportBudgets
      *
      * @param ExportRequest $request
      *
@@ -132,7 +135,7 @@ class ExportController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/data/exportCategories
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/data/exportCategories
      *
      * @param ExportRequest $request
      *
@@ -148,7 +151,7 @@ class ExportController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/data/exportPiggies
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/data/exportPiggies
      *
      * @param ExportRequest $request
      *
@@ -164,7 +167,7 @@ class ExportController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/data/exportRecurring
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/data/exportRecurring
      *
      * @param ExportRequest $request
      *
@@ -180,7 +183,7 @@ class ExportController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/data/exportRules
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/data/exportRules
      *
      * @param ExportRequest $request
      *
@@ -196,7 +199,7 @@ class ExportController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/data/exportTags
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/data/exportTags
      *
      * @param ExportRequest $request
      *
@@ -212,7 +215,7 @@ class ExportController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/data/exportTransactions
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/data/exportTransactions
      *
      * @param ExportRequest $request
      *
@@ -229,5 +232,4 @@ class ExportController extends Controller
 
         return $this->returnExport('transactions');
     }
-
 }

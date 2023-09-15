@@ -30,16 +30,18 @@ use FireflyIII\Support\Request\ChecksLogin;
 use FireflyIII\Support\Request\ConvertsDataTypes;
 use FireflyIII\Validation\Api\Data\Bulk\ValidatesBulkTransactionQuery;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Validator;
 use JsonException;
-use Log;
 
 /**
  * Class TransactionRequest
  */
 class TransactionRequest extends FormRequest
 {
-    use ChecksLogin, ConvertsDataTypes, ValidatesBulkTransactionQuery;
+    use ChecksLogin;
+    use ConvertsDataTypes;
+    use ValidatesBulkTransactionQuery;
 
     /**
      * @return array
@@ -60,7 +62,7 @@ class TransactionRequest extends FormRequest
     }
 
     /**
-     * @return string[]
+     * @return array
      */
     public function rules(): array
     {

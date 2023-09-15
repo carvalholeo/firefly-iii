@@ -31,11 +31,12 @@ use Illuminate\Foundation\Http\FormRequest;
 /**
  * Class UpdateRequest
  *
- * @codeCoverageIgnore
+
  */
 class UpdateRequest extends FormRequest
 {
-    use ConvertsDataTypes, ChecksLogin;
+    use ConvertsDataTypes;
+    use ChecksLogin;
 
     /**
      * Get all data from the request.
@@ -49,7 +50,7 @@ class UpdateRequest extends FormRequest
             'title'           => ['title', 'convertString'],
             'notes'           => ['notes', 'stringWithNewlines'],
             'attachable_type' => ['attachable_type', 'convertString'],
-            'attachable_id'   => ['attachable_id', 'integer'],
+            'attachable_id'   => ['attachable_id', 'convertInteger'],
         ];
 
         return $this->getAllData($fields);
@@ -64,10 +65,10 @@ class UpdateRequest extends FormRequest
     {
         $models = config('firefly.valid_attachment_models');
         $models = array_map(
-
             static function (string $className) {
                 return str_replace('FireflyIII\\Models\\', '', $className);
-            }, $models
+            },
+            $models
         );
         $models = implode(',', $models);
         $model  = $this->convertString('attachable_type');

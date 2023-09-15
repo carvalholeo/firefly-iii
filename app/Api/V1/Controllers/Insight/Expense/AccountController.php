@@ -50,7 +50,7 @@ class AccountController extends Controller
     /**
      * AccountController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -74,7 +74,7 @@ class AccountController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/insight/insightExpenseAsset
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/insight/insightExpenseAsset
      *
      * @param GenericRequest $request
      *
@@ -91,11 +91,11 @@ class AccountController extends Controller
         /** @var array $expense */
         foreach ($expenses as $expense) {
             $result[] = [
-                'id'               => (string) $expense['id'],
+                'id'               => (string)$expense['id'],
                 'name'             => $expense['name'],
                 'difference'       => $expense['sum'],
-                'difference_float' => (float) $expense['sum'],
-                'currency_id'      => (string) $expense['currency_id'],
+                'difference_float' => (float)$expense['sum'], // intentional float
+                'currency_id'      => (string)$expense['currency_id'],
                 'currency_code'    => $expense['currency_code'],
             ];
         }
@@ -105,7 +105,7 @@ class AccountController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/insight/insightExpenseExpense
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/insight/insightExpenseExpense
      *
      * @param GenericRequest $request
      *
@@ -123,16 +123,15 @@ class AccountController extends Controller
         /** @var array $expense */
         foreach ($expenses as $expense) {
             $result[] = [
-                'id'               => (string) $expense['id'],
+                'id'               => (string)$expense['id'],
                 'name'             => $expense['name'],
                 'difference'       => $expense['sum'],
-                'difference_float' => (float) $expense['sum'],
-                'currency_id'      => (string) $expense['currency_id'],
+                'difference_float' => (float)$expense['sum'], // intentional float
+                'currency_id'      => (string)$expense['currency_id'],
                 'currency_code'    => $expense['currency_code'],
             ];
         }
 
         return response()->json($result);
     }
-
 }

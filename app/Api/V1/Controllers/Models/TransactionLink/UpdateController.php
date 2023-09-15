@@ -34,6 +34,9 @@ use FireflyIII\User;
 use Illuminate\Http\JsonResponse;
 use League\Fractal\Resource\Item;
 
+/**
+ * Class UpdateController
+ */
 class UpdateController extends Controller
 {
     private JournalRepositoryInterface  $journalRepository;
@@ -42,7 +45,7 @@ class UpdateController extends Controller
     /**
      * TransactionLinkController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -65,7 +68,7 @@ class UpdateController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/links/updateTransactionLink
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/links/updateTransactionLink
      *
      * Update object.
      *
@@ -87,6 +90,5 @@ class UpdateController extends Controller
         $resource = new Item($journalLink, $transformer, 'transaction_links');
 
         return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
-
     }
 }

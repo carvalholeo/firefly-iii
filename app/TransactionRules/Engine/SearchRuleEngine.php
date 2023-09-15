@@ -35,7 +35,7 @@ use FireflyIII\Support\Search\SearchInterface;
 use FireflyIII\TransactionRules\Factory\ActionFactory;
 use FireflyIII\User;
 use Illuminate\Support\Collection;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class SearchRuleEngine
@@ -44,16 +44,20 @@ class SearchRuleEngine implements RuleEngineInterface
 {
     private Collection $groups;
     private array      $operators;
+    private bool       $refreshTriggers;
     private array      $resultCount;
     private Collection $rules;
     private User       $user;
 
     public function __construct()
     {
-        $this->rules       = new Collection;
-        $this->groups      = new Collection;
+        $this->rules       = new Collection();
+        $this->groups      = new Collection();
         $this->operators   = [];
         $this->resultCount = [];
+
+        // always collect the triggers from the database, unless indicated otherwise.
+        $this->refreshTriggers = true;
     }
 
     /**
@@ -71,9 +75,9 @@ class SearchRuleEngine implements RuleEngineInterface
     public function find(): Collection
     {
         Log::debug('SearchRuleEngine::find()');
-        $collection = new Collection;
+        $collection = new Collection();
         foreach ($this->rules as $rule) {
-            $found = new Collection;
+            $found = new Collection();
             if (true === $rule->strict) {
                 $found = $this->findStrictRule($rule);
             }
@@ -97,9 +101,13 @@ class SearchRuleEngine implements RuleEngineInterface
     {
         Log::debug(sprintf('Now in findStrictRule(#%d)', $rule->id ?? 0));
         $searchArray = [];
-
-        /** @var Collection $triggers */
-        $triggers = $rule->ruleTriggers;
+        $triggers    = [];
+        if ($this->refreshTriggers) {
+            $triggers = $rule->ruleTriggers()->orderBy('order', 'ASC')->get();
+        }
+        if (!$this->refreshTriggers) {
+            $triggers = $rule->ruleTriggers;
+        }
 
         /** @var RuleTrigger $ruleTrigger */
         foreach ($triggers as $ruleTrigger) {
@@ -188,7 +196,7 @@ class SearchRuleEngine implements RuleEngineInterface
         $journalId = 0;
         foreach ($array as $triggerName => $values) {
             if ('journal_id' === $triggerName && is_array($values) && 1 === count($values)) {
-                $journalId = (int) trim(($values[0] ?? '"0"'), '"'); // follows format "123".
+                $journalId = (int)trim(($values[0] ?? '"0"'), '"'); // follows format "123".
                 Log::debug(sprintf('Found journal ID #%d', $journalId));
             }
         }
@@ -209,6 +217,15 @@ class SearchRuleEngine implements RuleEngineInterface
     }
 
     /**
+     * @inheritDoc
+     */
+    public function setUser(User $user): void
+    {
+        $this->user      = $user;
+        $this->operators = [];
+    }
+
+    /**
      * @param Rule $rule
      *
      * @return Collection
@@ -216,11 +233,15 @@ class SearchRuleEngine implements RuleEngineInterface
     private function findNonStrictRule(Rule $rule): Collection
     {
         // start a search query for individual each trigger:
-        $total = new Collection;
-        $count = 0;
-
-        /** @var Collection $triggers */
-        $triggers = $rule->ruleTriggers;
+        $total    = new Collection();
+        $count    = 0;
+        $triggers = [];
+        if ($this->refreshTriggers) {
+            $triggers = $rule->ruleTriggers()->orderBy('order', 'ASC')->get();
+        }
+        if (!$this->refreshTriggers) {
+            $triggers = $rule->ruleTriggers;
+        }
 
         /** @var RuleTrigger $ruleTrigger */
         foreach ($triggers as $ruleTrigger) {
@@ -276,7 +297,7 @@ class SearchRuleEngine implements RuleEngineInterface
                     $str = sprintf('%s%d', $str, $transaction['transaction_journal_id']);
                 }
                 $key = sprintf('%d%s', $group['id'], $str);
-                Log::debug(sprintf('Return key: %s ', $key));
+                //Log::debug(sprintf('Return key: %s ', $key));
 
                 return $key;
             }
@@ -409,7 +430,7 @@ class SearchRuleEngine implements RuleEngineInterface
     private function processTransactionJournal(Rule $rule, array $transaction): void
     {
         Log::debug(sprintf('SearchRuleEngine:: Will now execute actions on transaction journal #%d', $transaction['transaction_journal_id']));
-        $actions = $rule->ruleActions()->get();
+        $actions = $rule->ruleActions()->orderBy('order', 'ASC')->get();
         /** @var RuleAction $ruleAction */
         foreach ($actions as $ruleAction) {
             if (false === $ruleAction->active) {
@@ -502,7 +523,6 @@ class SearchRuleEngine implements RuleEngineInterface
                 return;
             }
         }
-
     }
 
     /**
@@ -513,6 +533,14 @@ class SearchRuleEngine implements RuleEngineInterface
     public function getResults(): int
     {
         return count($this->resultCount);
+    }
+
+    /**
+     * @param bool $refreshTriggers
+     */
+    public function setRefreshTriggers(bool $refreshTriggers): void
+    {
+        $this->refreshTriggers = $refreshTriggers;
     }
 
     /**
@@ -534,7 +562,6 @@ class SearchRuleEngine implements RuleEngineInterface
      */
     public function setRules(Collection $rules): void
     {
-
         Log::debug(__METHOD__);
         foreach ($rules as $rule) {
             if ($rule instanceof Rule) {
@@ -542,14 +569,5 @@ class SearchRuleEngine implements RuleEngineInterface
                 $this->rules->push($rule);
             }
         }
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function setUser(User $user): void
-    {
-        $this->user      = $user;
-        $this->operators = [];
     }
 }

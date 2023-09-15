@@ -26,6 +26,7 @@ namespace FireflyIII\Console\Commands\Export;
 
 use Carbon\Carbon;
 use Exception;
+use FireflyIII\Console\Commands\ShowsFriendlyMessages;
 use FireflyIII\Console\Commands\VerifiesAccessToken;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Account;
@@ -35,14 +36,17 @@ use FireflyIII\Repositories\Journal\JournalRepositoryInterface;
 use FireflyIII\Support\Export\ExportDataGenerator;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
-use Log;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class ExportData
  */
 class ExportData extends Command
 {
+    use ShowsFriendlyMessages;
     use VerifiesAccessToken;
 
     /**
@@ -56,7 +60,7 @@ class ExportData extends Command
      *
      * @var string
      */
-    protected                          $signature = 'firefly-iii:export-data
+    protected $signature = 'firefly-iii:export-data
     {--user=1 : The user ID that the export should run for.}
     {--token= : The user\'s access token.}
     {--start= : First transaction to export. Defaults to your very first transaction. Only applies to transaction export.}
@@ -81,12 +85,14 @@ class ExportData extends Command
      *
      * @return int
      * @throws FireflyException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function handle(): int
     {
         // verify access token
         if (!$this->verifyAccessToken()) {
-            $this->error('Invalid access token. Check /profile.');
+            $this->friendlyError('Invalid access token. Check /profile.');
 
             return 1;
         }
@@ -99,7 +105,7 @@ class ExportData extends Command
         try {
             $options = $this->parseOptions();
         } catch (FireflyException $e) {
-            $this->error(sprintf('Could not work with your options: %s', $e));
+            $this->friendlyError(sprintf('Could not work with your options: %s', $e));
 
             return 1;
         }
@@ -121,15 +127,15 @@ class ExportData extends Command
         $exporter->setExportBills($options['export']['bills']);
         $exporter->setExportPiggies($options['export']['piggies']);
         $data = $exporter->export();
-        if (empty($data)) {
-            $this->error('You must export *something*. Use --export-transactions or another option. See docs.firefly-iii.org');
+        if (0 === count($data)) {
+            $this->friendlyError('You must export *something*. Use --export-transactions or another option. See docs.firefly-iii.org');
         }
         $returnCode = 0;
-        if (!empty($data)) {
+        if (0 !== count($data)) {
             try {
                 $this->exportData($options, $data);
             } catch (FireflyException $e) {
-                $this->error(sprintf('Could not store data: %s', $e->getMessage()));
+                $this->friendlyError(sprintf('Could not store data: %s', $e->getMessage()));
 
                 $returnCode = 1;
             }
@@ -143,7 +149,7 @@ class ExportData extends Command
      * executed. This leads to noticeable slow-downs and class calls. To prevent this, this method should
      * be called from the handle method instead of using the constructor to initialize the command.
      *
-     * @codeCoverageIgnore
+
      */
     private function stupidLaravel(): void
     {
@@ -191,14 +197,14 @@ class ExportData extends Command
      */
     private function getDateParameter(string $field): Carbon
     {
-        $date  = Carbon::now()->subYear();
+        $date  = today(config('app.timezone'))->subYear();
         $error = false;
         if (null !== $this->option($field)) {
             try {
                 $date = Carbon::createFromFormat('!Y-m-d', $this->option($field));
             } catch (InvalidArgumentException $e) {
                 Log::error($e->getMessage());
-                $this->error(sprintf('%s date "%s" must be formatted YYYY-MM-DD. Field will be ignored.', $field, $this->option('start')));
+                $this->friendlyError(sprintf('%s date "%s" must be formatted YYYY-MM-DD. Field will be ignored.', $field, $this->option('start')));
                 $error = true;
             }
         }
@@ -209,7 +215,7 @@ class ExportData extends Command
 
         if (true === $error && 'start' === $field) {
             $journal = $this->journalRepository->firstNull();
-            $date    = null === $journal ? Carbon::now()->subYear() : $journal->date;
+            $date    = null === $journal ? today(config('app.timezone'))->subYear() : $journal->date;
             $date->startOfDay();
         }
 
@@ -230,11 +236,11 @@ class ExportData extends Command
      */
     private function getAccountsParameter(): Collection
     {
-        $final       = new Collection;
-        $accounts    = new Collection;
+        $final       = new Collection();
+        $accounts    = new Collection();
         $accountList = $this->option('accounts');
         $types       = [AccountType::ASSET, AccountType::LOAN, AccountType::DEBT, AccountType::MORTGAGE];
-        if (null !== $accountList && '' !== (string) $accountList) {
+        if (null !== $accountList && '' !== (string)$accountList) {
             $accountIds = explode(',', $accountList);
             $accounts   = $this->accountRepository->getAccountsById($accountIds);
         }
@@ -249,7 +255,7 @@ class ExportData extends Command
             }
         }
         if (0 === $final->count()) {
-            throw new FireflyException('Ended up with zero valid accounts to export from.');
+            throw new FireflyException('300007: Ended up with zero valid accounts to export from.');
         }
 
         return $final;
@@ -262,7 +268,7 @@ class ExportData extends Command
      */
     private function getExportDirectory(): string
     {
-        $directory = (string) $this->option('export_directory');
+        $directory = (string)$this->option('export_directory');
         if (null === $directory) {
             $directory = './';
         }
@@ -288,11 +294,11 @@ class ExportData extends Command
                 throw new FireflyException(sprintf('File "%s" exists already. Use --force to overwrite.', $file));
             }
             if (true === $options['force'] && file_exists($file)) {
-                $this->warn(sprintf('File "%s" exists already but will be replaced.', $file));
+                $this->friendlyWarning(sprintf('File "%s" exists already but will be replaced.', $file));
             }
             // continue to write to file.
             file_put_contents($file, $content);
-            $this->info(sprintf('Wrote %s-export to file "%s".', $key, $file));
+            $this->friendlyPositive(sprintf('Wrote %s-export to file "%s".', $key, $file));
         }
     }
 }

@@ -27,7 +27,9 @@ use FireflyIII\Api\V1\Controllers\Controller;
 use FireflyIII\Api\V1\Requests\System\CronRequest;
 use FireflyIII\Support\Http\Controllers\CronRunner;
 use Illuminate\Http\JsonResponse;
-use Log;
+use Illuminate\Support\Facades\Log;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class CronController
@@ -38,12 +40,14 @@ class CronController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/about/getCron
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/about/getCron
      *
      * @param CronRequest $request
      * @param string      $token
      *
      * @return JsonResponse
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function cron(CronRequest $request, string $token): JsonResponse
     {
@@ -54,8 +58,11 @@ class CronController extends Controller
         $return                           = [];
         $return['recurring_transactions'] = $this->runRecurring($config['force'], $config['date']);
         $return['auto_budgets']           = $this->runAutoBudget($config['force'], $config['date']);
+        if (true === config('cer.download_enabled')) {
+            $return['exchange_rates'] = $this->exchangeRatesCronJob($config['force'], $config['date']);
+        }
+        $return['bill_warnings'] = $this->billWarningCronJob($config['force'], $config['date']);
 
         return response()->json($return);
     }
-
 }

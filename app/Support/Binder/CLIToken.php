@@ -26,7 +26,7 @@ namespace FireflyIII\Support\Binder;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Repositories\User\UserRepositoryInterface;
 use Illuminate\Routing\Route;
-use Log;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -34,7 +34,6 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class CLIToken implements BinderInterface
 {
-
     /**
      * @param string $value
      * @param Route  $route
@@ -49,7 +48,7 @@ class CLIToken implements BinderInterface
         $users      = $repository->all();
 
         // check for static token
-        if ($value === config('firefly.static_cron_token') && 32 === strlen((string) config('firefly.static_cron_token'))) {
+        if ($value === config('firefly.static_cron_token') && 32 === strlen((string)config('firefly.static_cron_token'))) {
             return $value;
         }
 
@@ -62,6 +61,6 @@ class CLIToken implements BinderInterface
             }
         }
         Log::error(sprintf('Recognized no users by access token "%s"', $value));
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
     }
 }

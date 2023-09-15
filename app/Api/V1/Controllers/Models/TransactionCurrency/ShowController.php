@@ -43,14 +43,15 @@ use League\Fractal\Resource\Item;
  */
 class ShowController extends Controller
 {
-    use AccountFilter, TransactionFilter;
+    use AccountFilter;
+    use TransactionFilter;
 
     private CurrencyRepositoryInterface $repository;
 
     /**
      * CurrencyRepository constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -67,18 +68,17 @@ class ShowController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/currencies/listCurrency
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/currencies/listCurrency
      *
      * Display a listing of the resource.
      *
      * @return JsonResponse
      * @throws FireflyException
      * @throws JsonException
-     * @codeCoverageIgnore
      */
     public function index(): JsonResponse
     {
-        $pageSize   = (int) app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize   = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
         $collection = $this->repository->getAll();
         $count      = $collection->count();
         // slice them:
@@ -101,7 +101,7 @@ class ShowController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/currencies/getCurrency
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/currencies/getCurrency
      *
      * Show a currency.
      *
@@ -110,7 +110,6 @@ class ShowController extends Controller
      * @return JsonResponse
      * @throws FireflyException
      * @throws JsonException
-     * @codeCoverageIgnore
      */
     public function show(TransactionCurrency $currency): JsonResponse
     {
@@ -129,14 +128,13 @@ class ShowController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/currencies/getDefaultCurrency
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/currencies/getDefaultCurrency
      *
      * Show a currency.
      *
      * @return JsonResponse
      * @throws FireflyException
      * @throws JsonException
-     * @codeCoverageIgnore
      */
     public function showDefault(): JsonResponse
     {

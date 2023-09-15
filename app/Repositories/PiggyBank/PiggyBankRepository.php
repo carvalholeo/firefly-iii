@@ -1,4 +1,5 @@
 <?php
+
 /**
  * PiggyBankRepository.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,6 +24,7 @@ declare(strict_types=1);
 namespace FireflyIII\Repositories\PiggyBank;
 
 use Carbon\Carbon;
+use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Attachment;
 use FireflyIII\Models\Note;
 use FireflyIII\Models\PiggyBank;
@@ -32,8 +34,10 @@ use FireflyIII\Models\TransactionJournal;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use FireflyIII\Repositories\Journal\JournalRepositoryInterface;
 use FireflyIII\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
-use Log;
+use Illuminate\Support\Facades\Log;
+use JsonException;
 use Storage;
 
 /**
@@ -65,7 +69,7 @@ class PiggyBankRepository implements PiggyBankRepositoryInterface
         Log::debug('Searching for piggy information.');
 
         if (null !== $piggyBankId) {
-            $searchResult = $this->find((int) $piggyBankId);
+            $searchResult = $this->find((int)$piggyBankId);
             if (null !== $searchResult) {
                 Log::debug(sprintf('Found piggy based on #%d, will return it.', $piggyBankId));
 
@@ -73,7 +77,7 @@ class PiggyBankRepository implements PiggyBankRepositoryInterface
             }
         }
         if (null !== $piggyBankName) {
-            $searchResult = $this->findByName((string) $piggyBankName);
+            $searchResult = $this->findByName((string)$piggyBankName);
             if (null !== $searchResult) {
                 Log::debug(sprintf('Found piggy based on "%s", will return it.', $piggyBankName));
 
@@ -92,7 +96,8 @@ class PiggyBankRepository implements PiggyBankRepositoryInterface
      */
     public function find(int $piggyBankId): ?PiggyBank
     {
-        return $this->user->piggyBanks()->find($piggyBankId);
+        // phpstan doesn't get the Model.
+        return $this->user->piggyBanks()->find($piggyBankId); // @phpstan-ignore-line
     }
 
     /**
@@ -121,7 +126,7 @@ class PiggyBankRepository implements PiggyBankRepositoryInterface
             static function (Attachment $attachment) use ($disk) {
                 $notes                   = $attachment->notes()->first();
                 $attachment->file_exists = $disk->exists($attachment->fileName());
-                $attachment->notes       = $notes ? $notes->text : '';
+                $attachment->notes       = $notes ? $notes->text : ''; // TODO setting the text to the 'notes' field doesn't work.
 
                 return $attachment;
             }
@@ -142,7 +147,7 @@ class PiggyBankRepository implements PiggyBankRepositoryInterface
             return '0';
         }
 
-        return (string) $rep->currentamount;
+        return (string)$rep->currentamount;
     }
 
     /**
@@ -173,8 +178,8 @@ class PiggyBankRepository implements PiggyBankRepositoryInterface
      * @param TransactionJournal  $journal
      *
      * @return string
-     * @throws \FireflyIII\Exceptions\FireflyException
-     * @throws \JsonException
+     * @throws FireflyException
+     * @throws JsonException
      */
     public function getExactAmount(PiggyBank $piggyBank, PiggyBankRepetition $repetition, TransactionJournal $journal): string
     {
@@ -221,11 +226,11 @@ class PiggyBankRepository implements PiggyBankRepositoryInterface
         // currency of the account + the piggy bank currency are almost the same.
         // which amount from the transaction matches?
         $amount = null;
-        if ((int) $source->transaction_currency_id === (int) $currency->id) {
+        if ((int)$source->transaction_currency_id === (int)$currency->id) {
             Log::debug('Use normal amount');
             $amount = app('steam')->$operator($source->amount);
         }
-        if ((int) $source->foreign_currency_id === (int) $currency->id) {
+        if ((int)$source->foreign_currency_id === (int)$currency->id) {
             Log::debug('Use foreign amount');
             $amount = app('steam')->$operator($source->foreign_amount);
         }
@@ -236,10 +241,10 @@ class PiggyBankRepository implements PiggyBankRepositoryInterface
         }
 
         Log::debug(sprintf('The currency is %s and the amount is %s', $currency->code, $amount));
-        $room    = bcsub((string) $piggyBank->targetamount, (string) $repetition->currentamount);
+        $room    = bcsub((string)$piggyBank->targetamount, (string)$repetition->currentamount);
         $compare = bcmul($repetition->currentamount, '-1');
 
-        if(bccomp((string) $piggyBank->targetamount,'0') === 0) {
+        if (bccomp((string)$piggyBank->targetamount, '0') === 0) {
             // amount is zero? then the "room" is positive amount of we wish to add or remove.
             $room = app('steam')->positive($amount);
             Log::debug(sprintf('Room is now %s', $room));
@@ -266,7 +271,17 @@ class PiggyBankRepository implements PiggyBankRepositoryInterface
             return $compare;
         }
 
-        return (string) $amount;
+        return (string)$amount;
+    }
+
+    /**
+     * @param User|Authenticatable|null $user
+     */
+    public function setUser(User | Authenticatable | null $user): void
+    {
+        if (null !== $user) {
+            $this->user = $user;
+        }
     }
 
     /**
@@ -274,7 +289,7 @@ class PiggyBankRepository implements PiggyBankRepositoryInterface
      */
     public function getMaxOrder(): int
     {
-        return (int) $this->user->piggyBanks()->max('piggy_banks.order');
+        return (int)$this->user->piggyBanks()->max('piggy_banks.order');
     }
 
     /**
@@ -302,7 +317,6 @@ class PiggyBankRepository implements PiggyBankRepositoryInterface
      */
     public function getPiggyBanksWithAmount(): Collection
     {
-
         $currency = app('amount')->getDefaultCurrency();
 
         $set = $this->getPiggyBanks();
@@ -321,7 +335,15 @@ class PiggyBankRepository implements PiggyBankRepositoryInterface
      */
     public function getPiggyBanks(): Collection
     {
-        return $this->user->piggyBanks()->with(['account', 'objectGroups'])->orderBy('order', 'ASC')->get();
+        return $this->user  // @phpstan-ignore-line (phpstan does not recognize objectGroups)
+        ->piggyBanks()
+        ->with(
+            [
+                'account',
+                'objectGroups',
+            ]
+        )
+        ->orderBy('order', 'ASC')->get();
     }
 
     /**
@@ -340,13 +362,14 @@ class PiggyBankRepository implements PiggyBankRepositoryInterface
             return $savePerMonth;
         }
         if (null !== $piggyBank->targetdate && $repetition->currentamount < $piggyBank->targetamount) {
-            $now             = Carbon::now();
-            $diffInMonths    = $now->diffInMonths($piggyBank->targetdate, false);
+            $now             = today(config('app.timezone'));
+            $startDate       = null !== $piggyBank->startdate && $piggyBank->startdate->gte($now) ? $piggyBank->startdate : $now;
+            $diffInMonths    = $startDate->diffInMonths($piggyBank->targetdate, false);
             $remainingAmount = bcsub($piggyBank->targetamount, $repetition->currentamount);
 
             // more than 1 month to go and still need money to save:
             if ($diffInMonths > 0 && 1 === bccomp($remainingAmount, '0')) {
-                $savePerMonth = bcdiv($remainingAmount, (string) $diffInMonths);
+                $savePerMonth = bcdiv($remainingAmount, (string)$diffInMonths);
             }
 
             // less than 1 month to go but still need money to save:
@@ -365,11 +388,10 @@ class PiggyBankRepository implements PiggyBankRepositoryInterface
      * @param Carbon    $date
      *
      * @return string
-     * @throws \JsonException
+     * @throws JsonException
      */
     public function leftOnAccount(PiggyBank $piggyBank, Carbon $date): string
     {
-
         $balance = app('steam')->balanceIgnoreVirtual($piggyBank->account, $date);
 
         /** @var Collection $piggies */
@@ -399,13 +421,5 @@ class PiggyBankRepository implements PiggyBankRepositoryInterface
                ->orderBy('piggy_banks.name', 'ASC');
 
         return $search->take($limit)->get();
-    }
-
-    /**
-     * @param User $user
-     */
-    public function setUser(User $user): void
-    {
-        $this->user = $user;
     }
 }

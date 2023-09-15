@@ -23,12 +23,16 @@ declare(strict_types=1);
 
 namespace FireflyIII\Validation;
 
+use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Account;
+use FireflyIII\Models\AccountType;
 use FireflyIII\Models\Transaction;
 use FireflyIII\Models\TransactionGroup;
 use FireflyIII\Models\TransactionJournal;
+use FireflyIII\Models\TransactionType;
+use FireflyIII\Repositories\Account\AccountRepositoryInterface;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Validator;
-use Log;
 
 /**
  * Trait TransactionValidation
@@ -42,6 +46,9 @@ trait TransactionValidation
      */
     public function validateAccountInformation(Validator $validator): void
     {
+        if ($validator->errors()->count() > 0) {
+            return;
+        }
         Log::debug('Now in validateAccountInformation (TransactionValidation) ()');
         $transactions = $this->getTransactionsArray($validator);
         $data         = $validator->getData();
@@ -68,19 +75,22 @@ trait TransactionValidation
      */
     protected function getTransactionsArray(Validator $validator): array
     {
+        Log::debug('Now in getTransactionsArray');
         $data         = $validator->getData();
-        $transactions = $data['transactions'] ?? [];
+        $transactions = [];
+        if (is_array($data) && array_key_exists('transactions', $data) && is_array($data['transactions'])) {
+            Log::debug('Transactions key exists and is array.');
+            $transactions = $data['transactions'];
+        }
+        if (is_array($data) && array_key_exists('transactions', $data) && !is_array($data['transactions'])) {
+            Log::debug(sprintf('Transactions key exists but is NOT array,  its a %s', gettype($data['transactions'])));
+        }
+        // should be impossible to hit this:
         if (!is_countable($transactions)) {
             Log::error(sprintf('Transactions array is not countable, because its a %s', gettype($transactions)));
-
             return [];
         }
-        // a superfluous check but you never know.
-        if (!is_array($transactions)) {
-            Log::error(sprintf('Transactions array is not an array, because its a %s', gettype($transactions)));
-
-            return [];
-        }
+        //Log::debug('Returning transactions.', $transactions);
 
         return $transactions;
     }
@@ -93,6 +103,7 @@ trait TransactionValidation
      */
     protected function validateSingleAccount(Validator $validator, int $index, string $transactionType, array $transaction): void
     {
+        app('log')->debug(sprintf('Now in validateSingleAccount(%d)', $index));
         /** @var AccountValidator $accountValidator */
         $accountValidator = app(AccountValidator::class);
 
@@ -100,17 +111,17 @@ trait TransactionValidation
         $accountValidator->setTransactionType($transactionType);
 
         // validate source account.
-        $sourceId     = array_key_exists('source_id', $transaction) ? (int) $transaction['source_id'] : null;
-        $sourceName   = array_key_exists('source_name', $transaction) ? (string) $transaction['source_name'] : null;
-        $sourceIban   = array_key_exists('source_iban', $transaction) ? (string) $transaction['source_iban'] : null;
-        $sourceNumber = array_key_exists('source_number', $transaction) ? (string) $transaction['source_number'] : null;
-        $array        = [
+        $sourceId     = array_key_exists('source_id', $transaction) ? (int)$transaction['source_id'] : null;
+        $sourceName   = array_key_exists('source_name', $transaction) ? (string)$transaction['source_name'] : null;
+        $sourceIban   = array_key_exists('source_iban', $transaction) ? (string)$transaction['source_iban'] : null;
+        $sourceNumber = array_key_exists('source_number', $transaction) ? (string)$transaction['source_number'] : null;
+        $source       = [
             'id'     => $sourceId,
             'name'   => $sourceName,
             'iban'   => $sourceIban,
             'number' => $sourceNumber,
         ];
-        $validSource  = $accountValidator->validateSource($array);
+        $validSource  = $accountValidator->validateSource($source);
 
         // do something with result:
         if (false === $validSource) {
@@ -120,22 +131,224 @@ trait TransactionValidation
             return;
         }
         // validate destination account
-        $destinationId     = array_key_exists('destination_id', $transaction) ? (int) $transaction['destination_id'] : null;
-        $destinationName   = array_key_exists('destination_name', $transaction) ? (string) $transaction['destination_name'] : null;
-        $destinationIban   = array_key_exists('destination_iban', $transaction) ? (string) $transaction['destination_iban'] : null;
-        $destinationNumber = array_key_exists('destination_number', $transaction) ? (string) $transaction['destination_number'] : null;
-        $array             = [
+        $destinationId     = array_key_exists('destination_id', $transaction) ? (int)$transaction['destination_id'] : null;
+        $destinationName   = array_key_exists('destination_name', $transaction) ? (string)$transaction['destination_name'] : null;
+        $destinationIban   = array_key_exists('destination_iban', $transaction) ? (string)$transaction['destination_iban'] : null;
+        $destinationNumber = array_key_exists('destination_number', $transaction) ? (string)$transaction['destination_number'] : null;
+        $destination       = [
             'id'     => $destinationId,
             'name'   => $destinationName,
             'iban'   => $destinationIban,
             'number' => $destinationNumber,
         ];
-        $validDestination  = $accountValidator->validateDestination($array);
+        $validDestination  = $accountValidator->validateDestination($destination);
         // do something with result:
         if (false === $validDestination) {
             $validator->errors()->add(sprintf('transactions.%d.destination_id', $index), $accountValidator->destError);
             $validator->errors()->add(sprintf('transactions.%d.destination_name', $index), $accountValidator->destError);
         }
+        // sanity check for reconciliation accounts. They can't both be null.
+        $this->sanityCheckReconciliation($validator, $transactionType, $index, $source, $destination);
+
+        // sanity check for currency information.
+        $this->sanityCheckForeignCurrency($validator, $accountValidator, $transaction, $transactionType, $index);
+    }
+
+    /**
+     * @param Validator $validator
+     * @param string    $transactionType
+     * @param int       $index
+     * @param array     $source
+     * @param array     $destination
+     *
+     * @return void
+     */
+    protected function sanityCheckReconciliation(Validator $validator, string $transactionType, int $index, array $source, array $destination): void
+    {
+        Log::debug('Now in sanityCheckReconciliation');
+        if (TransactionType::RECONCILIATION === ucfirst($transactionType) &&
+            null === $source['id'] && null === $source['name'] && null === $destination['id'] && null === $destination['name']
+        ) {
+            Log::debug('Both are NULL, error!');
+            $validator->errors()->add(sprintf('transactions.%d.source_id', $index), trans('validation.reconciliation_either_account'));
+            $validator->errors()->add(sprintf('transactions.%d.source_name', $index), trans('validation.reconciliation_either_account'));
+            $validator->errors()->add(sprintf('transactions.%d.destination_id', $index), trans('validation.reconciliation_either_account'));
+            $validator->errors()->add(sprintf('transactions.%d.destination_name', $index), trans('validation.reconciliation_either_account'));
+        }
+
+        if (TransactionType::RECONCILIATION === $transactionType &&
+            (null !== $source['id'] || null !== $source['name']) &&
+            (null !== $destination['id'] || null !== $destination['name'])) {
+            Log::debug('Both are not NULL, error!');
+            $validator->errors()->add(sprintf('transactions.%d.source_id', $index), trans('validation.reconciliation_either_account'));
+            $validator->errors()->add(sprintf('transactions.%d.source_name', $index), trans('validation.reconciliation_either_account'));
+            $validator->errors()->add(sprintf('transactions.%d.destination_id', $index), trans('validation.reconciliation_either_account'));
+            $validator->errors()->add(sprintf('transactions.%d.destination_name', $index), trans('validation.reconciliation_either_account'));
+        }
+    }
+
+    /**
+     * TODO describe this method.
+     *
+     * @param Validator        $validator
+     * @param AccountValidator $accountValidator
+     * @param array            $transaction
+     * @param string           $transactionType
+     * @param int              $index
+     *
+     * @return void
+     */
+    private function sanityCheckForeignCurrency(
+        Validator        $validator,
+        AccountValidator $accountValidator,
+        array            $transaction,
+        string           $transactionType,
+        int              $index
+    ): void {
+        Log::debug('Now in sanityCheckForeignCurrency()');
+        if (0 !== $validator->errors()->count()) {
+            Log::debug('Already have errors, return');
+            return;
+        }
+        if (null === $accountValidator->source) {
+            Log::debug('No source, return');
+            return;
+        }
+        if (null === $accountValidator->destination) {
+            Log::debug('No destination, return');
+            return;
+        }
+        $source      = $accountValidator->source;
+        $destination = $accountValidator->destination;
+
+        Log::debug(sprintf('Source: #%d "%s (%s)"', $source->id, $source->name, $source->accountType->type));
+        Log::debug(sprintf('Destination: #%d "%s" (%s)', $destination->id, $destination->name, $source->accountType->type));
+
+        if (!$this->isLiabilityOrAsset($source) || !$this->isLiabilityOrAsset($destination)) {
+            Log::debug('Any account must be liability or asset account to continue.');
+            return;
+        }
+
+
+        /** @var AccountRepositoryInterface $accountRepository */
+        $accountRepository   = app(AccountRepositoryInterface::class);
+        $defaultCurrency     = app('amount')->getDefaultCurrency();
+        $sourceCurrency      = $accountRepository->getAccountCurrency($source) ?? $defaultCurrency;
+        $destinationCurrency = $accountRepository->getAccountCurrency($destination) ?? $defaultCurrency;
+        // if both accounts have the same currency, continue.
+        if ($sourceCurrency->code === $destinationCurrency->code) {
+            Log::debug('Both accounts have the same currency, continue.');
+            return;
+        }
+        Log::debug(sprintf('Source account expects %s', $sourceCurrency->code));
+        Log::debug(sprintf('Destination account expects %s', $destinationCurrency->code));
+
+        Log::debug(sprintf('Amount is %s', $transaction['amount']));
+
+        if (TransactionType::DEPOSIT === ucfirst($transactionType)) {
+            Log::debug(sprintf('Processing as a "%s"', $transactionType));
+            // use case: deposit from liability account to an asset account
+            // the foreign amount must be in the currency of the source
+            // the amount must be in the currency of the destination
+
+            // no foreign currency information is present:
+            if (!$this->hasForeignCurrencyInfo($transaction)) {
+                $validator->errors()->add(sprintf('transactions.%d.foreign_amount', $index), (string)trans('validation.require_foreign_currency'));
+                return;
+            }
+
+            // wrong currency information is present
+            $foreignCurrencyCode = $transaction['foreign_currency_code'] ?? false;
+            $foreignCurrencyId   = (int)($transaction['foreign_currency_id'] ?? 0);
+            Log::debug(sprintf('Foreign currency code seems to be #%d "%s"', $foreignCurrencyId, $foreignCurrencyCode), $transaction);
+            if ($foreignCurrencyCode !== $sourceCurrency->code && $foreignCurrencyId !== (int)$sourceCurrency->id) {
+                $validator->errors()->add(sprintf('transactions.%d.foreign_currency_code', $index), (string)trans('validation.require_foreign_src'));
+                return;
+            }
+        }
+        if (TransactionType::TRANSFER === ucfirst($transactionType) || TransactionType::WITHDRAWAL === ucfirst($transactionType)) {
+            Log::debug(sprintf('Processing as a "%s"', $transactionType));
+            // use case: withdrawal from asset account to a liability account.
+            // the foreign amount must be in the currency of the destination
+            // the amount must be in the currency of the source
+
+            // use case: transfer between accounts with different currencies.
+            // the foreign amount must be in the currency of the destination
+            // the amount must be in the currency of the source
+
+            // no foreign currency information is present:
+            if (!$this->hasForeignCurrencyInfo($transaction)) {
+                $validator->errors()->add(sprintf('transactions.%d.foreign_amount', $index), (string)trans('validation.require_foreign_currency'));
+                return;
+            }
+
+            // wrong currency information is present
+            $foreignCurrencyCode = $transaction['foreign_currency_code'] ?? false;
+            $foreignCurrencyId   = (int)($transaction['foreign_currency_id'] ?? 0);
+            Log::debug(sprintf('Foreign currency code seems to be #%d "%s"', $foreignCurrencyId, $foreignCurrencyCode), $transaction);
+            if ($foreignCurrencyCode !== $destinationCurrency->code && $foreignCurrencyId !== (int)$destinationCurrency->id) {
+                Log::debug(sprintf('No match on code, "%s" vs "%s"', $foreignCurrencyCode, $destinationCurrency->code));
+                Log::debug(sprintf('No match on ID, #%d vs #%d', $foreignCurrencyId, $destinationCurrency->id));
+                $validator->errors()->add(sprintf('transactions.%d.foreign_amount', $index), (string)trans('validation.require_foreign_dest'));
+            }
+        }
+    }
+
+    /**
+     * @param Account $account
+     *
+     * @return bool
+     */
+    private function isLiabilityOrAsset(Account $account): bool
+    {
+        return $this->isLiability($account) || $this->isAsset($account);
+    }
+
+    /**
+     * @param Account $account
+     *
+     * @return bool
+     */
+    private function isLiability(Account $account): bool
+    {
+        $type = $account->accountType?->type;
+        if (in_array($type, config('firefly.valid_liabilities'), true)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * @param Account $account
+     *
+     * @return bool
+     */
+    private function isAsset(Account $account): bool
+    {
+        $type = $account->accountType?->type;
+        return $type === AccountType::ASSET;
+    }
+
+    /**
+     * @param array $transaction
+     *
+     * @return bool
+     */
+    private function hasForeignCurrencyInfo(array $transaction): bool
+    {
+        if (!array_key_exists('foreign_currency_code', $transaction) && !array_key_exists('foreign_currency_id', $transaction)) {
+            return false;
+        }
+        if (!array_key_exists('foreign_amount', $transaction)) {
+            return false;
+        }
+        if ('' === $transaction['foreign_amount']) {
+            return false;
+        }
+        if (bccomp('0', $transaction['foreign_amount']) === 0) {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -143,6 +356,8 @@ trait TransactionValidation
      *
      * @param Validator        $validator
      * @param TransactionGroup $transactionGroup
+     *
+     * @throws FireflyException
      */
     public function validateAccountInformationUpdate(Validator $validator, TransactionGroup $transactionGroup): void
     {
@@ -154,6 +369,9 @@ trait TransactionValidation
          * @var array $transaction
          */
         foreach ($transactions as $index => $transaction) {
+            if (!is_int($index)) {
+                throw new FireflyException('Invalid data submitted: transaction is not array.');
+            }
             $this->validateSingleUpdate($validator, $index, $transaction, $transactionGroup);
         }
     }
@@ -185,25 +403,42 @@ trait TransactionValidation
         // get the transaction type using the original transaction group:
         $accountValidator->setTransactionType($this->getTransactionType($transactionGroup, []));
 
-        // validate if the submitted source and / or name are valid
-        if (array_key_exists('source_id', $transaction) || array_key_exists('source_name', $transaction)) {
+        // validate if the submitted source ID/name/iban/number are valid
+        if (
+            array_key_exists('source_id', $transaction) ||
+            array_key_exists('source_name', $transaction) ||
+            array_key_exists('source_iban', $transaction) ||
+            array_key_exists('source_number', $transaction)
+        ) {
             Log::debug('Will try to validate source account information.');
-            $sourceId    = (int) ($transaction['source_id'] ?? 0);
-            $sourceName  = $transaction['source_name'] ?? null;
-            $validSource = $accountValidator->validateSource(['id' => $sourceId, 'name' => $sourceName]);
+            $sourceId     = (int)($transaction['source_id'] ?? 0);
+            $sourceName   = $transaction['source_name'] ?? null;
+            $sourceIban   = $transaction['source_iban'] ?? null;
+            $sourceNumber = $transaction['source_number'] ?? null;
+            $validSource  = $accountValidator->validateSource(
+                ['id' => $sourceId, 'name' => $sourceName, 'iban' => $sourceIban, 'number' => $sourceNumber]
+            );
 
             // do something with result:
             if (false === $validSource) {
-                Log::warning('Looks like the source account is not valid so complain to the user about it.');
+                app('log')->warning('Looks like the source account is not valid so complain to the user about it.');
                 $validator->errors()->add(sprintf('transactions.%d.source_id', $index), $accountValidator->sourceError);
                 $validator->errors()->add(sprintf('transactions.%d.source_name', $index), $accountValidator->sourceError);
+                $validator->errors()->add(sprintf('transactions.%d.source_iban', $index), $accountValidator->sourceError);
+                $validator->errors()->add(sprintf('transactions.%d.source_number', $index), $accountValidator->sourceError);
 
                 return;
             }
             Log::debug('Source account info is valid.');
         }
 
-        if (array_key_exists('destination_id', $transaction) || array_key_exists('destination_name', $transaction)) {
+        if (
+            array_key_exists('destination_id', $transaction) ||
+            array_key_exists('destination_name', $transaction) ||
+            array_key_exists('destination_iban', $transaction) ||
+            array_key_exists('destination_number', $transaction)
+
+        ) {
             Log::debug('Will try to validate destination account information.');
             // at this point the validator may not have a source account, because it was never submitted for validation.
             // must add it ourselves or the validator can never check if the destination is correct.
@@ -216,13 +451,15 @@ trait TransactionValidation
                     $accountValidator->source = $source;
                 }
             }
-            $destinationId    = (int) ($transaction['destination_id'] ?? 0);
-            $destinationName  = $transaction['destination_name'] ?? null;
-            $array            = ['id' => $destinationId, 'name' => $destinationName,];
-            $validDestination = $accountValidator->validateDestination($array);
+            $destinationId     = (int)($transaction['destination_id'] ?? 0);
+            $destinationName   = $transaction['destination_name'] ?? null;
+            $destinationIban   = $transaction['destination_iban'] ?? null;
+            $destinationNumber = $transaction['destination_number'] ?? null;
+            $array             = ['id' => $destinationId, 'name' => $destinationName, 'iban' => $destinationIban, 'number' => $destinationNumber];
+            $validDestination  = $accountValidator->validateDestination($array);
             // do something with result:
             if (false === $validDestination) {
-                Log::warning('Looks like the destination account is not valid so complain to the user about it.');
+                app('log')->warning('Looks like the destination account is not valid so complain to the user about it.');
                 $validator->errors()->add(sprintf('transactions.%d.destination_id', $index), $accountValidator->destError);
                 $validator->errors()->add(sprintf('transactions.%d.destination_name', $index), $accountValidator->destError);
             }
@@ -257,7 +494,8 @@ trait TransactionValidation
         }
         /** @var TransactionJournal $journal */
         foreach ($transactionGroup->transactionJournals as $journal) {
-            if ((int) $journal->id === (int) $transaction['transaction_journal_id']) {
+            $journalId = (int)($transaction['transaction_journal_id'] ?? 0);
+            if ((int)$journal->id === $journalId) {
                 return $journal->transactions()->where('amount', '<', 0)->first()->account;
             }
         }
@@ -276,8 +514,8 @@ trait TransactionValidation
         $transactions = $this->getTransactionsArray($validator);
 
         // need at least one transaction
-        if (empty($transactions)) {
-            $validator->errors()->add('transactions', (string) trans('validation.at_least_one_transaction'));
+        if (0 === count($transactions)) {
+            $validator->errors()->add('transactions', (string)trans('validation.at_least_one_transaction'));
         }
     }
 
@@ -288,11 +526,15 @@ trait TransactionValidation
      */
     public function validateOneTransaction(Validator $validator): void
     {
-        Log::debug('Now in validateOneTransaction()');
+        Log::debug('Now in validateOneTransaction');
+        if ($validator->errors()->count() > 0) {
+            Log::debug('Validator already has errors, so return.');
+            return;
+        }
         $transactions = $this->getTransactionsArray($validator);
         // need at least one transaction
-        if (empty($transactions)) {
-            $validator->errors()->add('transactions.0.description', (string) trans('validation.at_least_one_transaction'));
+        if (0 === count($transactions)) {
+            $validator->errors()->add('transactions.0.description', (string)trans('validation.at_least_one_transaction'));
             Log::debug('Added error: at_least_one_transaction.');
 
             return;
@@ -305,10 +547,13 @@ trait TransactionValidation
      */
     public function validateTransactionArray(Validator $validator): void
     {
+        if ($validator->errors()->count() > 0) {
+            return;
+        }
         $transactions = $this->getTransactionsArray($validator);
         foreach ($transactions as $key => $value) {
             if (!is_int($key)) {
-                $validator->errors()->add('transactions.0.description', (string) trans('validation.at_least_one_transaction'));
+                $validator->errors()->add('transactions.0.description', (string)trans('validation.at_least_one_transaction'));
                 Log::debug('Added error: at_least_one_transaction.');
 
                 return;
@@ -323,6 +568,9 @@ trait TransactionValidation
      */
     public function validateTransactionTypes(Validator $validator): void
     {
+        if ($validator->errors()->count() > 0) {
+            return;
+        }
         Log::debug('Now in validateTransactionTypes()');
         $transactions = $this->getTransactionsArray($validator);
 
@@ -332,13 +580,13 @@ trait TransactionValidation
         }
         $unique = array_unique($types);
         if (count($unique) > 1) {
-            $validator->errors()->add('transactions.0.type', (string) trans('validation.transaction_types_equal'));
+            $validator->errors()->add('transactions.0.type', (string)trans('validation.transaction_types_equal'));
 
             return;
         }
         $first = $unique[0] ?? 'invalid';
         if ('invalid' === $first) {
-            $validator->errors()->add('transactions.0.type', (string) trans('validation.invalid_transaction_type'));
+            $validator->errors()->add('transactions.0.type', (string)trans('validation.invalid_transaction_type'));
         }
     }
 
@@ -353,14 +601,14 @@ trait TransactionValidation
         $transactions = $this->getTransactionsArray($validator);
         $types        = [];
         foreach ($transactions as $transaction) {
-            $originalType = $this->getOriginalType((int) ($transaction['transaction_journal_id'] ?? 0));
+            $originalType = $this->getOriginalType((int)($transaction['transaction_journal_id'] ?? 0));
             // if type is not set, fall back to the type of the journal, if one is given.
             $types[] = $transaction['type'] ?? $originalType;
         }
         $unique = array_unique($types);
         if (count($unique) > 1) {
-            Log::warning('Add error for mismatch transaction types.');
-            $validator->errors()->add('transactions.0.type', (string) trans('validation.transaction_types_equal'));
+            app('log')->warning('Add error for mismatch transaction types.');
+            $validator->errors()->add('transactions.0.type', (string)trans('validation.transaction_types_equal'));
 
             return;
         }
@@ -391,6 +639,9 @@ trait TransactionValidation
      */
     private function validateEqualAccounts(Validator $validator): void
     {
+        if ($validator->errors()->count() > 0) {
+            return;
+        }
         Log::debug('Now in validateEqualAccounts()');
         $transactions = $this->getTransactionsArray($validator);
 
@@ -411,18 +662,18 @@ trait TransactionValidation
             default:
             case 'withdrawal':
                 if (count($sources) > 1) {
-                    $validator->errors()->add('transactions.0.source_id', (string) trans('validation.all_accounts_equal'));
+                    $validator->errors()->add('transactions.0.source_id', (string)trans('validation.all_accounts_equal'));
                 }
                 break;
             case 'deposit':
                 if (count($dests) > 1) {
-                    $validator->errors()->add('transactions.0.destination_id', (string) trans('validation.all_accounts_equal'));
+                    $validator->errors()->add('transactions.0.destination_id', (string)trans('validation.all_accounts_equal'));
                 }
                 break;
             case'transfer':
                 if (count($sources) > 1 || count($dests) > 1) {
-                    $validator->errors()->add('transactions.0.source_id', (string) trans('validation.all_accounts_equal'));
-                    $validator->errors()->add('transactions.0.destination_id', (string) trans('validation.all_accounts_equal'));
+                    $validator->errors()->add('transactions.0.source_id', (string)trans('validation.all_accounts_equal'));
+                    $validator->errors()->add('transactions.0.destination_id', (string)trans('validation.all_accounts_equal'));
                 }
                 break;
         }
@@ -444,25 +695,25 @@ trait TransactionValidation
         }
         $type = $this->getTransactionType($transactionGroup, $transactions);
 
-        // compare source ID's, destination ID's, source names and destination names.
+        // compare source IDs, destination IDs, source names and destination names.
         // I think I can get away with one combination being equal, as long as the rest
         // of the code picks up on this as well.
         // either way all fields must be blank or all equal
-        // but if ID's are equal don't bother with the names.
+        // but if IDs are equal don't bother with the names.
         $comparison = $this->collectComparisonData($transactions);
         $result     = $this->compareAccountData($type, $comparison);
         if (false === $result) {
             if ('withdrawal' === $type) {
-                $validator->errors()->add('transactions.0.source_id', (string) trans('validation.all_accounts_equal'));
+                $validator->errors()->add('transactions.0.source_id', (string)trans('validation.all_accounts_equal'));
             }
             if ('deposit' === $type) {
-                $validator->errors()->add('transactions.0.destination_id', (string) trans('validation.all_accounts_equal'));
+                $validator->errors()->add('transactions.0.destination_id', (string)trans('validation.all_accounts_equal'));
             }
             if ('transfer' === $type) {
-                $validator->errors()->add('transactions.0.source_id', (string) trans('validation.all_accounts_equal'));
-                $validator->errors()->add('transactions.0.destination_id', (string) trans('validation.all_accounts_equal'));
+                $validator->errors()->add('transactions.0.source_id', (string)trans('validation.all_accounts_equal'));
+                $validator->errors()->add('transactions.0.destination_id', (string)trans('validation.all_accounts_equal'));
             }
-            Log::warning('Add error about equal accounts.');
+            app('log')->warning('Add error about equal accounts.');
 
             return;
         }
@@ -483,7 +734,7 @@ trait TransactionValidation
             /** @var array $transaction */
             foreach ($transactions as $transaction) {
                 // source or destination may be omitted. If this is the case, use the original source / destination name + ID.
-                $originalData = $this->getOriginalData((int) ($transaction['transaction_journal_id'] ?? 0));
+                $originalData = $this->getOriginalData((int)($transaction['transaction_journal_id'] ?? 0));
 
                 // get field.
                 $comparison[$field][] = $transaction[$field] ?? $originalData[$field];
@@ -534,8 +785,8 @@ trait TransactionValidation
     private function compareAccountData(string $type, array $comparison): bool
     {
         return match ($type) {
-            default => $this->compareAccountDataWithdrawal($comparison),
-            'deposit' => $this->compareAccountDataDeposit($comparison),
+            default    => $this->compareAccountDataWithdrawal($comparison),
+            'deposit'  => $this->compareAccountDataDeposit($comparison),
             'transfer' => $this->compareAccountDataTransfer($comparison),
         };
     }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * EncryptCookies.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -27,7 +28,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies as Middleware;
 /**
  * Class EncryptCookies
  *
- * @codeCoverageIgnore
+
  */
 class EncryptCookies extends Middleware
 {

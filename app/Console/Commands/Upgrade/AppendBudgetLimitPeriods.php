@@ -23,13 +23,20 @@ declare(strict_types=1);
 
 namespace FireflyIII\Console\Commands\Upgrade;
 
-use FireflyIII\Exceptions\FireflyException;
+use FireflyIII\Console\Commands\ShowsFriendlyMessages;
 use FireflyIII\Models\BudgetLimit;
 use Illuminate\Console\Command;
-use Log;
+use Illuminate\Support\Facades\Log;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
+/**
+ * Class AppendBudgetLimitPeriods
+ */
 class AppendBudgetLimitPeriods extends Command
 {
+    use ShowsFriendlyMessages;
+
     public const CONFIG_NAME = '550_budget_limit_periods';
     /**
      * The console command description.
@@ -48,38 +55,33 @@ class AppendBudgetLimitPeriods extends Command
      * Execute the console command.
      *
      * @return int
-     * @throws FireflyException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function handle(): int
     {
-        $start = microtime(true);
         if ($this->isExecuted() && true !== $this->option('force')) {
-            $this->warn('This command has already been executed.');
+            $this->friendlyInfo('This command has already been executed.');
 
             return 0;
         }
 
         $this->theresNoLimit();
-
         $this->markAsExecuted();
-
-        $end = round(microtime(true) - $start, 2);
-        $this->info(sprintf('Fixed budget limits in %s seconds.', $end));
 
         return 0;
     }
 
     /**
      * @return bool
-     * @throws FireflyException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     private function isExecuted(): bool
     {
         $configVar = app('fireflyconfig')->get(self::CONFIG_NAME, false);
 
-        return (bool) $configVar->data;
+        return (bool)$configVar->data;
     }
 
     /**
@@ -103,10 +105,13 @@ class AppendBudgetLimitPeriods extends Command
 
         if (null === $period) {
             $message = sprintf(
-                'Could not guesstimate budget limit #%d (%s - %s) period.', $limit->id, $limit->start_date->format('Y-m-d'), $limit->end_date->format('Y-m-d')
+                'Could not guesstimate budget limit #%d (%s - %s) period.',
+                $limit->id,
+                $limit->start_date->format('Y-m-d'),
+                $limit->end_date->format('Y-m-d')
             );
-            $this->warn($message);
-            Log::warning($message);
+            $this->friendlyWarning($message);
+            app('log')->warning($message);
 
             return;
         }
@@ -114,10 +119,13 @@ class AppendBudgetLimitPeriods extends Command
         $limit->save();
 
         $msg = sprintf(
-            'Budget limit #%d (%s - %s) period is "%s".', $limit->id, $limit->start_date->format('Y-m-d'), $limit->end_date->format('Y-m-d'), $period
+            'Budget limit #%d (%s - %s) period is "%s".',
+            $limit->id,
+            $limit->start_date->format('Y-m-d'),
+            $limit->end_date->format('Y-m-d'),
+            $period
         );
         Log::debug($msg);
-
     }
 
     /**
@@ -159,8 +167,8 @@ class AppendBudgetLimitPeriods extends Command
         $start = ['1-1', '1-7'];
         $end   = ['30-6', '31-12'];
         if (
-            in_array($limit->start_date->format('j-n'), $start) // start of quarter
-            && in_array($limit->end_date->format('j-n'), $end) // end of quarter
+            in_array($limit->start_date->format('j-n'), $start, true) // start of quarter
+            && in_array($limit->end_date->format('j-n'), $end, true) // end of quarter
             && 5 === $limit->start_date->diffInMonths($limit->end_date)
         ) {
             return 'half_year';

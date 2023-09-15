@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Domain.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -25,7 +26,7 @@ namespace FireflyIII\Support;
 /**
  * Class Domain.
  *
- * @codeCoverageIgnore
+
  */
 class Domain
 {

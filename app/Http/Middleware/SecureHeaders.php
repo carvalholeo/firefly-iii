@@ -26,6 +26,7 @@ namespace FireflyIII\Http\Middleware;
 use Closure;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Vite;
 
 /**
  *
@@ -46,6 +47,7 @@ class SecureHeaders
     {
         // generate and share nonce.
         $nonce = base64_encode(random_bytes(16));
+        Vite::useCspNonce($nonce);
         app('view')->share('JS_NONCE', $nonce);
 
         $response          = $next($request);
@@ -64,8 +66,8 @@ class SecureHeaders
 
         $route     = $request->route();
         $customUrl = '';
-        $authGuard = (string) config('firefly.authentication_guard');
-        $logoutUrl = (string) config('firefly.custom_logout_url');
+        $authGuard = (string)config('firefly.authentication_guard');
+        $logoutUrl = (string)config('firefly.custom_logout_url');
         if ('remote_user_guard' === $authGuard && '' !== $logoutUrl) {
             $customUrl = $logoutUrl;
         }
@@ -115,8 +117,8 @@ class SecureHeaders
      */
     private function getTrackingScriptSource(): string
     {
-        if ('' !== (string) config('firefly.tracker_site_id') && '' !== (string) config('firefly.tracker_url')) {
-            return (string) config('firefly.tracker_url');
+        if ('' !== (string)config('firefly.tracker_site_id') && '' !== (string)config('firefly.tracker_url')) {
+            return (string)config('firefly.tracker_url');
         }
 
         return '';

@@ -40,7 +40,7 @@ class TransactionController extends Controller
 {
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/search/searchTransactions
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/search/searchTransactions
      *
      * @param Request         $request
      * @param SearchInterface $searcher
@@ -51,10 +51,10 @@ class TransactionController extends Controller
     public function search(Request $request, SearchInterface $searcher): JsonResponse
     {
         $manager   = $this->getManager();
-        $fullQuery = (string) $request->get('query');
-        $page      = 0 === (int) $request->get('page') ? 1 : (int) $request->get('page');
-        $pageSize  = (int) app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
-        $pageSize  = 0 === (int) $request->get('limit') ? $pageSize : (int) $request->get('limit');
+        $fullQuery = (string)$request->get('query');
+        $page      = 0 === (int)$request->get('page') ? 1 : (int)$request->get('page');
+        $pageSize  = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize  = 0 === (int)$request->get('limit') ? $pageSize : (int)$request->get('limit');
         $searcher->parseQuery($fullQuery);
         $searcher->setPage($page);
         $searcher->setLimit($pageSize);
@@ -71,6 +71,8 @@ class TransactionController extends Controller
         $resource = new Collection($transactions, $transformer, 'transactions');
         $resource->setPaginator(new IlluminatePaginatorAdapter($groups));
 
-        return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
+        $array = $manager->createData($resource)->toArray();
+
+        return response()->json($array)->header('Content-Type', self::CONTENT_TYPE);
     }
 }

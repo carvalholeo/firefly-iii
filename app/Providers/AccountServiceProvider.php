@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AccountServiceProvider.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -28,11 +29,12 @@ use FireflyIII\Repositories\Account\AccountTasker;
 use FireflyIII\Repositories\Account\AccountTaskerInterface;
 use FireflyIII\Repositories\Account\OperationsRepository;
 use FireflyIII\Repositories\Account\OperationsRepositoryInterface;
+use FireflyIII\Repositories\Administration\Account\AccountRepository as AdminAccountRepository;
+use FireflyIII\Repositories\Administration\Account\AccountRepositoryInterface as AdminAccountRepositoryInterface;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 
 /**
- * @codeCoverageIgnore
  * Class AccountServiceProvider.
  */
 class AccountServiceProvider extends ServiceProvider
@@ -64,8 +66,25 @@ class AccountServiceProvider extends ServiceProvider
                 /** @var AccountRepositoryInterface $repository */
                 $repository = app(AccountRepository::class);
 
+                // phpstan thinks auth does not exist.
                 if ($app->auth->check()) { // @phpstan-ignore-line
                     $repository->setUser(auth()->user());
+                }
+
+                return $repository;
+            }
+        );
+
+        $this->app->bind(
+            AdminAccountRepositoryInterface::class,
+            function (Application $app) {
+                /** @var AdminAccountRepositoryInterface $repository */
+                $repository = app(AdminAccountRepository::class);
+
+                // phpstan thinks auth does not exist.
+                if ($app->auth->check()) { // @phpstan-ignore-line
+                    $repository->setUser(auth()->user());
+                    $repository->setAdministrationId((int)auth()->user()->user_group_id);
                 }
 
                 return $repository;
@@ -78,6 +97,7 @@ class AccountServiceProvider extends ServiceProvider
                 /** @var OperationsRepository $repository */
                 $repository = app(OperationsRepository::class);
 
+                // phpstan thinks auth does not exist.
                 if ($app->auth->check()) { // @phpstan-ignore-line
                     $repository->setUser(auth()->user());
                 }
@@ -98,6 +118,7 @@ class AccountServiceProvider extends ServiceProvider
                 /** @var AccountTaskerInterface $tasker */
                 $tasker = app(AccountTasker::class);
 
+                // phpstan thinks auth does not exist.
                 if ($app->auth->check()) { // @phpstan-ignore-line
                     $tasker->setUser(auth()->user());
                 }

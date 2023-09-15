@@ -40,7 +40,7 @@ class RuleTransformer extends AbstractTransformer
     /**
      * CurrencyTransformer constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -60,14 +60,14 @@ class RuleTransformer extends AbstractTransformer
         $this->ruleRepository->setUser($rule->user);
 
         return [
-            'id'               => (string) $rule->id,
+            'id'               => (string)$rule->id,
             'created_at'       => $rule->created_at->toAtomString(),
             'updated_at'       => $rule->updated_at->toAtomString(),
-            'rule_group_id'    => (string) $rule->rule_group_id,
-            'rule_group_title' => (string) $rule->ruleGroup->title,
+            'rule_group_id'    => (string)$rule->rule_group_id,
+            'rule_group_title' => (string)$rule->ruleGroup->title,
             'title'            => $rule->title,
             'description'      => $rule->description,
-            'order'            => (int) $rule->order,
+            'order'            => (int)$rule->order,
             'active'           => $rule->active,
             'strict'           => $rule->strict,
             'stop_processing'  => $rule->stop_processing,
@@ -121,7 +121,7 @@ class RuleTransformer extends AbstractTransformer
                 continue;
             }
             $result[] = [
-                'id'              => (string) $ruleTrigger->id,
+                'id'              => (string)$ruleTrigger->id,
                 'created_at'      => $ruleTrigger->created_at->toAtomString(),
                 'updated_at'      => $ruleTrigger->updated_at->toAtomString(),
                 'type'            => $ruleTrigger->trigger_type,
@@ -147,7 +147,7 @@ class RuleTransformer extends AbstractTransformer
         /** @var RuleAction $ruleAction */
         foreach ($actions as $ruleAction) {
             $result[] = [
-                'id'              => (string) $ruleAction->id,
+                'id'              => (string)$ruleAction->id,
                 'created_at'      => $ruleAction->created_at->toAtomString(),
                 'updated_at'      => $ruleAction->updated_at->toAtomString(),
                 'type'            => $ruleAction->action_type,

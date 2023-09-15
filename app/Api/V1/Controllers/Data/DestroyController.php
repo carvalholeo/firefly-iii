@@ -45,15 +45,18 @@ use FireflyIII\Repositories\Tag\TagRepositoryInterface;
 use FireflyIII\Services\Internal\Destroy\AccountDestroyService;
 use FireflyIII\Services\Internal\Destroy\JournalDestroyService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class DestroyController
  */
 class DestroyController extends Controller
 {
+    private bool $unused;
+
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/data/destroyData
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/data/destroyData
      *
      * @param DestroyRequest $request
      *
@@ -62,11 +65,11 @@ class DestroyController extends Controller
      */
     public function destroy(DestroyRequest $request): JsonResponse
     {
-        $objects = $request->getObjects();
-
+        $objects      = $request->getObjects();
+        $this->unused = $request->boolean('unused', false);
         switch ($objects) {
             default:
-                throw new FireflyException(sprintf('This endpoint can\'t handle object "%s"', $objects));
+                throw new FireflyException(sprintf('200033: This endpoint can\'t handle object "%s"', $objects));
             case 'budgets':
                 $this->destroyBudgets();
                 break;
@@ -91,27 +94,55 @@ class DestroyController extends Controller
             case 'object_groups':
                 $this->destroyObjectGroups();
                 break;
+            case 'not_assets_liabilities':
+                $this->destroyAccounts(
+                    [
+                        AccountType::BENEFICIARY,
+                        AccountType::CASH,
+                        AccountType::CREDITCARD,
+                        AccountType::DEFAULT,
+                        AccountType::EXPENSE,
+                        AccountType::IMPORT,
+                        AccountType::INITIAL_BALANCE,
+                        AccountType::LIABILITY_CREDIT,
+                        AccountType::RECONCILIATION,
+                        AccountType::REVENUE,
+                    ]
+                );
+                break;
             case 'accounts':
                 $this->destroyAccounts(
                     [
-                        AccountType::ASSET, AccountType::DEFAULT,
-                        AccountType::BENEFICIARY, AccountType::EXPENSE,
-                        AccountType::REVENUE, AccountType::INITIAL_BALANCE,
-                        AccountType::DEBT, AccountType::LOAN, AccountType::MORTGAGE, AccountType::CREDITCARD,
+                        AccountType::ASSET,
+                        AccountType::BENEFICIARY,
+                        AccountType::CASH,
+                        AccountType::CREDITCARD,
+                        AccountType::DEBT,
+                        AccountType::DEFAULT,
+                        AccountType::EXPENSE,
+                        AccountType::IMPORT,
+                        AccountType::INITIAL_BALANCE,
+                        AccountType::LIABILITY_CREDIT,
+                        AccountType::LOAN,
+                        AccountType::MORTGAGE,
+                        AccountType::RECONCILIATION,
+                        AccountType::REVENUE,
                     ]
                 );
                 break;
             case 'asset_accounts':
                 $this->destroyAccounts(
                     [
-                        AccountType::ASSET, AccountType::DEFAULT,
+                        AccountType::ASSET,
+                        AccountType::DEFAULT,
                     ]
                 );
                 break;
             case 'expense_accounts':
                 $this->destroyAccounts(
                     [
-                        AccountType::BENEFICIARY, AccountType::EXPENSE,
+                        AccountType::BENEFICIARY,
+                        AccountType::EXPENSE,
                     ]
                 );
                 break;
@@ -125,7 +156,10 @@ class DestroyController extends Controller
             case 'liabilities':
                 $this->destroyAccounts(
                     [
-                        AccountType::DEBT, AccountType::LOAN, AccountType::MORTGAGE, AccountType::CREDITCARD,
+                        AccountType::DEBT,
+                        AccountType::LOAN,
+                        AccountType::MORTGAGE,
+                        AccountType::CREDITCARD,
                     ]
                 );
                 break;
@@ -162,6 +196,7 @@ class DestroyController extends Controller
                 );
                 break;
         }
+        app('preferences')->mark();
 
         return response()->json([], 204);
     }
@@ -244,6 +279,9 @@ class DestroyController extends Controller
         $tagRepository->destroyAll();
     }
 
+    /**
+     * @return void
+     */
     private function destroyObjectGroups(): void
     {
         /** @var ObjectGroupRepositoryInterface $repository */
@@ -260,9 +298,19 @@ class DestroyController extends Controller
         $repository = app(AccountRepositoryInterface::class);
         $collection = $repository->getAccountsByType($types);
         $service    = app(AccountDestroyService::class);
+
         /** @var Account $account */
         foreach ($collection as $account) {
-            $service->destroy($account, null);
+            $count = $account->transactions()->count();
+            if (true === $this->unused && 0 === $count) {
+                Log::info(sprintf('Deleted unused account #%d "%s"', $account->id, $account->name));
+                $service->destroy($account, null);
+                continue;
+            }
+            if (false === $this->unused) {
+                Log::info(sprintf('Deleting account #%d "%s"', $account->id, $account->name));
+                $service->destroy($account, null);
+            }
         }
     }
 
@@ -280,5 +328,4 @@ class DestroyController extends Controller
             $service->destroy($journal);
         }
     }
-
 }

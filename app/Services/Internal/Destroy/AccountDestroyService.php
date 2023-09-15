@@ -24,7 +24,6 @@ declare(strict_types=1);
 namespace FireflyIII\Services\Internal\Destroy;
 
 use DB;
-use Exception;
 use FireflyIII\Models\Account;
 use FireflyIII\Models\PiggyBank;
 use FireflyIII\Models\RecurrenceTransaction;
@@ -32,7 +31,7 @@ use FireflyIII\Models\Transaction;
 use FireflyIII\Models\TransactionJournal;
 use FireflyIII\Models\TransactionType;
 use Illuminate\Database\Eloquent\Builder;
-use Log;
+use Illuminate\Support\Facades\Log;
 use stdClass;
 
 /**
@@ -68,11 +67,7 @@ class AccountDestroyService
         // delete account meta:
         $account->accountMeta()->delete();
         // delete account.
-        try {
-            $account->delete();
-        } catch (Exception $e) { // @phpstan-ignore-line
-            // @ignoreException
-        }
+        $account->delete();
     }
 
     /**
@@ -87,14 +82,13 @@ class AccountDestroyService
                        ->where('transaction_types.type', TransactionType::OPENING_BALANCE)
                        ->get(['transactions.transaction_journal_id']);
         if ($set->count() > 0) {
-            $journalId = (int) $set->first()->transaction_journal_id;
+            $journalId = (int)$set->first()->transaction_journal_id;
             Log::debug(sprintf('Found opening balance journal with ID #%d', $journalId));
 
             // get transactions with this journal (should be just one):
-            $transactions = Transaction
-                ::where('transaction_journal_id', $journalId)
-                ->where('account_id', '!=', $account->id)
-                ->get();
+            $transactions = Transaction::where('transaction_journal_id', $journalId)
+                                       ->where('account_id', '!=', $account->id)
+                                       ->get();
             /** @var Transaction $transaction */
             foreach ($transactions as $transaction) {
                 Log::debug(sprintf('Found transaction with ID #%d', $transaction->id));
@@ -123,7 +117,7 @@ class AccountDestroyService
 
         $collection = Transaction::groupBy('transaction_journal_id', 'account_id')
                                  ->where('account_id', $moveTo->id)
-                                 ->get(['transaction_journal_id', 'account_id', DB::raw('count(*) as the_count')]); // @phpstan-ignore-line
+                                 ->get(['transaction_journal_id', 'account_id', DB::raw('count(*) as the_count')]);
         if (0 === $collection->count()) {
             return;
         }
@@ -133,8 +127,8 @@ class AccountDestroyService
         $user    = $account->user;
         /** @var stdClass $row */
         foreach ($collection as $row) {
-            if ((int) $row->the_count > 1) {
-                $journalId = (int) $row->transaction_journal_id;
+            if ((int)$row->the_count > 1) {
+                $journalId = (int)$row->transaction_journal_id;
                 $journal   = $user->transactionJournals()->find($journalId);
                 if (null !== $journal) {
                     Log::debug(sprintf('Deleted journal #%d because it has the same source as destination.', $journal->id));
@@ -159,7 +153,6 @@ class AccountDestroyService
      */
     private function destroyJournals(Account $account): void
     {
-
         /** @var JournalDestroyService $service */
         $service = app(JournalDestroyService::class);
 
@@ -181,8 +174,7 @@ class AccountDestroyService
      */
     private function destroyRecurrences(Account $account): void
     {
-        $recurrences = RecurrenceTransaction::
-        where(
+        $recurrences = RecurrenceTransaction::where(
             static function (Builder $q) use ($account) {
                 $q->where('source_id', $account->id);
                 $q->orWhere('destination_id', $account->id);
@@ -192,8 +184,7 @@ class AccountDestroyService
         /** @var RecurrenceDestroyService $destroyService */
         $destroyService = app(RecurrenceDestroyService::class);
         foreach ($recurrences as $recurrenceId) {
-            $destroyService->destroyById((int) $recurrenceId);
+            $destroyService->destroyById((int)$recurrenceId);
         }
     }
-
 }

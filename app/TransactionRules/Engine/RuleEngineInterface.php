@@ -56,6 +56,13 @@ interface RuleEngineInterface
     public function getResults(): int;
 
     /**
+     * @param bool $refreshTriggers
+     *
+     * @return void
+     */
+    public function setRefreshTriggers(bool $refreshTriggers): void;
+
+    /**
      * Add entire rule groups for the engine to execute.
      *
      * @param Collection $ruleGroups
@@ -73,5 +80,4 @@ interface RuleEngineInterface
      * @param User $user
      */
     public function setUser(User $user): void;
-
 }

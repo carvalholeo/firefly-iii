@@ -1,4 +1,5 @@
 <?php
+
 /**
  * RouteServiceProvider.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -26,7 +27,6 @@ use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvi
 use Illuminate\Support\Facades\Route;
 
 /**
- * @codeCoverageIgnore
  * Class RouteServiceProvider
  */
 class RouteServiceProvider extends ServiceProvider
@@ -52,22 +52,19 @@ class RouteServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->routes(function () {
-            Route::prefix('api/v1')
+            Route::prefix('api')
                  ->middleware('api')
                  ->namespace($this->namespace)
                  ->group(base_path('routes/api.php'));
 
             Route::prefix('api/v1/cron')
-                 ->middleware('apiY')
+                 ->middleware('api_basic')
                  ->namespace($this->namespace)
                  ->group(base_path('routes/api-noauth.php'));
 
             Route::middleware('web')
                  ->namespace($this->namespace)
                  ->group(base_path('routes/web.php'));
-
         });
     }
-
-
 }

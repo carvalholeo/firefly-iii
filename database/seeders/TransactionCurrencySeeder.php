@@ -1,4 +1,5 @@
 <?php
+
 /**
  * TransactionCurrencySeeder.php
  * Copyright (c) 2019 james@firefly-iii.org.
@@ -24,7 +25,7 @@ namespace Database\Seeders;
 
 use FireflyIII\Models\TransactionCurrency;
 use Illuminate\Database\Seeder;
-use PDOEXception;
+use PDOException;
 
 /**
  * Class TransactionCurrencySeeder.
@@ -32,8 +33,6 @@ use PDOEXception;
 class TransactionCurrencySeeder extends Seeder
 {
     /**
-     * @SuppressWarnings(PHPMD.ShortMethodName)
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function run()
     {
@@ -65,14 +64,9 @@ class TransactionCurrencySeeder extends Seeder
 
         // asian currencies
         $currencies[] = ['code' => 'JPY', 'name' => 'Japanese yen', 'symbol' => '¥', 'decimal_places' => 0];
-        $currencies[] = ['code' => 'RMB', 'name' => 'Chinese yuan', 'symbol' => '¥', 'decimal_places' => 2];
+        $currencies[] = ['code' => 'CNY', 'name' => 'Chinese yuan', 'symbol' => '¥', 'decimal_places' => 2];
         $currencies[] = ['code' => 'RUB', 'name' => 'Russian ruble', 'symbol' => '₽', 'decimal_places' => 2];
         $currencies[] = ['code' => 'INR', 'name' => 'Indian rupee', 'symbol' => '₹', 'decimal_places' => 2];
-
-        // international currencies
-        $currencies[] = ['code' => 'XBT', 'name' => 'Bitcoin', 'symbol' => '₿', 'decimal_places' => 8];
-        $currencies[] = ['code' => 'BCH', 'name' => 'Bitcoin cash', 'symbol' => '₿C', 'decimal_places' => 8];
-        $currencies[] = ['code' => 'ETH', 'name' => 'Ethereum', 'symbol' => 'Ξ', 'decimal_places' => 12];
 
         // PLEASE ADD NEW CURRENCIES BELOW THIS LINE
         $currencies[] = ['code' => 'ILS', 'name' => 'Israeli new shekel', 'symbol' => '₪', 'decimal_places' => 2];

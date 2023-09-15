@@ -1,4 +1,5 @@
 <?php
+
 /**
  * MonthReportGenerator.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -18,55 +19,48 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-/** @noinspection MultipleReturnStatementsInspection */
 declare(strict_types=1);
 
 namespace FireflyIII\Generator\Report\Category;
 
 use Carbon\Carbon;
+use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Generator\Report\ReportGeneratorInterface;
-use FireflyIII\Generator\Report\Support;
 use FireflyIII\Helpers\Collector\GroupCollectorInterface;
 use FireflyIII\Models\TransactionType;
 use Illuminate\Support\Collection;
-use JetBrains\PhpStorm\Pure;
-use Log;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
  * Class MonthReportGenerator.
- * See reference nr. 18
+ * TODO include info about tags
  *
- * @codeCoverageIgnore
+
  */
 class MonthReportGenerator implements ReportGeneratorInterface
 {
-    /** @var Collection The included accounts */
-    private $accounts;
-    /** @var Collection The included categories */
-    private $categories;
-    /** @var Carbon The end date */
-    private $end;
-    /** @var array The expenses */
-    private $expenses;
-    /** @var array The income in the report. */
-    private $income;
-    /** @var Carbon The start date. */
-    private $start;
+    private Collection $accounts;
+    private Collection $categories;
+    private Carbon     $end;
+    private array      $expenses;
+    private array      $income;
+    private Carbon     $start;
 
     /**
      * MonthReportGenerator constructor.
      */
-    #[Pure] public function __construct()
+    public function __construct()
     {
-        $this->income   = new Collection;
-        $this->expenses = new Collection;
+        $this->income   = [];
+        $this->expenses = [];
     }
 
     /**
      * Generates the report.
      *
      * @return string
+     * @throws FireflyException
      */
     public function generate(): string
     {
@@ -81,26 +75,12 @@ class MonthReportGenerator implements ReportGeneratorInterface
                 ->with('categories', $this->categories)
                 ->with('accounts', $this->accounts)
                 ->render();
-        } catch (Throwable $e) { // @phpstan-ignore-line
+        } catch (Throwable $e) {
             Log::error(sprintf('Cannot render reports.category.month: %s', $e->getMessage()));
+            Log::error($e->getTraceAsString());
             $result = sprintf('Could not render report view: %s', $e->getMessage());
+            throw new FireflyException($result, 0, $e);
         }
-
-        return $result;
-    }
-
-    /**
-     * Set the involved accounts.
-     *
-     * @param Collection $accounts
-     *
-     * @return ReportGeneratorInterface
-     */
-    public function setAccounts(Collection $accounts): ReportGeneratorInterface
-    {
-        $this->accounts = $accounts;
-
-        return $this;
     }
 
     /**
@@ -112,20 +92,6 @@ class MonthReportGenerator implements ReportGeneratorInterface
      */
     public function setBudgets(Collection $budgets): ReportGeneratorInterface
     {
-        return $this;
-    }
-
-    /**
-     * Set the categories involved in this report.
-     *
-     * @param Collection $categories
-     *
-     * @return ReportGeneratorInterface
-     */
-    public function setCategories(Collection $categories): ReportGeneratorInterface
-    {
-        $this->categories = $categories;
-
         return $this;
     }
 
@@ -188,7 +154,7 @@ class MonthReportGenerator implements ReportGeneratorInterface
      */
     protected function getExpenses(): array
     {
-        if (!empty($this->expenses)) {
+        if (0 !== count($this->expenses)) {
             Log::debug('Return previous set of expenses.');
 
             return $this->expenses;
@@ -207,13 +173,41 @@ class MonthReportGenerator implements ReportGeneratorInterface
     }
 
     /**
+     * Set the categories involved in this report.
+     *
+     * @param Collection $categories
+     *
+     * @return ReportGeneratorInterface
+     */
+    public function setCategories(Collection $categories): ReportGeneratorInterface
+    {
+        $this->categories = $categories;
+
+        return $this;
+    }
+
+    /**
+     * Set the involved accounts.
+     *
+     * @param Collection $accounts
+     *
+     * @return ReportGeneratorInterface
+     */
+    public function setAccounts(Collection $accounts): ReportGeneratorInterface
+    {
+        $this->accounts = $accounts;
+
+        return $this;
+    }
+
+    /**
      * Get the income for this report.
      *
      * @return array
      */
     protected function getIncome(): array
     {
-        if (!empty($this->income)) {
+        if (0 !== count($this->income)) {
             return $this->income;
         }
 

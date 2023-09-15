@@ -25,12 +25,14 @@ declare(strict_types=1);
 namespace FireflyIII\Http\Controllers\PiggyBank;
 
 use Carbon\Carbon;
+use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Http\Controllers\Controller;
 use FireflyIII\Models\PiggyBank;
 use FireflyIII\Repositories\PiggyBank\PiggyBankRepositoryInterface;
 use FireflyIII\Transformers\PiggyBankTransformer;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\View\View;
+use JsonException;
 use Symfony\Component\HttpFoundation\ParameterBag;
 
 /**
@@ -43,7 +45,7 @@ class ShowController extends Controller
     /**
      * PiggyBankController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -51,7 +53,7 @@ class ShowController extends Controller
 
         $this->middleware(
             function ($request, $next) {
-                app('view')->share('title', (string) trans('firefly.piggyBanks'));
+                app('view')->share('title', (string)trans('firefly.piggyBanks'));
                 app('view')->share('mainTitleIcon', 'fa-bullseye');
 
                 $this->piggyRepos = app(PiggyBankRepositoryInterface::class);
@@ -67,13 +69,15 @@ class ShowController extends Controller
      * @param PiggyBank $piggyBank
      *
      * @return Factory|View
+     * @throws FireflyException
+     * @throws JsonException
      */
     public function show(PiggyBank $piggyBank)
     {
         /** @var Carbon $end */
-        $end = session('end', Carbon::now()->endOfMonth());
+        $end = session('end', today(config('app.timezone'))->endOfMonth());
         // transform piggies using the transformer:
-        $parameters = new ParameterBag;
+        $parameters = new ParameterBag();
         $parameters->set('end', $end);
 
         /** @var PiggyBankTransformer $transformer */

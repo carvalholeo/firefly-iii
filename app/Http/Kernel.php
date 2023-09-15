@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Kernel.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -22,6 +23,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Http;
 
+use FireflyIII\Http\Middleware\AcceptHeaders;
 use FireflyIII\Http\Middleware\Authenticate;
 use FireflyIII\Http\Middleware\Binder;
 use FireflyIII\Http\Middleware\EncryptCookies;
@@ -53,7 +55,7 @@ use PragmaRX\Google2FALaravel\Middleware as MFAMiddleware;
 /**
  * Class Kernel
  *
- * @codeCoverageIgnore
+
  */
 class Kernel extends HttpKernel
 {
@@ -72,7 +74,22 @@ class Kernel extends HttpKernel
             TrustProxies::class,
             InstallationId::class,
         ];
-
+    /**
+     * The application's route middleware.
+     *
+     * These middleware may be assigned to groups or used individually.
+     *
+     * @var array
+     */
+    protected $middlewareAliases
+        = [
+            'auth'       => Authenticate::class,
+            'auth.basic' => AuthenticateWithBasicAuth::class,
+            'bindings'   => Binder::class,
+            'can'        => Authorize::class,
+            'guest'      => RedirectIfAuthenticated::class,
+            'throttle'   => ThrottleRequests::class,
+        ];
     /**
      * The application's route middleware groups.
      *
@@ -176,12 +193,16 @@ class Kernel extends HttpKernel
                 CreateFreshApiToken::class,
             ],
 
-            'api'  => [
+            // full API authentication
+            'api'                   => [
+                AcceptHeaders::class,
                 EnsureFrontendRequestsAreStateful::class,
                 'auth:api,sanctum',
                 'bindings',
             ],
-            'apiY' => [
+            // do only bindings, no auth
+            'api_basic'             => [
+                AcceptHeaders::class,
                 'bindings',
             ],
         ];
@@ -199,21 +220,5 @@ class Kernel extends HttpKernel
             Authenticate::class,
             Binder::class,
             Authorize::class,
-        ];
-    /**
-     * The application's route middleware.
-     *
-     * These middleware may be assigned to groups or used individually.
-     *
-     * @var array
-     */
-    protected $routeMiddleware
-        = [
-            'auth'       => Authenticate::class,
-            'auth.basic' => AuthenticateWithBasicAuth::class,
-            'bindings'   => Binder::class,
-            'can'        => Authorize::class,
-            'guest'      => RedirectIfAuthenticated::class,
-            'throttle'   => ThrottleRequests::class,
         ];
 }

@@ -45,7 +45,7 @@ class ListController extends Controller
     /**
      * ObjectGroupController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -64,7 +64,7 @@ class ListController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/object_groups/listBillByObjectGroup
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/object_groups/listBillByObjectGroup
      *
      * List all bills in this object group
      *
@@ -72,13 +72,12 @@ class ListController extends Controller
      *
      * @return JsonResponse
      * @throws FireflyException
-     * @codeCoverageIgnore
      */
     public function bills(ObjectGroup $objectGroup): JsonResponse
     {
         $manager = $this->getManager();
 
-        $pageSize = (int) app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
         // get list of piggy banks. Count it and split it.
         $collection = $this->repository->getBills($objectGroup);
         $count      = $collection->count();
@@ -100,7 +99,7 @@ class ListController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/object_groups/listPiggyBankByObjectGroup
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/object_groups/listPiggyBankByObjectGroup
      *
      * List all piggies under the object group.
      *
@@ -108,7 +107,6 @@ class ListController extends Controller
      *
      * @return JsonResponse
      * @throws FireflyException
-     * @codeCoverageIgnore
      */
     public function piggyBanks(ObjectGroup $objectGroup): JsonResponse
     {
@@ -116,7 +114,7 @@ class ListController extends Controller
         $manager = $this->getManager();
 
         // types to get, page size:
-        $pageSize = (int) app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
 
         // get list of piggy banks. Count it and split it.
         $collection = $this->repository->getPiggyBanks($objectGroup);
@@ -125,7 +123,7 @@ class ListController extends Controller
 
         // make paginator:
         $paginator = new LengthAwarePaginator($piggyBanks, $count, $pageSize, $this->parameters->get('page'));
-        $paginator->setPath(route('api.v1.object-groups.piggy_banks', [$objectGroup->id]) . $this->buildParams());
+        $paginator->setPath(route('api.v1.object-groups.piggy-banks', [$objectGroup->id]) . $this->buildParams());
 
         /** @var PiggyBankTransformer $transformer */
         $transformer = app(PiggyBankTransformer::class);
@@ -135,6 +133,5 @@ class ListController extends Controller
         $resource->setPaginator(new IlluminatePaginatorAdapter($paginator));
 
         return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
-
     }
 }

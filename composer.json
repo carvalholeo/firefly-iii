@@ -65,7 +65,7 @@
     }
   ],
   "require": {
-    "php": ">=8",
+    "php": ">=8.2",
     "ext-bcmath": "*",
     "ext-curl": "*",
     "ext-fileinfo": "*",
@@ -82,37 +82,45 @@
     "ext-xml": "*",
     "ext-xmlwriter": "*",
     "bacon/bacon-qr-code": "2.*",
-    "diglactic/laravel-breadcrumbs": "^7.1",
+    "diglactic/laravel-breadcrumbs": "^8.1",
     "doctrine/dbal": "3.*",
-    "gdbots/query-parser": "^2.0",
-    "guzzlehttp/guzzle": "^7.4",
+    "gdbots/query-parser": "^3.0",
+    "guzzlehttp/guzzle": "^7.8",
     "jc5/google2fa-laravel": "^2.0",
     "jc5/recovery": "^2",
-    "laravel/framework": "^9",
-    "laravel/passport": "10.*",
-    "laravel/sanctum": "^2.14",
-    "laravel/ui": "^3.4",
-    "laravelcollective/html": "6.*",
+    "laravel/framework": "^10",
+    "laravel/passport": "11.*",
+    "laravel/sanctum": "^3.2",
+    "laravel/slack-notification-channel": "^3",
+    "laravel/ui": "^4.2",
     "league/commonmark": "2.*",
-    "league/csv": "^9.7",
+    "league/csv": "^9.10",
     "league/fractal": "0.*",
-    "nunomaduro/collision": "^6.2",
+    "nunomaduro/collision": "^7.7",
     "pragmarx/google2fa": "^8.0",
-    "predis/predis": "^2.0",
+    "predis/predis": "^2.2",
     "psr/log": "<4",
-    "ramsey/uuid": "^4.3",
+    "ramsey/uuid": "^4.7",
     "rcrowe/twigbridge": "^0.14",
-    "spatie/data-transfer-object": "^3.8",
-    "spatie/laravel-ignition": "^1.3",
-    "symfony/http-client": "^6.0",
-    "symfony/mailgun-mailer": "^6.0"
+    "spatie/laravel-html": "^3.2",
+    "spatie/laravel-ignition": "^2",
+    "spatie/period": "^2.4",
+    "symfony/http-client": "^6.3",
+    "symfony/mailgun-mailer": "^6.3",
+    "therobfonz/laravel-mandrill-driver": "^5.0"
   },
   "require-dev": {
     "barryvdh/laravel-ide-helper": "2.*",
-    "filp/whoops": "2.*",
+    "ergebnis/phpstan-rules": "^2.1",
     "fakerphp/faker": "1.*",
+    "filp/whoops": "2.*",
     "mockery/mockery": "1.*",
-    "phpunit/phpunit": "^9.5"
+    "nunomaduro/larastan": "^2.6",
+    "phpstan/phpstan": "^1.10",
+    "phpstan/phpstan-deprecation-rules": "^1.1",
+    "phpstan/phpstan-strict-rules": "^1.4",
+    "phpunit/phpunit": "^10",
+    "thecodingmachine/phpstan-strict-rules": "^1.0"
   },
   "suggest": {
   },
@@ -135,9 +143,6 @@
     }
   },
   "scripts": {
-    "pre-install-cmd": [
-      "@php -r \"if (!(getenv('DYNO'))===false){file_exists('.env') || copy('.deploy/heroku/.env.heroku', '.env');copy('.deploy/heroku/.locales', '.locales');}\""
-    ],
     "post-root-package-install": [
       "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
     ],
@@ -148,63 +153,35 @@
       "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump"
     ],
     "post-update-cmd": [
+      "@php artisan config:clear",
+      "@php artisan route:clear",
+      "@php artisan twig:clean",
+      "@php artisan view:clear",
+      "@php artisan clear-compiled",
       "@php artisan cache:clear",
-      "@php artisan firefly-iii:fix-pgsql-sequences",
-      "@php artisan firefly-iii:decrypt-all",
-      "@php artisan firefly-iii:transaction-identifiers",
-      "@php artisan firefly-iii:migrate-to-groups",
-      "@php artisan firefly-iii:account-currencies",
-      "@php artisan firefly-iii:transfer-currencies",
-      "@php artisan firefly-iii:other-currencies",
-      "@php artisan firefly-iii:migrate-notes",
-      "@php artisan firefly-iii:migrate-attachments",
-      "@php artisan firefly-iii:bills-to-rules",
-      "@php artisan firefly-iii:bl-currency",
-      "@php artisan firefly-iii:cc-liabilities",
-      "@php artisan firefly-iii:back-to-journals",
-      "@php artisan firefly-iii:rename-account-meta",
-      "@php artisan firefly-iii:migrate-recurrence-meta",
-      "@php artisan firefly-iii:migrate-tag-locations",
-      "@php artisan firefly-iii:migrate-recurrence-type",
-      "@php artisan firefly-iii:upgrade-liabilities",
-      "@php artisan firefly-iii:create-group-memberships",
-      "@php artisan firefly-iii:fix-piggies",
-      "@php artisan firefly-iii:create-link-types",
-      "@php artisan firefly-iii:create-access-tokens",
-      "@php artisan firefly-iii:remove-bills",
-      "@php artisan firefly-iii:enable-currencies",
-      "@php artisan firefly-iii:fix-transfer-budgets",
-      "@php artisan firefly-iii:fix-uneven-amount",
-      "@php artisan firefly-iii:delete-zero-amount",
-      "@php artisan firefly-iii:delete-orphaned-transactions",
-      "@php artisan firefly-iii:delete-empty-journals",
-      "@php artisan firefly-iii:delete-empty-groups",
-      "@php artisan firefly-iii:fix-account-types",
-      "@php artisan firefly-iii:fix-account-order",
-      "@php artisan firefly-iii:rename-meta-fields",
-      "@php artisan firefly-iii:fix-ob-currencies",
-      "@php artisan firefly-iii:fix-long-descriptions",
-      "@php artisan firefly-iii:fix-recurring-transactions",
-      "@php artisan firefly-iii:unify-group-accounts",
-      "@php artisan firefly-iii:fix-transaction-types",
-      "@php artisan firefly-iii:fix-frontpage-accounts",
-      "@php artisan firefly-iii:fix-ibans",
-      "@php artisan firefly-iii:report-empty-objects",
-      "@php artisan firefly-iii:report-sum",
-      "@php artisan firefly-iii:restore-oauth-keys",
-      "@php artisan firefly-iii:set-latest-version --james-is-cool",
-      "@php artisan firefly:instructions update",
-      "@php artisan firefly-iii:verify-security-alerts",
-      "@php artisan passport:install"
+      "@php artisan firefly-iii:upgrade-database",
+      "@php artisan firefly-iii:correct-database",
+      "@php artisan firefly-iii:report-integrity",
+      "@php artisan passport:install",
+      "@php artisan firefly:instructions update"
     ],
     "post-install-cmd": [
       "@php artisan firefly:instructions install",
       "@php artisan firefly-iii:verify-security-alerts"
+    ],
+    "unit-test": [
+      "@php vendor/bin/phpunit -c phpunit.xml --testsuite unit --no-coverage"
+    ],
+    "integration-test": [
+      "@php vendor/bin/phpunit -c phpunit.xml --testsuite integration --no-coverage"
+    ],
+    "coverage": [
+      "@php vendor/bin/phpunit -c phpunit.xml --testsuite unit"
     ]
   },
   "config": {
     "platform": {
-      "php": "8.0.19"
+      "php": "8.2"
     },
     "preferred-install": "dist",
     "sort-packages": true,

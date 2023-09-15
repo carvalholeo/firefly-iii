@@ -36,7 +36,8 @@ use Illuminate\Validation\Validator;
  */
 class UpdateRequest extends FormRequest
 {
-    use ConvertsDataTypes, ChecksLogin;
+    use ConvertsDataTypes;
+    use ChecksLogin;
 
     /**
      * Get all data from the request.
@@ -46,10 +47,10 @@ class UpdateRequest extends FormRequest
     public function getAll(): array
     {
         return [
-            'link_type_id'   => $this->integer('link_type_id'),
+            'link_type_id'   => $this->convertInteger('link_type_id'),
             'link_type_name' => $this->convertString('link_type_name'),
-            'inward_id'      => $this->integer('inward_id'),
-            'outward_id'     => $this->integer('outward_id'),
+            'inward_id'      => $this->convertInteger('inward_id'),
+            'outward_id'     => $this->convertInteger('outward_id'),
             'notes'          => $this->stringWithNewlines('notes'),
         ];
     }
@@ -104,8 +105,8 @@ class UpdateRequest extends FormRequest
 
         $inwardId  = $data['inward_id'] ?? $existing->source_id;
         $outwardId = $data['outward_id'] ?? $existing->destination_id;
-        $inward    = $journalRepos->find((int) $inwardId);
-        $outward   = $journalRepos->find((int) $outwardId);
+        $inward    = $journalRepos->find((int)$inwardId);
+        $outward   = $journalRepos->find((int)$outwardId);
         if (null === $inward) {
             $inward = $existing->source;
         }

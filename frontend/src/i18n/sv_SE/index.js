@@ -1,3 +1,23 @@
+/*
+ * index.js
+ * Copyright (c) 2022 james@firefly-iii.org
+ *
+ * This file is part of Firefly III (https://github.com/firefly-iii).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 export default {
     "config": {
         "html_language": "sv",
@@ -40,6 +60,7 @@ export default {
         "liabilities_accounts": "Skulder"
     },
     "firefly": {
+        "administration_index": "Financial administration",
         "actions": "\u00c5tg\u00e4rder",
         "edit": "Redigera",
         "delete": "Ta bort",
@@ -49,9 +70,12 @@ export default {
         "new_budget": "Ny budget",
         "new_asset_account": "Nytt tillg\u00e5ngskonto",
         "newTransfer": "Ny \u00f6verf\u00f6ring",
+        "submission_options": "Submission options",
+        "apply_rules_checkbox": "Apply rules",
+        "fire_webhooks_checkbox": "Fire webhooks",
         "newDeposit": "Ny ins\u00e4ttning",
         "newWithdrawal": "Ny utgift",
-        "bills_paid": "Notor betalda",
+        "bills_paid": "R\u00e4kningar betalda",
         "left_to_spend": "\u00c5terst\u00e5r att spendera",
         "no_budget": "(ingen budget)",
         "budgeted": "Budgeterat",
@@ -81,9 +105,9 @@ export default {
         "rule_trigger_destination_account_nr_contains_choice": "Destinationskontonummer \/ IBAN inneh\u00e5ller..",
         "rule_trigger_transaction_type_choice": "Transaktion \u00e4r av typen..",
         "rule_trigger_category_is_choice": "Kategori \u00e4r..",
-        "rule_trigger_amount_less_choice": "Beloppet \u00e4r mindre \u00e4n..",
+        "rule_trigger_amount_less_choice": "Amount is less than or equal to ..",
         "rule_trigger_amount_is_choice": "Amount is..",
-        "rule_trigger_amount_more_choice": "Belopp \u00e4r mer \u00e4n..",
+        "rule_trigger_amount_more_choice": "Amount is more than or equal to..",
         "rule_trigger_description_starts_choice": "Beskrivning b\u00f6rjar med..",
         "rule_trigger_description_ends_choice": "Beskrivning slutar med..",
         "rule_trigger_description_contains_choice": "Beskrivningen inneh\u00e5ller..",
@@ -116,28 +140,28 @@ export default {
         "rule_trigger_external_id_is_choice": "External ID is..",
         "rule_trigger_internal_reference_is_choice": "Internal reference is..",
         "rule_trigger_journal_id_choice": "Transaktionsjournal-ID \u00e4r..",
-        "rule_trigger_any_external_url_choice": "Transaktionen har en extern URL",
+        "rule_trigger_any_external_url_choice": "Transaction has an (any) external URL",
         "rule_trigger_no_external_url_choice": "Transaktionen saknar extern URL",
         "rule_trigger_id_choice": "Transaktions-ID \u00e4r..",
-        "rule_action_delete_transaction_choice": "TA BORT transaktion (!)",
-        "rule_action_set_category_choice": "Ange kategori till..",
+        "rule_action_delete_transaction_choice": "DELETE transaction(!)",
+        "rule_action_set_category_choice": "Set category to ..",
         "rule_action_clear_category_choice": "Rensa alla kategorier",
-        "rule_action_set_budget_choice": "S\u00e4tt budget till..",
+        "rule_action_set_budget_choice": "Set budget to ..",
         "rule_action_clear_budget_choice": "Rensa alla budgetar",
-        "rule_action_add_tag_choice": "L\u00e4gg till etikett..",
-        "rule_action_remove_tag_choice": "Ta bort etikett..",
+        "rule_action_add_tag_choice": "Add tag ..",
+        "rule_action_remove_tag_choice": "Remove tag ..",
         "rule_action_remove_all_tags_choice": "Ta bort alla etiketter",
-        "rule_action_set_description_choice": "S\u00e4tt beskrivning till..",
-        "rule_action_update_piggy_choice": "L\u00e4gg till\/ta bort transaktionsbelopp i spargrisen..",
-        "rule_action_append_description_choice": "L\u00e4gg till beskrivning med..",
-        "rule_action_prepend_description_choice": "F\u00f6rbered beskrivning med..",
-        "rule_action_set_source_account_choice": "S\u00e4tt k\u00e4llkonto till..",
-        "rule_action_set_destination_account_choice": "S\u00e4tt destinationskonto till..",
-        "rule_action_append_notes_choice": "L\u00e4gg till anteckningar med..",
-        "rule_action_prepend_notes_choice": "F\u00f6rbered anteckningar med..",
+        "rule_action_set_description_choice": "Set description to ..",
+        "rule_action_update_piggy_choice": "Add \/ remove transaction amount in piggy bank ..",
+        "rule_action_append_description_choice": "Append description with ..",
+        "rule_action_prepend_description_choice": "Prepend description with ..",
+        "rule_action_set_source_account_choice": "Set source account to ..",
+        "rule_action_set_destination_account_choice": "Set destination account to ..",
+        "rule_action_append_notes_choice": "Append notes with ..",
+        "rule_action_prepend_notes_choice": "Prepend notes with ..",
         "rule_action_clear_notes_choice": "Ta bort alla anteckningar",
-        "rule_action_set_notes_choice": "St\u00e4ll in anteckningar p\u00e5..",
-        "rule_action_link_to_bill_choice": "L\u00e4nka till en nota..",
+        "rule_action_set_notes_choice": "Set notes to ..",
+        "rule_action_link_to_bill_choice": "Link to a bill ..",
         "rule_action_convert_deposit_choice": "Konvertera transaktionen till en ins\u00e4ttning",
         "rule_action_convert_withdrawal_choice": "Konvertera transaktionen till ett uttag",
         "rule_action_convert_transfer_choice": "G\u00f6r transaktionen till en \u00f6verf\u00f6ring",
@@ -191,7 +215,7 @@ export default {
         "budgets": "Budgetar",
         "subscriptions": "Prenumerationer",
         "welcome_back": "Vad spelas?",
-        "bills_to_pay": "Notor att betala",
+        "bills_to_pay": "R\u00e4kningar\n att betala",
         "net_worth": "Nettof\u00f6rm\u00f6genhet",
         "pref_last365": "F\u00f6reg\u00e5ende \u00e5r",
         "pref_last90": "Senaste 90 dagarna",

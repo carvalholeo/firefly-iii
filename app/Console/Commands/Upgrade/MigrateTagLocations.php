@@ -24,16 +24,19 @@ declare(strict_types=1);
 
 namespace FireflyIII\Console\Commands\Upgrade;
 
-use FireflyIII\Exceptions\FireflyException;
+use FireflyIII\Console\Commands\ShowsFriendlyMessages;
 use FireflyIII\Models\Location;
 use FireflyIII\Models\Tag;
 use Illuminate\Console\Command;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class MigrateTagLocations
  */
 class MigrateTagLocations extends Command
 {
+    use ShowsFriendlyMessages;
 
     public const CONFIG_NAME = '500_migrate_tag_locations';
     /**
@@ -53,41 +56,40 @@ class MigrateTagLocations extends Command
      * Execute the console command.
      *
      * @return int
-     * @throws FireflyException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function handle(): int
     {
-        $start = microtime(true);
         if ($this->isExecuted() && true !== $this->option('force')) {
-            $this->warn('This command has already been executed.');
+            $this->friendlyInfo('This command has already been executed.');
 
             return 0;
         }
         $this->migrateTagLocations();
         $this->markAsExecuted();
 
-        $end = round(microtime(true) - $start, 2);
-        $this->info(sprintf('Migrated tag locations in %s seconds.', $end));
-
         return 0;
     }
 
     /**
      * @return bool
-     * @throws FireflyException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     private function isExecuted(): bool
     {
         $configVar = app('fireflyconfig')->get(self::CONFIG_NAME, false);
         if (null !== $configVar) {
-            return (bool) $configVar->data;
+            return (bool)$configVar->data;
         }
 
         return false;
     }
 
+    /**
+     * @return void
+     */
     private function migrateTagLocations(): void
     {
         $tags = Tag::get();
@@ -114,7 +116,7 @@ class MigrateTagLocations extends Command
      */
     private function migrateLocationDetails(Tag $tag): void
     {
-        $location             = new Location;
+        $location             = new Location();
         $location->longitude  = $tag->longitude;
         $location->latitude   = $tag->latitude;
         $location->zoom_level = $tag->zoomLevel;

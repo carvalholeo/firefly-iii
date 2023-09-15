@@ -65,7 +65,7 @@ class AccountController extends Controller
 
     /**
      * Documentation for this endpoint:
-     * https://api-docs.firefly-iii.org/#/autocomplete/getAccountsAC
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/autocomplete/getAccountsAC
      *
      * @param AutocompleteRequest $request
      *
@@ -81,8 +81,9 @@ class AccountController extends Controller
         $query = $data['query'];
         $date  = $data['date'] ?? today(config('app.timezone'));
 
-        $return          = [];
-        $result          = $this->repository->searchAccount((string) $query, $types, $data['limit']);
+        $return = [];
+        $result = $this->repository->searchAccount((string)$query, $types, $data['limit']);
+        // TODO this code is duplicated in the V2 Autocomplete controller, which means this code is due to be deprecated.
         $defaultCurrency = app('amount')->getDefaultCurrency();
 
         /** @var Account $account */
@@ -92,11 +93,15 @@ class AccountController extends Controller
 
             if (in_array($account->accountType->type, $this->balanceTypes, true)) {
                 $balance         = app('steam')->balance($account, $date);
-                $nameWithBalance = sprintf('%s (%s)', $account->name, app('amount')->formatAnything($currency, $balance, false));
+                $nameWithBalance = sprintf(
+                    '%s (%s)',
+                    $account->name,
+                    app('amount')->formatAnything($currency, $balance, false)
+                );
             }
 
             $return[] = [
-                'id'                      => (string) $account->id,
+                'id'                      => (string)$account->id,
                 'name'                    => $account->name,
                 'name_with_balance'       => $nameWithBalance,
                 'type'                    => $account->accountType->type,
@@ -109,14 +114,15 @@ class AccountController extends Controller
         }
 
         // custom order.
-        $order = [AccountType::ASSET, AccountType::REVENUE, AccountType::EXPENSE];
         usort(
-            $return, function ($a, $b) use ($order) {
-            $pos_a = array_search($a['type'], $order);
-            $pos_b = array_search($b['type'], $order);
+            $return,
+            function ($a, $b) {
+                $order = [AccountType::ASSET, AccountType::REVENUE, AccountType::EXPENSE];
+                $posA  = array_search($a['type'], $order, true);
+                $posB  = array_search($b['type'], $order, true);
 
-            return $pos_a - $pos_b;
-        }
+                return $posA - $posB;
+            }
         );
 
         return response()->json($return);

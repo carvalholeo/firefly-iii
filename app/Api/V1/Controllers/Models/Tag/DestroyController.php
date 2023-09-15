@@ -39,7 +39,7 @@ class DestroyController extends Controller
     /**
      * TagController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -59,18 +59,18 @@ class DestroyController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/tags/deleteTag
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/tags/deleteTag
      *
      * Delete the resource.
      *
      * @param Tag $tag
      *
      * @return JsonResponse
-     * @codeCoverageIgnore
      */
     public function destroy(Tag $tag): JsonResponse
     {
         $this->repository->destroy($tag);
+        app('preferences')->mark();
 
         return response()->json([], 204);
     }

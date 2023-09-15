@@ -108,15 +108,15 @@ class CategoryReportGenerator
     private function processCurrencyArray(int $currencyId, array $currencyRow): void
     {
         $this->report['sums'][$currencyId] = $this->report['sums'][$currencyId] ?? [
-                'spent'                   => '0',
-                'earned'                  => '0',
-                'sum'                     => '0',
-                'currency_id'             => $currencyRow['currency_id'],
-                'currency_symbol'         => $currencyRow['currency_symbol'],
-                'currency_name'           => $currencyRow['currency_name'],
-                'currency_code'           => $currencyRow['currency_code'],
-                'currency_decimal_places' => $currencyRow['currency_decimal_places'],
-            ];
+            'spent'                   => '0',
+            'earned'                  => '0',
+            'sum'                     => '0',
+            'currency_id'             => $currencyRow['currency_id'],
+            'currency_symbol'         => $currencyRow['currency_symbol'],
+            'currency_name'           => $currencyRow['currency_name'],
+            'currency_code'           => $currencyRow['currency_code'],
+            'currency_decimal_places' => $currencyRow['currency_decimal_places'],
+        ];
 
         /**
          * @var int   $categoryId
@@ -137,17 +137,17 @@ class CategoryReportGenerator
     {
         $key                              = sprintf('%s-%s', $currencyId, $categoryId);
         $this->report['categories'][$key] = $this->report['categories'][$key] ?? [
-                'id'                      => $categoryId,
-                'title'                   => $categoryRow['name'],
-                'currency_id'             => $currencyRow['currency_id'],
-                'currency_symbol'         => $currencyRow['currency_symbol'],
-                'currency_name'           => $currencyRow['currency_name'],
-                'currency_code'           => $currencyRow['currency_code'],
-                'currency_decimal_places' => $currencyRow['currency_decimal_places'],
-                'spent'                   => '0',
-                'earned'                  => '0',
-                'sum'                     => '0',
-            ];
+            'id'                      => $categoryId,
+            'title'                   => $categoryRow['name'],
+            'currency_id'             => $currencyRow['currency_id'],
+            'currency_symbol'         => $currencyRow['currency_symbol'],
+            'currency_name'           => $currencyRow['currency_name'],
+            'currency_code'           => $currencyRow['currency_code'],
+            'currency_decimal_places' => $currencyRow['currency_decimal_places'],
+            'spent'                   => '0',
+            'earned'                  => '0',
+            'sum'                     => '0',
+        ];
         // loop journals:
         foreach ($categoryRow['transaction_journals'] as $journal) {
             // sum of sums
@@ -210,5 +210,4 @@ class CategoryReportGenerator
         $this->noCatRepository->setUser($user);
         $this->opsRepository->setUser($user);
     }
-
 }

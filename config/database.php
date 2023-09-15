@@ -75,17 +75,12 @@ if (false !== $useSSL && null !== $useSSL) {
 return [
     'default'     => envNonEmpty('DB_CONNECTION', 'mysql'),
     'connections' => [
-        'sqlite'      => [
+        'sqlite' => [
             'driver'   => 'sqlite',
             'database' => envNonEmpty('DB_DATABASE', storage_path('database/database.sqlite')),
             'prefix'   => '',
         ],
-        'sqlite_test' => [
-            'driver'   => 'sqlite',
-            'database' => envNonEmpty('DB_DATABASE', storage_path('database/test_db.sqlite')),
-            'prefix'   => '',
-        ],
-        'mysql'       => [
+        'mysql'  => [
             'driver'      => 'mysql',
             'host'        => envNonEmpty('DB_HOST', $host),
             'port'        => envNonEmpty('DB_PORT', $port),
@@ -100,7 +95,7 @@ return [
             'engine'      => 'InnoDB',
             'options'     => $mySqlSSLOptions,
         ],
-        'pgsql'       => [
+        'pgsql'  => [
             'driver'      => 'pgsql',
             'host'        => envNonEmpty('DB_HOST', $host),
             'port'        => envNonEmpty('DB_PORT', $port),
@@ -115,7 +110,7 @@ return [
             'sslkey'      => envNonEmpty('PGSQL_SSL_KEY'),
             'sslrootcert' => envNonEmpty('PGSQL_SSL_ROOT_CERT'),
         ],
-        'sqlsrv'      => [
+        'sqlsrv' => [
             'driver'   => 'sqlsrv',
             'host'     => env('DB_HOST', 'localhost'),
             'port'     => env('DB_PORT', '1433'),
@@ -150,6 +145,7 @@ return [
             'path'     => envNonEmpty('REDIS_PATH'),
             'host'     => envNonEmpty('REDIS_HOST', '127.0.0.1'),
             'port'     => envNonEmpty('REDIS_PORT', 6379),
+            'username' => env('REDIS_USERNAME'),
             'password' => env('REDIS_PASSWORD', null),
             'database' => env('REDIS_DB', '0'),
         ],
@@ -159,6 +155,7 @@ return [
             'path'     => envNonEmpty('REDIS_PATH'),
             'host'     => envNonEmpty('REDIS_HOST', '127.0.0.1'),
             'port'     => envNonEmpty('REDIS_PORT', 6379),
+            'username' => env('REDIS_USERNAME'),
             'password' => env('REDIS_PASSWORD', null),
             'database' => env('REDIS_CACHE_DB', '1'),
         ],

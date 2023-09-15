@@ -32,7 +32,7 @@
             :autocomplete-items="autocompleteItems"
             :tags="tags"
             :title="$t('firefly.tags')"
-            classes="form-input"
+            class="force-background-tags-input"
             v-bind:placeholder="$t('firefly.tags')"
             @tags-changed="update"
         />
@@ -74,18 +74,22 @@ export default {
   },
   methods: {
     update(newTags) {
+      console.log('update', newTags);
       this.autocompleteItems = [];
       this.tags = newTags;
       this.$emit('input', this.tags);
     },
     clearTags() {
+      console.log('clearTags');
       this.tags = [];
+      this.$emit('input', this.tags);
+
     },
     hasError: function () {
       return this.error.length > 0;
     },
     initItems() {
-      // console.log('Now in initItems');
+      console.log('Now in initItems');
       if (this.tag.length < 2) {
         return;
       }

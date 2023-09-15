@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Budget.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -38,26 +39,26 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 /**
  * FireflyIII\Models\Budget
  *
- * @property int                                       $id
- * @property Carbon|null                               $created_at
- * @property Carbon|null                               $updated_at
- * @property Carbon|null                               $deleted_at
- * @property int                                       $user_id
- * @property string                                    $name
- * @property bool                                      $active
- * @property bool                                      $encrypted
- * @property int                                       $order
- * @property-read Collection|Attachment[]              $attachments
- * @property-read int|null                             $attachments_count
- * @property-read Collection|AutoBudget[]              $autoBudgets
- * @property-read int|null                             $auto_budgets_count
- * @property-read Collection|BudgetLimit[]             $budgetlimits
- * @property-read int|null                             $budgetlimits_count
- * @property-read Collection|TransactionJournal[]      $transactionJournals
- * @property-read int|null                             $transaction_journals_count
- * @property-read Collection|Transaction[]             $transactions
- * @property-read int|null                             $transactions_count
- * @property-read User                                 $user
+ * @property int                                  $id
+ * @property Carbon|null                          $created_at
+ * @property Carbon|null                          $updated_at
+ * @property Carbon|null                          $deleted_at
+ * @property int                                  $user_id
+ * @property string                               $name
+ * @property bool                                 $active
+ * @property bool                                 $encrypted
+ * @property int                                  $order
+ * @property-read Collection|Attachment[]         $attachments
+ * @property-read int|null                        $attachments_count
+ * @property-read Collection|AutoBudget[]         $autoBudgets
+ * @property-read int|null                        $auto_budgets_count
+ * @property-read Collection|BudgetLimit[]        $budgetlimits
+ * @property-read int|null                        $budgetlimits_count
+ * @property-read Collection|TransactionJournal[] $transactionJournals
+ * @property-read int|null                        $transaction_journals_count
+ * @property-read Collection|Transaction[]        $transactions
+ * @property-read int|null                        $transactions_count
+ * @property-read User                            $user
  * @method static \Illuminate\Database\Eloquent\Builder|Budget newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|Budget newQuery()
  * @method static Builder|Budget onlyTrashed()
@@ -73,12 +74,12 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * @method static \Illuminate\Database\Eloquent\Builder|Budget whereUserId($value)
  * @method static Builder|Budget withTrashed()
  * @method static Builder|Budget withoutTrashed()
- * @mixin Eloquent
- * @property string                 $email
- * @property int|null               $user_group_id
+ * @property string                               $email
+ * @property int|null                             $user_group_id
  * @method static \Illuminate\Database\Eloquent\Builder|Budget whereUserGroupId($value)
- * @property-read Collection|Note[] $notes
- * @property-read int|null          $notes_count
+ * @property-read Collection|Note[]               $notes
+ * @property-read int|null                        $notes_count
+ * @mixin Eloquent
  */
 class Budget extends Model
 {
@@ -98,7 +99,7 @@ class Budget extends Model
             'encrypted'  => 'boolean',
         ];
     /** @var array Fields that can be filled */
-    protected $fillable = ['user_id', 'name', 'active', 'order'];
+    protected $fillable = ['user_id', 'name', 'active', 'order', 'user_group_id'];
     /** @var array Hidden from view */
     protected $hidden = ['encrypted'];
 
@@ -113,7 +114,7 @@ class Budget extends Model
     public static function routeBinder(string $value): Budget
     {
         if (auth()->check()) {
-            $budgetId = (int) $value;
+            $budgetId = (int)$value;
             /** @var User $user */
             $user = auth()->user();
             /** @var Budget $budget */
@@ -122,11 +123,18 @@ class Budget extends Model
                 return $budget;
             }
         }
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
     }
 
     /**
-     * @codeCoverageIgnore
+     * @return BelongsTo
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
      * @return MorphMany
      */
     public function attachments(): MorphMany
@@ -135,7 +143,6 @@ class Budget extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return HasMany
      */
     public function autoBudgets(): HasMany
@@ -144,7 +151,6 @@ class Budget extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return HasMany
      */
     public function budgetlimits(): HasMany
@@ -153,7 +159,6 @@ class Budget extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * Get all of the notes.
      */
     public function notes(): MorphMany
@@ -162,7 +167,6 @@ class Budget extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsToMany
      */
     public function transactionJournals(): BelongsToMany
@@ -171,20 +175,10 @@ class Budget extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsToMany
      */
     public function transactions(): BelongsToMany
     {
         return $this->belongsToMany(Transaction::class, 'budget_transaction', 'budget_id');
-    }
-
-    /**
-     * @codeCoverageIgnore
-     * @return BelongsTo
-     */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
     }
 }

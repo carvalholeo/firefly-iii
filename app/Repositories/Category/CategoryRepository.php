@@ -1,4 +1,5 @@
 <?php
+
 /**
  * CategoryRepository.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -35,8 +36,9 @@ use FireflyIII\Models\RuleAction;
 use FireflyIII\Services\Internal\Destroy\CategoryDestroyService;
 use FireflyIII\Services\Internal\Update\CategoryUpdateService;
 use FireflyIII\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
-use Log;
+use Illuminate\Support\Facades\Log;
 use Storage;
 
 /**
@@ -125,11 +127,11 @@ class CategoryRepository implements CategoryRepositoryInterface
     {
         Log::debug('Now in findCategory()');
         Log::debug(sprintf('Searching for category with ID #%d...', $categoryId));
-        $result = $this->find((int) $categoryId);
+        $result = $this->find((int)$categoryId);
         if (null === $result) {
             Log::debug(sprintf('Searching for category with name %s...', $categoryName));
-            $result = $this->findByName((string) $categoryName);
-            if (null === $result && '' !== (string) $categoryName) {
+            $result = $this->findByName((string)$categoryName);
+            if (null === $result && '' !== (string)$categoryName) {
                 // create it!
                 $result = $this->store(['name' => $categoryName]);
             }
@@ -192,7 +194,16 @@ class CategoryRepository implements CategoryRepositoryInterface
         }
 
         return $category;
+    }
 
+    /**
+     * @param User|Authenticatable|null $user
+     */
+    public function setUser(User | Authenticatable | null $user): void
+    {
+        if (null !== $user) {
+            $this->user = $user;
+        }
     }
 
     /**
@@ -210,7 +221,7 @@ class CategoryRepository implements CategoryRepositoryInterface
     {
         $dbNote = $category->notes()->first();
         if (null === $dbNote) {
-            $dbNote = new Note;
+            $dbNote = new Note();
             $dbNote->noteable()->associate($category);
         }
         $dbNote->text = trim($notes);
@@ -421,14 +432,6 @@ class CategoryRepository implements CategoryRepositoryInterface
         }
 
         return $search->take($limit)->get();
-    }
-
-    /**
-     * @param User $user
-     */
-    public function setUser(User $user): void
-    {
-        $this->user = $user;
     }
 
     /**

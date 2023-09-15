@@ -28,7 +28,7 @@ use Carbon\Carbon;
 /**
  * Class AbstractCronjob
  *
- * @codeCoverageIgnore
+
  */
 abstract class AbstractCronjob
 {
@@ -74,5 +74,4 @@ abstract class AbstractCronjob
     {
         $this->force = $force;
     }
-
 }

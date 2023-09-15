@@ -25,14 +25,13 @@ namespace FireflyIII\Repositories\TransactionType;
 
 use FireflyIII\Models\TransactionType;
 use Illuminate\Support\Collection;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class TransactionTypeRepository
  */
 class TransactionTypeRepository implements TransactionTypeRepositoryInterface
 {
-
     /**
      * @param TransactionType|null $type
      * @param string|null          $typeString

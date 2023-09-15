@@ -1,4 +1,5 @@
 <?php
+
 /**
  * TrimStrings.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -27,7 +28,7 @@ use Illuminate\Foundation\Http\Middleware\TrimStrings as Middleware;
 /**
  * Class TrimStrings
  *
- * @codeCoverageIgnore
+
  */
 class TrimStrings extends Middleware
 {

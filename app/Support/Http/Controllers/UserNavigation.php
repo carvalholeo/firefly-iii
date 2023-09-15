@@ -31,7 +31,7 @@ use FireflyIII\Models\TransactionJournal;
 use FireflyIII\Models\TransactionType;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Redirector;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Trait UserNavigation
@@ -39,13 +39,13 @@ use Log;
  */
 trait UserNavigation
 {
-
     /**
      * Functionality:.
      *
-     * - If the $identifier contains the word "delete" then a remembered url with the text "/show/" in it will not be returned but instead the index (/)
-     *   will be returned.
-     * - If the remembered url contains "jscript/" the remembered url will not be returned but instead the index (/) will be returned.
+     * - If the $identifier contains the word "delete" then a remembered url with the text "/show/" in it will not be
+     * returned but instead the index (/) will be returned.
+     * - If the remembered url contains "jscript/" the remembered url will not be returned but instead the index (/)
+     * will be returned.
      *
      * @param string $identifier
      *
@@ -54,7 +54,7 @@ trait UserNavigation
     final protected function getPreviousUrl(string $identifier): string
     {
         Log::debug(sprintf('Trying to retrieve URL stored under "%s"', $identifier));
-        $url = (string) session($identifier);
+        $url = (string)session($identifier);
         Log::debug(sprintf('The URL is %s', $url));
 
         return app('steam')->getSafeUrl($url, route('index'));

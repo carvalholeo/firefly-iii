@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BudgetLimit.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,7 +24,11 @@ declare(strict_types=1);
 namespace FireflyIII\Models;
 
 use Eloquent;
+use FireflyIII\Events\Model\BudgetLimit\Created;
+use FireflyIII\Events\Model\BudgetLimit\Deleted;
+use FireflyIII\Events\Model\BudgetLimit\Updated;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -75,7 +80,12 @@ class BudgetLimit extends Model
             'end_date'    => 'date',
             'auto_budget' => 'boolean',
         ];
-
+    protected $dispatchesEvents
+        = [
+            'created' => Created::class,
+            'updated' => Updated::class,
+            'deleted' => Deleted::class,
+        ];
     /** @var array Fields that can be filled */
     protected $fillable = ['budget_id', 'start_date', 'end_date', 'amount', 'transaction_currency_id'];
 
@@ -90,7 +100,7 @@ class BudgetLimit extends Model
     public static function routeBinder(string $value): BudgetLimit
     {
         if (auth()->check()) {
-            $budgetLimitId = (int) $value;
+            $budgetLimitId = (int)$value;
             $budgetLimit   = self::where('budget_limits.id', $budgetLimitId)
                                  ->leftJoin('budgets', 'budgets.id', '=', 'budget_limits.budget_id')
                                  ->where('budgets.user_id', auth()->user()->id)
@@ -99,11 +109,10 @@ class BudgetLimit extends Model
                 return $budgetLimit;
             }
         }
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function budget(): BelongsTo
@@ -112,11 +121,22 @@ class BudgetLimit extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function transactionCurrency(): BelongsTo
     {
         return $this->belongsTo(TransactionCurrency::class);
+    }
+
+    /**
+     * Get the amount
+     *
+     * @return Attribute
+     */
+    protected function amount(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => (string)$value,
+        );
     }
 }

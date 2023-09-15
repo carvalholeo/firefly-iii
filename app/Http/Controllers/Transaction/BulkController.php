@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Http\Controllers\Transaction;
 
+use FireflyIII\Events\UpdatedTransactionGroup;
 use FireflyIII\Http\Controllers\Controller;
 use FireflyIII\Http\Requests\BulkEditJournalRequest;
 use FireflyIII\Models\TransactionJournal;
@@ -32,8 +33,9 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Redirector;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
-use Log;
 
 /**
  * Class BulkController
@@ -46,7 +48,7 @@ class BulkController extends Controller
     /**
      * BulkController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -55,7 +57,7 @@ class BulkController extends Controller
         $this->middleware(
             function ($request, $next) {
                 $this->repository = app(JournalRepositoryInterface::class);
-                app('view')->share('title', (string) trans('firefly.transactions'));
+                app('view')->share('title', (string)trans('firefly.transactions'));
                 app('view')->share('mainTitleIcon', 'fa-exchange');
 
                 return $next($request);
@@ -66,7 +68,7 @@ class BulkController extends Controller
     /**
      * Edit a set of journals in bulk.
      *
-     * See reference nr. 47
+     * TODO user wont be able to tell if the journal is part of a split.
      *
      * @param array $journals
      *
@@ -74,7 +76,7 @@ class BulkController extends Controller
      */
     public function edit(array $journals)
     {
-        $subTitle = (string) trans('firefly.mass_bulk_journals');
+        $subTitle = (string)trans('firefly.mass_bulk_journals');
 
         $this->rememberPreviousUrl('transactions.bulk-edit.url');
 
@@ -99,14 +101,14 @@ class BulkController extends Controller
     {
         $journalIds     = $request->get('journals');
         $journalIds     = is_array($journalIds) ? $journalIds : [];
-        $ignoreCategory = 1 === (int) $request->get('ignore_category');
-        $ignoreBudget   = 1 === (int) $request->get('ignore_budget');
+        $ignoreCategory = 1 === (int)$request->get('ignore_category');
+        $ignoreBudget   = 1 === (int)$request->get('ignore_budget');
         $tagsAction     = $request->get('tags_action');
-
-        $count = 0;
+        $collection     = new Collection();
+        $count          = 0;
 
         foreach ($journalIds as $journalId) {
-            $journalId = (int) $journalId;
+            $journalId = (int)$journalId;
             $journal   = $this->repository->find($journalId);
             if (null !== $journal) {
                 $resultA = $this->updateJournalBudget($journal, $ignoreBudget, $request->integer('budget_id'));
@@ -114,11 +116,19 @@ class BulkController extends Controller
                 $resultC = $this->updateJournalCategory($journal, $ignoreCategory, $request->convertString('category'));
                 if ($resultA || $resultB || $resultC) {
                     $count++;
+                    $collection->push($journal);
                 }
             }
         }
+
+        // run rules on changed journals:
+        /** @var TransactionJournal $journal */
+        foreach ($collection as $journal) {
+            event(new UpdatedTransactionGroup($journal->transactionGroup, true, true));
+        }
+
         app('preferences')->mark();
-        $request->session()->flash('success', (string) trans_choice('firefly.mass_edited_transactions_success', $count));
+        $request->session()->flash('success', (string)trans_choice('firefly.mass_edited_transactions_success', $count));
 
         // redirect to previous URL:
         return redirect($this->getPreviousUrl('transactions.bulk-edit.url'));

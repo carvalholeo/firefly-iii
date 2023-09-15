@@ -1,4 +1,5 @@
 <?php
+
 /**
  * PiggyBank.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,6 +24,7 @@ declare(strict_types=1);
 namespace FireflyIII\Models;
 
 use Eloquent;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -84,7 +86,7 @@ class PiggyBank extends Model
     use SoftDeletes;
 
     /**
-     * The attributes that should be casted to native types.
+     * The attributes that should be cast to native types.
      *
      * @var array
      */
@@ -115,7 +117,7 @@ class PiggyBank extends Model
     public static function routeBinder(string $value): PiggyBank
     {
         if (auth()->check()) {
-            $piggyBankId = (int) $value;
+            $piggyBankId = (int)$value;
             $piggyBank   = self::where('piggy_banks.id', $piggyBankId)
                                ->leftJoin('accounts', 'accounts.id', '=', 'piggy_banks.account_id')
                                ->where('accounts.user_id', auth()->user()->id)->first(['piggy_banks.*']);
@@ -123,11 +125,10 @@ class PiggyBank extends Model
                 return $piggyBank;
             }
         }
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function account(): BelongsTo
@@ -136,7 +137,6 @@ class PiggyBank extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return MorphMany
      */
     public function attachments(): MorphMany
@@ -145,7 +145,6 @@ class PiggyBank extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * Get all of the piggy bank's notes.
      */
     public function notes(): MorphMany
@@ -154,7 +153,7 @@ class PiggyBank extends Model
     }
 
     /**
-     * Get all of the tags for the post.
+     * Get all the tags for the post.
      */
     public function objectGroups()
     {
@@ -162,7 +161,6 @@ class PiggyBank extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return HasMany
      */
     public function piggyBankEvents(): HasMany
@@ -171,7 +169,6 @@ class PiggyBank extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return HasMany
      */
     public function piggyBankRepetitions(): HasMany
@@ -180,12 +177,23 @@ class PiggyBank extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      *
      * @param mixed $value
      */
     public function setTargetamountAttribute($value): void
     {
-        $this->attributes['targetamount'] = (string) $value;
+        $this->attributes['targetamount'] = (string)$value;
+    }
+
+    /**
+     * Get the max amount
+     *
+     * @return Attribute
+     */
+    protected function targetamount(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => (string)$value,
+        );
     }
 }

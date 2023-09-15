@@ -24,8 +24,8 @@ declare(strict_types=1);
 namespace FireflyIII\Transformers;
 
 use FireflyIII\Models\WebhookMessage;
+use Illuminate\Support\Facades\Log;
 use Jsonexception;
-use Log;
 
 /**
  * Class WebhookMessageTransformer
@@ -41,7 +41,6 @@ class WebhookMessageTransformer extends AbstractTransformer
      */
     public function transform(WebhookMessage $message): array
     {
-
         $json = '{}';
         try {
             $json = json_encode($message->message, JSON_THROW_ON_ERROR);
@@ -50,15 +49,14 @@ class WebhookMessageTransformer extends AbstractTransformer
         }
 
         return [
-            'id'         => (string) $message->id,
+            'id'         => (string)$message->id,
             'created_at' => $message->created_at->toAtomString(),
             'updated_at' => $message->updated_at->toAtomString(),
             'sent'       => $message->sent,
             'errored'    => $message->errored,
-            'webhook_id' => (string) $message->webhook_id,
+            'webhook_id' => (string)$message->webhook_id,
             'uuid'       => $message->uuid,
             'message'    => $json,
         ];
     }
-
 }

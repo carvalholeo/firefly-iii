@@ -23,23 +23,25 @@ declare(strict_types=1);
 
 namespace FireflyIII\Http\Controllers;
 
-use Artisan;
-use Carbon\Carbon;
 use DB;
 use Exception;
 use FireflyConfig;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Http\Middleware\IsDemoUser;
+use FireflyIII\Models\AccountType;
+use FireflyIII\Models\TransactionType;
 use FireflyIII\Support\Http\Controllers\GetConfigurationData;
+use FireflyIII\User;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Redirector;
-use Illuminate\Routing\Route;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
-use Log;
 use Monolog\Handler\RotatingFileHandler;
-use Route as RouteFacade;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class DebugController
@@ -52,7 +54,7 @@ class DebugController extends Controller
     /**
      * DebugController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -70,7 +72,7 @@ class DebugController extends Controller
         Log::debug('This is a test message at the DEBUG level.');
         Log::info('This is a test message at the INFO level.');
         Log::notice('This is a test message at the NOTICE level.');
-        Log::warning('This is a test message at the WARNING level.');
+        app('log')->warning('This is a test message at the WARNING level.');
         Log::error('This is a test message at the ERROR level.');
         Log::critical('This is a test message at the CRITICAL level.');
         Log::alert('This is a test message at the ALERT level.');
@@ -84,12 +86,14 @@ class DebugController extends Controller
      * @param Request $request
      *
      * @return RedirectResponse|Redirector
+     * @throws FireflyException
      */
     public function flush(Request $request)
     {
         app('preferences')->mark();
-        $request->session()->forget(['start', 'end', '_previous', 'viewRange', 'range', 'is_custom_range']);
+        $request->session()->forget(['start', 'end', '_previous', 'viewRange', 'range', 'is_custom_range', 'temp-mfa-secret', 'temp-mfa-codes']);
         Log::debug('Call cache:clear...');
+
         Artisan::call('cache:clear');
         Log::debug('Call config:clear...');
         Artisan::call('config:clear');
@@ -98,14 +102,12 @@ class DebugController extends Controller
         Log::debug('Call twig:clean...');
         try {
             Artisan::call('twig:clean');
-
-        } catch (Exception $e) { // @phpstan-ignore-line
-            // @ignoreException
+        } catch (Exception $e) {  // intentional generic exception
+            throw new FireflyException($e->getMessage(), 0, $e);
         }
 
         Log::debug('Call view:clear...');
         Artisan::call('view:clear');
-        Log::debug('Done! Redirecting...');
 
         return redirect(route('index'));
     }
@@ -120,53 +122,137 @@ class DebugController extends Controller
      */
     public function index(Request $request)
     {
-        // basic scope information:
-        $now               = Carbon::now()->format('Y-m-d H:i:s e');
-        $buildNr           = '(unknown)';
-        $buildDate         = '(unknown)';
-        $expectedDBversion = config('firefly.db_version');
-        $foundDBversion    = FireflyConfig::get('db_version', 1)->data;
-        if (file_exists('/var/www/counter-main.txt')) {
-            $buildNr = trim(file_get_contents('/var/www/counter-main.txt'));
-        }
-        if (file_exists('/var/www/build-date-main.txt')) {
-            $buildDate = trim(file_get_contents('/var/www/build-date-main.txt'));
-        }
-        $phpVersion = PHP_VERSION;
-        $phpOs      = PHP_OS;
+        $table = $this->generateTable();
+        $table = str_replace(["\n", "\t", '  '], '', $table);
+        $now   = now(config('app.timezone'))->format('Y-m-d H:i:s');
 
-        // system information
-        $tz              = env('TZ');
-        $appEnv          = config('app.env');
-        $appDebug        = var_export(config('app.debug'), true);
-        $cacheDriver     = config('cache.default');
-        $logChannel      = config('logging.default');
-        $appLogLevel     = config('logging.level');
-        $displayErrors   = ini_get('display_errors');
-        $errorReporting  = $this->errorReporting((int) ini_get('error_reporting'));
-        $interface       = PHP_SAPI;
-        $defaultLanguage = (string) config('firefly.default_language');
-        $defaultLocale   = (string) config('firefly.default_locale');
-        $bcscale         = bcscale();
-        $drivers         = implode(', ', DB::availableDrivers());
-        $currentDriver   = DB::getDriverName();
-        $trustedProxies  = config('firefly.trusted_proxies');
+        // get latest log file:
+        $logger = Log::driver();
+        // PHPstan doesn't recognize the method because of its polymorphic nature.
+        $handlers   = $logger->getHandlers(); // @phpstan-ignore-line
+        $logContent = '';
+        foreach ($handlers as $handler) {
+            if ($handler instanceof RotatingFileHandler) {
+                $logFile = $handler->getUrl();
+                if (null !== $logFile && file_exists($logFile)) {
+                    $logContent = file_get_contents($logFile);
+                }
+            }
+        }
+        if ('' !== $logContent) {
+            // last few lines
+            $logContent = 'Truncated from this point <----|' . substr($logContent, -16384);
+        }
+
+        return view('debug', compact('table', 'now', 'logContent'));
+    }
+
+    /**
+     * @return string
+     */
+    private function generateTable(): string
+    {
+        // system information:
+        $system = $this->getSystemInformation();
+        $docker = $this->getBuildInfo();
+        $app    = $this->getAppInfo();
+        $user   = $this->getuserInfo();
+
+        return (string)view('partials.debug-table', compact('system', 'docker', 'app', 'user'));
+    }
+
+    /**
+     * @return array
+     */
+    private function getSystemInformation(): array
+    {
+        $maxFileSize   = app('steam')->phpBytes(ini_get('upload_max_filesize'));
+        $maxPostSize   = app('steam')->phpBytes(ini_get('post_max_size'));
+        $drivers       = DB::availableDrivers();
+        $currentDriver = DB::getDriverName();
+        return [
+            'db_version'      => app('fireflyconfig')->get('db_version', 1)->data,
+            'php_version'     => PHP_VERSION,
+            'php_os'          => PHP_OS,
+            'interface'       => PHP_SAPI,
+            'bcscale'         => bcscale(),
+            'display_errors'  => ini_get('display_errors'),
+            'error_reporting' => $this->errorReporting((int)ini_get('error_reporting')),
+            'upload_size'     => min($maxFileSize, $maxPostSize),
+            'all_drivers'     => $drivers,
+            'current_driver'  => $currentDriver,
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    private function getBuildInfo(): array
+    {
+        $return = [
+            'is_docker'       => env('IS_DOCKER', false),
+            'build'           => '(unknown)',
+            'build_date'      => '(unknown)',
+            'base_build'      => '(unknown)',
+            'base_build_date' => '(unknown)',
+
+        ];
+        try {
+            if (file_exists('/var/www/counter-main.txt')) {
+                $return['build'] = trim(file_get_contents('/var/www/counter-main.txt'));
+            }
+        } catch (Exception $e) { // generic catch for open basedir.
+            Log::debug('Could not check build counter, but thats ok.');
+            Log::warning($e->getMessage());
+        }
+        try {
+            if (file_exists('/var/www/build-date-main.txt')) {
+                $return['build_date'] = trim(file_get_contents('/var/www/build-date-main.txt'));
+            }
+        } catch (Exception $e) { // generic catch for open basedir.
+            Log::debug('Could not check build date, but thats ok.');
+            Log::warning($e->getMessage());
+        }
+        if ('' !== (string)env('BASE_IMAGE_BUILD')) {
+            $return['base_build'] = env('BASE_IMAGE_BUILD');
+        }
+        if ('' !== (string)env('BASE_IMAGE_DATE')) {
+            $return['base_build_date'] = env('BASE_IMAGE_DATE');
+        }
+        return $return;
+    }
+
+    /**
+     * @return array
+     */
+    private function getAppInfo(): array
+    {
+        $userGuard = config('auth.defaults.guard');
+
+        return [
+            'tz'                 => env('TZ'),
+            'debug'              => var_export(config('app.debug'), true),
+            'log_channel'        => env('LOG_CHANNEL'),
+            'audit_log_channel'  => envNonEmpty('AUDIT_LOG_CHANNEL', '(empty)'),
+            'default_language'   => (string)config('firefly.default_language'),
+            'default_locale'     => (string)config('firefly.default_locale'),
+            'remote_header'      => $userGuard === 'remote_user_guard' ? config('auth.guard_header') : 'N/A',
+            'remote_mail_header' => $userGuard === 'remote_user_guard' ? config('auth.guard_email') : 'N/A',
+            'stateful_domains'   => join(', ', config('sanctum.stateful')),
+        ];
+    }
+
+    /**
+     * @return array
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     */
+    private function getuserInfo(): array
+    {
+        $userFlags = $this->getUserFlags();
 
         // user info
-        $loginProvider    = config('auth.providers.users.driver');
-        $userGuard        = config('auth.defaults.guard');
-        $remoteHeader     = $userGuard === 'remote_user_guard' ? config('auth.guard_header') : 'N/A';
-        $remoteMailHeader = $userGuard === 'remote_user_guard' ? config('auth.guard_email') : 'N/A';
-        $userLanguage     = app('steam')->getLanguage();
-        $userLocale       = app('steam')->getLocale();
-        $userAgent        = $request->header('user-agent');
-        $stateful         = join(', ', config('sanctum.stateful'));
-
-
-        // expected + found DB version:
-
-        // some new vars.
-        $isDocker = env('IS_DOCKER', false);
+        $userAgent = request()->header('user-agent');
 
         // set languages, see what happens:
         $original       = setlocale(LC_ALL, 0);
@@ -175,112 +261,70 @@ class DebugController extends Controller
         foreach ($parts as $code) {
             $code = trim($code);
             Log::debug(sprintf('Trying to set %s', $code));
-            $localeAttempts[$code] = var_export(setlocale(LC_ALL, $code), true);
+            $result                = setlocale(LC_ALL, $code);
+            $localeAttempts[$code] = $result === $code;
         }
         setlocale(LC_ALL, $original);
 
-        // get latest log file:
-        $logger     = Log::driver();
-        $handlers   = $logger->getHandlers();
-        $logContent = '';
-        foreach ($handlers as $handler) {
-            if ($handler instanceof RotatingFileHandler) {
-                $logFile = $handler->getUrl();
-                if (null !== $logFile) {
-                    try {
-                        $logContent = file_get_contents($logFile);
-
-                    } catch (Exception $e) { // @phpstan-ignore-line
-                        // @ignoreException
-                    }
-
-                }
-            }
-        }
-        if ('' !== $logContent) {
-            // last few lines
-            $logContent = 'Truncated from this point <----|' . substr($logContent, -8192);
-        }
-
-        return view(
-            'debug',
-            compact(
-                'phpVersion',
-                'localeAttempts',
-                'expectedDBversion',
-                'foundDBversion',
-                'appEnv',
-                'appDebug',
-                'logChannel',
-                'stateful',
-                'tz',
-                'appLogLevel',
-                'remoteHeader',
-                'remoteMailHeader',
-                'now',
-                'drivers',
-                'currentDriver',
-                'userGuard',
-                'loginProvider',
-                'buildNr',
-                'buildDate',
-                'bcscale',
-                'userAgent',
-                'displayErrors',
-                'errorReporting',
-                'phpOs',
-                'interface',
-                'logContent',
-                'cacheDriver',
-                'trustedProxies',
-                'userLanguage',
-                'userLocale',
-                'defaultLanguage',
-                'defaultLocale',
-                'isDocker'
-
-            )
-        );
+        return [
+            'user_id'         => auth()->user()->id,
+            'user_count'      => User::count(),
+            'user_flags'      => $userFlags,
+            'user_agent'      => $userAgent,
+            'locale_attempts' => $localeAttempts,
+            'locale'          => app('steam')->getLocale(),
+            'language'        => app('steam')->getLanguage(),
+            'view_range'      => app('preferences')->get('viewRange', '1M')->data,
+        ];
     }
 
     /**
-     * Return all possible routes.
-     *
      * @return string
      */
-    public function routes(): string
+    private function getUserFlags(): string
     {
-        $set    = RouteFacade::getRoutes();
-        $ignore = ['chart.', 'javascript.', 'json.', 'report-data.', 'popup.', 'debugbar.', 'attachments.download', 'attachments.preview',
-                   'bills.rescan', 'budgets.income', 'currencies.def', 'error', 'flush', 'help.show',
-                   'login', 'logout', 'password.reset', 'profile.confirm-email-change', 'profile.undo-email-change',
-                   'register', 'report.options', 'routes', 'rule-groups.down', 'rule-groups.up', 'rules.up', 'rules.down',
-                   'rules.select', 'search.search', 'test-flash', 'transactions.link.delete', 'transactions.link.switch',
-                   'two-factor.lost', 'reports.options', 'debug',
-                   'preferences.delete-code', 'rules.test-triggers', 'piggy-banks.remove-money', 'piggy-banks.add-money',
-                   'accounts.reconcile.transactions', 'accounts.reconcile.overview',
-                   'transactions.clone', 'two-factor.index', 'api.v1', 'installer.', 'attachments.view', 'recurring.events',
-                   'recurring.suggest',
-        ];
-        $return = '&nbsp;';
-        /** @var Route $route */
-        foreach ($set as $route) {
-            $name = (string) $route->getName();
-            if (in_array('GET', $route->methods(), true)) {
-                $found = false;
-                foreach ($ignore as $string) {
-                    if (false !== stripos($name, $string)) {
-                        $found = true;
-                        break;
-                    }
-                }
-                if (false === $found) {
-                    $return .= 'touch ' . $route->getName() . '.md;';
-                }
-            }
+        $flags = [];
+        /** @var User $user */
+        $user = auth()->user();
+
+        // has liabilities
+        if ($user->accounts()->accountTypeIn([AccountType::DEBT, AccountType::LOAN, AccountType::MORTGAGE])->count() > 0) {
+            $flags[] = ':credit_card:';
         }
 
-        return $return;
+        // has piggies
+        if ($user->piggyBanks()->count() > 0) {
+            $flags[] = ':pig:';
+        }
+
+        // has stored reconciliations
+        $type = TransactionType::whereType(TransactionType::RECONCILIATION)->first();
+        if ($user->transactionJournals()->where('transaction_type_id', $type->id)->count()) {
+            $flags[] = ':ledger:';
+        }
+
+        // has used importer?
+
+        // has rules
+        if ($user->rules()->count() > 0) {
+            $flags[] = ':wrench:';
+        }
+
+        // has recurring transactions
+        if ($user->recurrences()->count() > 0) {
+            $flags[] = ':clock130:';
+        }
+
+        // has groups
+        if ($user->objectGroups()->count() > 0) {
+            $flags[] = ':bookmark_tabs:';
+        }
+
+        // uses bills
+        if ($user->bills()->count() > 0) {
+            $flags[] = ':email:';
+        }
+        return join(' ', $flags);
     }
 
     /**
@@ -299,4 +343,5 @@ class DebugController extends Controller
 
         return redirect(route('home'));
     }
+
 }

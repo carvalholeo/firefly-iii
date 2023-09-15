@@ -1,4 +1,5 @@
 <?php
+
 /**
  * SetSourceAccount.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,6 +24,8 @@ declare(strict_types=1);
 namespace FireflyIII\TransactionRules\Actions;
 
 use DB;
+use FireflyIII\Events\Model\Rule\RuleActionFailedOnArray;
+use FireflyIII\Events\TriggeredAuditLog;
 use FireflyIII\Models\Account;
 use FireflyIII\Models\RuleAction;
 use FireflyIII\Models\Transaction;
@@ -30,7 +33,7 @@ use FireflyIII\Models\TransactionJournal;
 use FireflyIII\Models\TransactionType;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use FireflyIII\User;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class SetSourceAccount.
@@ -58,11 +61,11 @@ class SetSourceAccount implements ActionInterface
         $user = User::find($journal['user_id']);
         $type = $journal['transaction_type_type'];
         /** @var TransactionJournal|null $object */
-        $object           = $user->transactionJournals()->find((int) $journal['transaction_journal_id']);
+        $object           = $user->transactionJournals()->find((int)$journal['transaction_journal_id']);
         $this->repository = app(AccountRepositoryInterface::class);
         if (null === $object) {
             Log::error('Could not find journal.');
-
+            event(new RuleActionFailedOnArray($this->action, $journal, trans('rules.no_such_journal')));
             return false;
         }
         $type = $object->transactionType->type;
@@ -74,7 +77,7 @@ class SetSourceAccount implements ActionInterface
             Log::error(
                 sprintf('Cant change source account of journal #%d because no asset account with name "%s" exists.', $object->id, $this->action->action_value)
             );
-
+            event(new RuleActionFailedOnArray($this->action, $journal, trans('rules.cannot_find_asset', ['name' => $this->action->action_value])));
             return false;
         }
 
@@ -83,28 +86,29 @@ class SetSourceAccount implements ActionInterface
         $destination = $object->transactions()->where('amount', '>', 0)->first();
         if (null === $destination) {
             Log::error('Could not find destination transaction.');
-
+            event(new RuleActionFailedOnArray($this->action, $journal, trans('rules.cannot_find_destination_transaction')));
             return false;
         }
-        // account must not be deleted (in the mean time):
+        // account must not be deleted (in the meantime):
         if (null === $destination->account) {
             Log::error('Could not find destination transaction account.');
-
+            event(new RuleActionFailedOnArray($this->action, $journal, trans('rules.cannot_find_destination_transaction_account')));
             return false;
         }
-        if (null !== $newAccount && (int) $newAccount->id === (int) $destination->account_id) {
+        if (null !== $newAccount && (int)$newAccount->id === (int)$destination->account_id) {
             Log::error(
                 sprintf(
-                    'New source account ID #%d and current destination account ID #%d are the same. Do nothing.', $newAccount->id,
+                    'New source account ID #%d and current destination account ID #%d are the same. Do nothing.',
+                    $newAccount->id,
                     $destination->account_id
                 )
             );
-
+            event(new RuleActionFailedOnArray($this->action, $journal, trans('rules.already_has_source', ['name' => $newAccount->name])));
             return false;
         }
 
         // if this is a deposit, the new source account must be a revenue account and may be created:
-        // or its a liability
+        // or it's a liability
         if (TransactionType::DEPOSIT === $type) {
             $newAccount = $this->findDepositSourceAccount();
         }
@@ -116,6 +120,8 @@ class SetSourceAccount implements ActionInterface
           ->where('transaction_journal_id', '=', $object->id)
           ->where('amount', '<', 0)
           ->update(['account_id' => $newAccount->id]);
+
+        event(new TriggeredAuditLog($this->action->rule, $object, 'set_source', null, $newAccount->name));
 
         Log::debug(sprintf('Updated journal #%d (group #%d) and gave it new source account ID.', $object->id, $object->transaction_group_id));
 

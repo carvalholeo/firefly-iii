@@ -1,4 +1,5 @@
 <?php
+
 /**
  * MassDeleteJournalRequest.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -28,7 +29,7 @@ use Illuminate\Foundation\Http\FormRequest;
 /**
  * Class MassDeleteJournalRequest.
  *
- * @codeCoverageIgnore
+
  */
 class MassDeleteJournalRequest extends FormRequest
 {

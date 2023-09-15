@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Account.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -26,12 +27,14 @@ use Carbon\Carbon;
 use Eloquent;
 use FireflyIII\User;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Query\Builder;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -88,7 +91,6 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * @method static EloquentBuilder|Account whereVirtualBalance($value)
  * @method static Builder|Account withTrashed()
  * @method static Builder|Account withoutTrashed()
- * @mixin Eloquent
  * @property Carbon                          $lastActivityDate
  * @property string                          $startBalance
  * @property string                          $endBalance
@@ -96,15 +98,17 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * @property string                          $interest
  * @property string                          $interestPeriod
  * @property string                          $accountTypeString
- * @property string                          $location
+ * @property Location                        $location
  * @property string                          $liability_direction
  * @property string                          $current_debt
  * @property int|null                        $user_group_id
  * @method static EloquentBuilder|Account whereUserGroupId($value)
+ * @mixin Eloquent
  */
 class Account extends Model
 {
-    use SoftDeletes, HasFactory;
+    use SoftDeletes;
+    use HasFactory;
 
     /**
      * The attributes that should be casted to native types.
@@ -121,11 +125,10 @@ class Account extends Model
             'encrypted'  => 'boolean',
         ];
     /** @var array Fields that can be filled */
-    protected $fillable = ['user_id', 'account_type_id', 'name', 'active', 'virtual_balance', 'iban'];
+    protected $fillable = ['user_id', 'user_group_id', 'account_type_id', 'name', 'active', 'virtual_balance', 'iban'];
     /** @var array Hidden from view */
-    protected $hidden = ['encrypted'];
-    /** @var bool */
-    private $joinedAccountTypes;
+    protected $hidden             = ['encrypted'];
+    private bool $joinedAccountTypes = false;
 
     /**
      * Route binder. Converts the key in the URL to the specified object (or throw 404).
@@ -138,21 +141,28 @@ class Account extends Model
     public static function routeBinder(string $value): Account
     {
         if (auth()->check()) {
-            $accountId = (int) $value;
+            $accountId = (int)$value;
             /** @var User $user */
             $user = auth()->user();
             /** @var Account $account */
-            $account = $user->accounts()->find($accountId);
+            $account = $user->accounts()->with(['accountType'])->find($accountId);
             if (null !== $account) {
                 return $account;
             }
         }
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
     }
 
     /**
      * @return BelongsTo
-     * @codeCoverageIgnore
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return BelongsTo
      */
     public function accountType(): BelongsTo
     {
@@ -160,7 +170,6 @@ class Account extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return MorphMany
      */
     public function attachments(): MorphMany
@@ -185,7 +194,6 @@ class Account extends Model
 
     /**
      * @return HasMany
-     * @codeCoverageIgnore
      */
     public function accountMeta(): HasMany
     {
@@ -194,7 +202,6 @@ class Account extends Model
 
     /**
      * @return string
-     * @codeCoverageIgnore
      */
     public function getEditNameAttribute(): string
     {
@@ -208,7 +215,6 @@ class Account extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return MorphMany
      */
     public function locations(): MorphMany
@@ -217,7 +223,6 @@ class Account extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * Get all of the notes.
      */
     public function notes(): MorphMany
@@ -226,16 +231,15 @@ class Account extends Model
     }
 
     /**
-     * Get all of the tags for the post.
+     * Get all the tags for the post.
      */
-    public function objectGroups()
+    public function objectGroups(): MorphToMany
     {
         return $this->morphToMany(ObjectGroup::class, 'object_groupable');
     }
 
     /**
      * @return HasMany
-     * @codeCoverageIgnore
      */
     public function piggyBanks(): HasMany
     {
@@ -243,14 +247,13 @@ class Account extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      *
      * @param EloquentBuilder $query
      * @param array           $types
      */
     public function scopeAccountTypeIn(EloquentBuilder $query, array $types): void
     {
-        if (null === $this->joinedAccountTypes) {
+        if (false === $this->joinedAccountTypes) {
             $query->leftJoin('account_types', 'account_types.id', '=', 'accounts.account_type_id');
             $this->joinedAccountTypes = true;
         }
@@ -258,15 +261,14 @@ class Account extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      *
      * @param mixed $value
      *
-     * @codeCoverageIgnore
+
      */
-    public function setVirtualBalanceAttribute($value): void
+    public function setVirtualBalanceAttribute(mixed $value): void
     {
-        $value = (string) $value;
+        $value = (string)$value;
         if ('' === $value) {
             $value = null;
         }
@@ -275,7 +277,6 @@ class Account extends Model
 
     /**
      * @return HasMany
-     * @codeCoverageIgnore
      */
     public function transactions(): HasMany
     {
@@ -283,11 +284,14 @@ class Account extends Model
     }
 
     /**
-     * @return BelongsTo
-     * @codeCoverageIgnore
+     * Get the virtual balance
+     *
+     * @return Attribute
      */
-    public function user(): BelongsTo
+    protected function virtualBalance(): Attribute
     {
-        return $this->belongsTo(User::class);
+        return Attribute::make(
+            get: fn ($value) => (string)$value,
+        );
     }
 }

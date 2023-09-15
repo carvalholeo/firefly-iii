@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AttachmentServiceProvider.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -28,7 +29,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 
 /**
- * @codeCoverageIgnore
  * Class AttachmentServiceProvider.
  */
 class AttachmentServiceProvider extends ServiceProvider
@@ -50,6 +50,7 @@ class AttachmentServiceProvider extends ServiceProvider
             function (Application $app) {
                 /** @var AttachmentRepositoryInterface $repository */
                 $repository = app(AttachmentRepository::class);
+                // reference to auth is not understood by phpstan.
                 if ($app->auth->check()) { // @phpstan-ignore-line
                     $repository->setUser(auth()->user());
                 }

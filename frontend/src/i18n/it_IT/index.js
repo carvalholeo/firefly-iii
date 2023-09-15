@@ -1,3 +1,23 @@
+/*
+ * index.js
+ * Copyright (c) 2022 james@firefly-iii.org
+ *
+ * This file is part of Firefly III (https://github.com/firefly-iii).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 export default {
     "config": {
         "html_language": "it",
@@ -40,6 +60,7 @@ export default {
         "liabilities_accounts": "Passivit\u00e0"
     },
     "firefly": {
+        "administration_index": "Amministrazione finanziaria",
         "actions": "Azioni",
         "edit": "Modifica",
         "delete": "Elimina",
@@ -49,6 +70,9 @@ export default {
         "new_budget": "Nuovo budget",
         "new_asset_account": "Nuovo conto attivit\u00e0",
         "newTransfer": "Nuovo trasferimento",
+        "submission_options": "Submission options",
+        "apply_rules_checkbox": "Apply rules",
+        "fire_webhooks_checkbox": "Fire webhooks",
         "newDeposit": "Nuova entrata",
         "newWithdrawal": "Nuova uscita",
         "bills_paid": "Bollette pagate",
@@ -61,10 +85,10 @@ export default {
         "rule_trigger_source_account_ends_choice": "Il nome del conto di origine termina con..",
         "rule_trigger_source_account_is_choice": "Il nome del conto di origine \u00e8..",
         "rule_trigger_source_account_contains_choice": "Il nome del conto di origine contiene...",
-        "rule_trigger_account_id_choice": "Either account ID is exactly..",
+        "rule_trigger_account_id_choice": "Entrambi gli ID del conto sono esattamente..",
         "rule_trigger_source_account_id_choice": "L'ID del conto di origine \u00e8 esattamente...",
         "rule_trigger_destination_account_id_choice": "L'ID del conto di destinazione \u00e8 esattamente...",
-        "rule_trigger_account_is_cash_choice": "Either account is cash",
+        "rule_trigger_account_is_cash_choice": "Entrambi i conti sono contanti",
         "rule_trigger_source_is_cash_choice": "Il conte di origine \u00e8 un conto (in contanti)",
         "rule_trigger_destination_is_cash_choice": "Il conto destinazione \u00e8 un conto (in contanti)",
         "rule_trigger_source_account_nr_starts_choice": "Il numero del conto di origine \/ l'IBAN inizia con...",
@@ -81,14 +105,14 @@ export default {
         "rule_trigger_destination_account_nr_contains_choice": "Il numero del conto di destinazione \/ l'IBAN contiene..",
         "rule_trigger_transaction_type_choice": "La transazione \u00e8 di tipo...",
         "rule_trigger_category_is_choice": "La categoria \u00e8...",
-        "rule_trigger_amount_less_choice": "L'importo \u00e8 inferiore a...",
-        "rule_trigger_amount_is_choice": "Amount is..",
-        "rule_trigger_amount_more_choice": "L'importo \u00e8 pi\u00f9 di...",
+        "rule_trigger_amount_less_choice": "Amount is less than or equal to ..",
+        "rule_trigger_amount_is_choice": "L'importo \u00e8..",
+        "rule_trigger_amount_more_choice": "Amount is more than or equal to..",
         "rule_trigger_description_starts_choice": "La descrizione inizia con...",
         "rule_trigger_description_ends_choice": "La descrizione termina con...",
         "rule_trigger_description_contains_choice": "La descrizione contiene...",
         "rule_trigger_description_is_choice": "La descrizione \u00e8...",
-        "rule_trigger_date_on_choice": "Transaction date is..",
+        "rule_trigger_date_on_choice": "La data della transizione \u00e8..",
         "rule_trigger_date_before_choice": "La data della transazione \u00e8 antecedente al...",
         "rule_trigger_date_after_choice": "La data della transazione \u00e8 successiva al...",
         "rule_trigger_created_at_on_choice": "Transaction was made on..",
@@ -116,28 +140,28 @@ export default {
         "rule_trigger_external_id_is_choice": "External ID is..",
         "rule_trigger_internal_reference_is_choice": "Internal reference is..",
         "rule_trigger_journal_id_choice": "L'ID journal della transazione \u00e8...",
-        "rule_trigger_any_external_url_choice": "La transazione ha un URL esterno",
+        "rule_trigger_any_external_url_choice": "Transaction has an (any) external URL",
         "rule_trigger_no_external_url_choice": "La transazione non ha URL esterno",
         "rule_trigger_id_choice": "L'ID della transazione \u00e8...",
-        "rule_action_delete_transaction_choice": "ELIMINA transazione (!)",
-        "rule_action_set_category_choice": "Imposta come categoria...",
+        "rule_action_delete_transaction_choice": "DELETE transaction(!)",
+        "rule_action_set_category_choice": "Set category to ..",
         "rule_action_clear_category_choice": "Rimuovi da tutte le categorie",
-        "rule_action_set_budget_choice": "Imposta il budget su...",
+        "rule_action_set_budget_choice": "Set budget to ..",
         "rule_action_clear_budget_choice": "Rimuovi da tutti i budget",
-        "rule_action_add_tag_choice": "Aggiungi l'etichetta...",
-        "rule_action_remove_tag_choice": "Rimuovi l'etichetta...",
+        "rule_action_add_tag_choice": "Add tag ..",
+        "rule_action_remove_tag_choice": "Remove tag ..",
         "rule_action_remove_all_tags_choice": "Rimuovi tutte le etichette",
-        "rule_action_set_description_choice": "Imposta come descrizione...",
-        "rule_action_update_piggy_choice": "Aggiungi\/rimuovi l'importo della transazione nel salvadanaio..",
-        "rule_action_append_description_choice": "Aggiungi alla descrizione...",
-        "rule_action_prepend_description_choice": "Anteponi alla descrizione...",
-        "rule_action_set_source_account_choice": "Imposta come conto di origine...",
-        "rule_action_set_destination_account_choice": "Imposta come conto di destinazione...",
-        "rule_action_append_notes_choice": "Aggiungi alle note...",
-        "rule_action_prepend_notes_choice": "Anteponi alle note...",
+        "rule_action_set_description_choice": "Set description to ..",
+        "rule_action_update_piggy_choice": "Add \/ remove transaction amount in piggy bank ..",
+        "rule_action_append_description_choice": "Append description with ..",
+        "rule_action_prepend_description_choice": "Prepend description with ..",
+        "rule_action_set_source_account_choice": "Set source account to ..",
+        "rule_action_set_destination_account_choice": "Set destination account to ..",
+        "rule_action_append_notes_choice": "Append notes with ..",
+        "rule_action_prepend_notes_choice": "Prepend notes with ..",
         "rule_action_clear_notes_choice": "Rimuovi tutte le note",
-        "rule_action_set_notes_choice": "Imposta come note...",
-        "rule_action_link_to_bill_choice": "Collega ad una bolletta...",
+        "rule_action_set_notes_choice": "Set notes to ..",
+        "rule_action_link_to_bill_choice": "Link to a bill ..",
         "rule_action_convert_deposit_choice": "Converti la transazione in un deposito",
         "rule_action_convert_withdrawal_choice": "Converti la transazione in un prelievo",
         "rule_action_convert_transfer_choice": "Converti la transazione in un trasferimento",

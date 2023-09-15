@@ -37,6 +37,9 @@ use League\Fractal\Pagination\IlluminatePaginatorAdapter;
 use League\Fractal\Resource\Collection as FractalCollection;
 use League\Fractal\Resource\Item;
 
+/**
+ * Class ShowController
+ */
 class ShowController extends Controller
 {
     private LinkTypeRepositoryInterface $repository;
@@ -44,7 +47,7 @@ class ShowController extends Controller
     /**
      * TransactionLinkController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -65,7 +68,7 @@ class ShowController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/links/listTransactionLink
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/links/listTransactionLink
      *
      * List all transaction links there are.
      *
@@ -73,7 +76,6 @@ class ShowController extends Controller
      *
      * @return JsonResponse
      * @throws FireflyException
-     * @codeCoverageIgnore
      */
     public function index(Request $request): JsonResponse
     {
@@ -83,7 +85,7 @@ class ShowController extends Controller
         $name = $request->get('name');
 
         // types to get, page size:
-        $pageSize = (int) app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
         $linkType = $this->repository->findByName($name);
 
         // get list of transaction links. Count it and split it.
@@ -93,7 +95,7 @@ class ShowController extends Controller
 
         // make paginator:
         $paginator = new LengthAwarePaginator($journalLinks, $count, $pageSize, $this->parameters->get('page'));
-        $paginator->setPath(route('api.v1.transaction_links.index') . $this->buildParams());
+        $paginator->setPath(route('api.v1.transaction-links.index') . $this->buildParams());
 
         /** @var TransactionLinkTransformer $transformer */
         $transformer = app(TransactionLinkTransformer::class);
@@ -103,19 +105,17 @@ class ShowController extends Controller
         $resource->setPaginator(new IlluminatePaginatorAdapter($paginator));
 
         return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
-
     }
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/links/getTransactionLink
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/links/getTransactionLink
      *
      * List single resource.
      *
      * @param TransactionJournalLink $journalLink
      *
      * @return JsonResponse
-     * @codeCoverageIgnore
      */
     public function show(TransactionJournalLink $journalLink): JsonResponse
     {
@@ -128,6 +128,5 @@ class ShowController extends Controller
         $resource = new Item($journalLink, $transformer, 'transaction_links');
 
         return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
-
     }
 }

@@ -29,7 +29,6 @@ use FireflyIII\Api\V1\Requests\Models\TransactionCurrency\UpdateRequest;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\Repositories\Currency\CurrencyRepositoryInterface;
-use FireflyIII\Repositories\User\UserRepositoryInterface;
 use FireflyIII\Support\Http\Api\AccountFilter;
 use FireflyIII\Support\Http\Api\TransactionFilter;
 use FireflyIII\Transformers\CurrencyTransformer;
@@ -42,23 +41,22 @@ use League\Fractal\Resource\Item;
  */
 class UpdateController extends Controller
 {
-    use AccountFilter, TransactionFilter;
+    use AccountFilter;
+    use TransactionFilter;
 
     private CurrencyRepositoryInterface $repository;
-    private UserRepositoryInterface     $userRepository;
 
     /**
      * CurrencyRepository constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
         parent::__construct();
         $this->middleware(
             function ($request, $next) {
-                $this->repository     = app(CurrencyRepositoryInterface::class);
-                $this->userRepository = app(UserRepositoryInterface::class);
+                $this->repository = app(CurrencyRepositoryInterface::class);
                 $this->repository->setUser(auth()->user());
 
                 return $next($request);
@@ -68,7 +66,7 @@ class UpdateController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/currencies/disableCurrency
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/currencies/disableCurrency
      *
      * Disable a currency.
      *
@@ -77,7 +75,6 @@ class UpdateController extends Controller
      * @return JsonResponse
      * @throws FireflyException
      * @throws JsonException
-     * @codeCoverageIgnore
      */
     public function disable(TransactionCurrency $currency): JsonResponse
     {
@@ -98,43 +95,11 @@ class UpdateController extends Controller
         $resource = new Item($currency, $transformer, 'currencies');
 
         return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
-
     }
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/currencies/enableCurrency
-     *
-     * Enable a currency.
-     *
-     * @param TransactionCurrency $currency
-     *
-     * @return JsonResponse
-     * @throws FireflyException
-     * @throws JsonException
-     * @codeCoverageIgnore
-     */
-    public function enable(TransactionCurrency $currency): JsonResponse
-    {
-        $this->repository->enable($currency);
-        $manager = $this->getManager();
-
-        $defaultCurrency = app('amount')->getDefaultCurrencyByUser(auth()->user());
-        $this->parameters->set('defaultCurrency', $defaultCurrency);
-
-        /** @var CurrencyTransformer $transformer */
-        $transformer = app(CurrencyTransformer::class);
-        $transformer->setParameters($this->parameters);
-
-        $resource = new Item($currency, $transformer, 'currencies');
-
-        return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
-
-    }
-
-    /**
-     * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/currencies/defaultCurrency
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/currencies/defaultCurrency
      *
      * Make the currency a default currency.
      *
@@ -142,7 +107,6 @@ class UpdateController extends Controller
      *
      * @return JsonResponse
      * @throws FireflyException
-     * @codeCoverageIgnore
      */
     public function makeDefault(TransactionCurrency $currency): JsonResponse
     {
@@ -162,12 +126,40 @@ class UpdateController extends Controller
         $resource = new Item($currency, $transformer, 'currencies');
 
         return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
-
     }
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/currencies/updateCurrency
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/currencies/enableCurrency
+     *
+     * Enable a currency.
+     *
+     * @param TransactionCurrency $currency
+     *
+     * @return JsonResponse
+     * @throws FireflyException
+     * @throws JsonException
+     */
+    public function enable(TransactionCurrency $currency): JsonResponse
+    {
+        $this->repository->enable($currency);
+        $manager = $this->getManager();
+
+        $defaultCurrency = app('amount')->getDefaultCurrencyByUser(auth()->user());
+        $this->parameters->set('defaultCurrency', $defaultCurrency);
+
+        /** @var CurrencyTransformer $transformer */
+        $transformer = app(CurrencyTransformer::class);
+        $transformer->setParameters($this->parameters);
+
+        $resource = new Item($currency, $transformer, 'currencies');
+
+        return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
+    }
+
+    /**
+     * This endpoint is documented at:
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/currencies/updateCurrency
      *
      * Update a currency.
      *
@@ -200,6 +192,5 @@ class UpdateController extends Controller
         $resource = new Item($currency, $transformer, 'currencies');
 
         return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
-
     }
 }

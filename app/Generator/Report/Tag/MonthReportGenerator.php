@@ -19,53 +19,43 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/** @noinspection MultipleReturnStatementsInspection */
 declare(strict_types=1);
 
 namespace FireflyIII\Generator\Report\Tag;
 
 use Carbon\Carbon;
+use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Generator\Report\ReportGeneratorInterface;
-use FireflyIII\Generator\Report\Support;
 use Illuminate\Support\Collection;
-use JetBrains\PhpStorm\Pure;
-use Log;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
  * Class MonthReportGenerator.
  *
- * @codeCoverageIgnore
+
  */
 class MonthReportGenerator implements ReportGeneratorInterface
 {
-    /** @var Collection The accounts involved */
-    private $accounts;
-    /** @var Carbon The end date */
-    private $end;
-    /** @var array The expenses involved */
-    private $expenses;
-    /** @var array The income involved */
-    private $income;
-    /** @var Carbon The start date */
-    private $start;
-    /** @var Collection The tags involved. */
-    private $tags;
+    private Collection $accounts;
+    private Carbon     $end;
+    private Carbon     $start;
+    private Collection $tags;
 
     /**
      * MonthReportGenerator constructor.
      */
-    #[Pure] public function __construct()
+    public function __construct()
     {
-        $this->expenses = new Collection;
-        $this->income   = new Collection;
-        $this->tags     = new Collection;
+        $this->tags     = new Collection();
+        $this->accounts = new Collection();
     }
 
     /**
      * Generate the report.
      *
      * @return string
+     * @throws FireflyException
      */
     public function generate(): string
     {
@@ -79,9 +69,11 @@ class MonthReportGenerator implements ReportGeneratorInterface
                 'reports.tag.month',
                 compact('accountIds', 'reportType', 'tagIds')
             )->with('start', $this->start)->with('end', $this->end)->with('tags', $this->tags)->with('accounts', $this->accounts)->render();
-        } catch (Throwable $e) { // @phpstan-ignore-line
+        } catch (Throwable $e) {
             Log::error(sprintf('Cannot render reports.tag.month: %s', $e->getMessage()));
+            Log::error($e->getTraceAsString());
             $result = sprintf('Could not render report view: %s', $e->getMessage());
+            throw new FireflyException($result, 0, $e);
         }
 
         return $result;

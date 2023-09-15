@@ -1,4 +1,5 @@
 <?php
+
 /**
  * FireflySessionProvider.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -27,7 +28,6 @@ use Illuminate\Session\SessionManager;
 use Illuminate\Support\ServiceProvider;
 
 /**
- * @codeCoverageIgnore
  * Class FireflySessionProvider
  */
 class FireflySessionProvider extends ServiceProvider

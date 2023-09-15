@@ -1,4 +1,5 @@
 <?php
+
 /**
  * CategoryServiceProvider.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -32,7 +33,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 
 /**
- * @codeCoverageIgnore
  * Class CategoryServiceProvider.
  */
 class CategoryServiceProvider extends ServiceProvider
@@ -49,6 +49,7 @@ class CategoryServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // phpstan does not understand reference to 'auth'.
         $this->app->bind(
             CategoryRepositoryInterface::class,
             static function (Application $app) {

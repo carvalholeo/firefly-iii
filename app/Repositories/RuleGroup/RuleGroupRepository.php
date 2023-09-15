@@ -1,4 +1,5 @@
 <?php
+
 /**
  * RuleGroupRepository.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -28,9 +29,10 @@ use FireflyIII\Models\RuleAction;
 use FireflyIII\Models\RuleGroup;
 use FireflyIII\Models\RuleTrigger;
 use FireflyIII\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class RuleGroupRepository.
@@ -59,6 +61,14 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface
             }
             $index++;
         }
+    }
+
+    /**
+     * @return Collection
+     */
+    public function get(): Collection
+    {
+        return $this->user->ruleGroups()->orderBy('order', 'ASC')->get();
     }
 
     /**
@@ -142,7 +152,7 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface
         $count = 1;
         /** @var Rule $entry */
         foreach ($set as $entry) {
-            if ((int) $entry->order !== $count) {
+            if ((int)$entry->order !== $count) {
                 Log::debug(sprintf('Rule #%d was on spot %d but must be on spot %d', $entry->id, $entry->order, $count));
                 $entry->order = $count;
                 $entry->save();
@@ -169,7 +179,7 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface
         $index   = 1;
         /** @var RuleAction $action */
         foreach ($actions as $action) {
-            if ((int) $action->order !== $index) {
+            if ((int)$action->order !== $index) {
                 $action->order = $index;
                 $action->save();
                 Log::debug(sprintf('Rule action #%d was on spot %d but must be on spot %d', $action->id, $action->order, $index));
@@ -191,7 +201,7 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface
         $index    = 1;
         /** @var RuleTrigger $trigger */
         foreach ($triggers as $trigger) {
-            $order = (int) $trigger->order;
+            $order = (int)$trigger->order;
             if ($order !== $index) {
                 $trigger->order = $index;
                 $trigger->save();
@@ -212,14 +222,6 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface
             $group->rules()->delete();
             $group->delete();
         }
-    }
-
-    /**
-     * @return Collection
-     */
-    public function get(): Collection
-    {
-        return $this->user->ruleGroups()->orderBy('order', 'ASC')->get();
     }
 
     /**
@@ -351,7 +353,7 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface
     {
         $entry = $this->user->ruleGroups()->max('order');
 
-        return (int) $entry;
+        return (int)$entry;
     }
 
     /**
@@ -423,7 +425,7 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface
      */
     public function maxOrder(): int
     {
-        return (int) $this->user->ruleGroups()->where('active', true)->max('order');
+        return (int)$this->user->ruleGroups()->where('active', true)->max('order');
     }
 
     /**
@@ -442,11 +444,13 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface
     }
 
     /**
-     * @param User $user
+     * @param User|Authenticatable|null $user
      */
-    public function setUser(User $user): void
+    public function setUser(User | Authenticatable | null $user): void
     {
-        $this->user = $user;
+        if (null !== $user) {
+            $this->user = $user;
+        }
     }
 
     /**
@@ -479,7 +483,7 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface
      */
     public function setOrder(RuleGroup $ruleGroup, int $newOrder): void
     {
-        $oldOrder = (int) $ruleGroup->order;
+        $oldOrder = (int)$ruleGroup->order;
 
         if ($newOrder > $oldOrder) {
             $this->user->ruleGroups()->where('rule_groups.order', '<=', $newOrder)->where('rule_groups.order', '>', $oldOrder)
@@ -521,7 +525,7 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface
         // order
         if (array_key_exists('order', $data) && $ruleGroup->order !== $data['order']) {
             $this->resetOrder();
-            $this->setOrder($ruleGroup, (int) $data['order']);
+            $this->setOrder($ruleGroup, (int)$data['order']);
         }
 
         $ruleGroup->save();

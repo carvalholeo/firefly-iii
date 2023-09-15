@@ -1,4 +1,5 @@
 <?php
+
 /**
  * TrustProxies.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -28,23 +29,23 @@ use Symfony\Component\HttpFoundation\Request;
 /**
  * Class TrustProxies
  *
- * @codeCoverageIgnore
+
  */
 class TrustProxies extends Middleware
 {
     // After...
-    protected $headers =
-        Request::HEADER_X_FORWARDED_FOR |
-        Request::HEADER_X_FORWARDED_HOST |
-        Request::HEADER_X_FORWARDED_PORT |
-        Request::HEADER_X_FORWARDED_PROTO |
-        Request::HEADER_X_FORWARDED_AWS_ELB;
+    protected $headers
+        = Request::HEADER_X_FORWARDED_FOR |
+          Request::HEADER_X_FORWARDED_HOST |
+          Request::HEADER_X_FORWARDED_PORT |
+          Request::HEADER_X_FORWARDED_PROTO |
+          Request::HEADER_X_FORWARDED_AWS_ELB;
 
     /**
      * TrustProxies constructor.
      */
     public function __construct()
     {
-        $this->proxies = (string) config('firefly.trusted_proxies');
+        $this->proxies = (string)config('firefly.trusted_proxies');
     }
 }

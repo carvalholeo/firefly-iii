@@ -24,7 +24,6 @@ declare(strict_types=1);
 namespace FireflyIII\Services\Internal\Support;
 
 use Carbon\Carbon;
-use Exception;
 use FireflyIII\Exceptions\DuplicateTransactionException;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Factory\AccountMetaFactory;
@@ -39,7 +38,8 @@ use FireflyIII\Models\TransactionGroup;
 use FireflyIII\Models\TransactionJournal;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use FireflyIII\Services\Internal\Destroy\TransactionGroupDestroyService;
-use Log;
+use Illuminate\Support\Facades\Log;
+use JsonException;
 use Validator;
 
 /**
@@ -100,9 +100,9 @@ trait AccountServiceTrait
     }
 
     /**
-     * Update meta data for account. Depends on type which fields are valid.
+     * Update metadata for account. Depends on type which fields are valid.
      *
-     * See reference nr. 97
+     * TODO this method treats expense accounts and liabilities the same way (tries to save interest)
      *
      * @param Account $account
      * @param array   $data
@@ -115,7 +115,17 @@ trait AccountServiceTrait
             $fields = $this->validAssetFields;
         }
 
-        // the account role may not be set in the data but we may have it already:
+        // remove currency_id if necessary.
+        $type = $account->accountType->type;
+        $list = config('firefly.valid_currency_account_types');
+        if (!in_array($type, $list, true)) {
+            $pos = array_search('currency_id', $fields, true);
+            if ($pos !== false) {
+                unset($fields[$pos]);
+            }
+        }
+
+        // the account role may not be set in the data, but we may have it already:
         if (!array_key_exists('account_role', $data)) {
             $data['account_role'] = null;
         }
@@ -137,16 +147,18 @@ trait AccountServiceTrait
             // if the field is set but NULL, skip it.
             // if the field is set but "", update it.
             if (array_key_exists($field, $data) && null !== $data[$field]) {
-
                 // convert boolean value:
                 if (is_bool($data[$field]) && false === $data[$field]) {
                     $data[$field] = 0;
                 }
-                if (is_bool($data[$field]) && true === $data[$field]) {
+                if (true === $data[$field]) {
                     $data[$field] = 1;
                 }
+                if ($data[$field] instanceof Carbon) {
+                    $data[$field] = $data[$field]->toAtomString();
+                }
 
-                $factory->crud($account, $field, (string) $data[$field]);
+                $factory->crud($account, $field, (string)$data[$field]);
             }
         }
     }
@@ -155,26 +167,20 @@ trait AccountServiceTrait
      * @param Account $account
      * @param string  $note
      *
-     * @codeCoverageIgnore
      * @return bool
      */
     public function updateNote(Account $account, string $note): bool
     {
+        $dbNote = $account->notes()->first();
         if ('' === $note) {
-            $dbNote = $account->notes()->first();
             if (null !== $dbNote) {
-                try {
-                    $dbNote->delete();
-                } catch (Exception $e) { // @phpstan-ignore-line
-                    // @ignoreException
-                }
+                $dbNote->delete();
             }
 
             return true;
         }
-        $dbNote = $account->notes()->first();
         if (null === $dbNote) {
-            $dbNote = new Note;
+            $dbNote = new Note();
             $dbNote->noteable()->associate($account);
         }
         $dbNote->text = trim($note);
@@ -192,7 +198,7 @@ trait AccountServiceTrait
      */
     public function validOBData(array $data): bool
     {
-        $data['opening_balance'] = (string) ($data['opening_balance'] ?? '');
+        $data['opening_balance'] = (string)($data['opening_balance'] ?? '');
         if ('' !== $data['opening_balance'] && 0 === bccomp($data['opening_balance'], '0')) {
             $data['opening_balance'] = '';
         }
@@ -213,6 +219,7 @@ trait AccountServiceTrait
      *
      * @return TransactionGroup
      * @throws FireflyException
+     * @throws JsonException
      * @deprecated
      */
     protected function createOBGroup(Account $account, array $data): TransactionGroup
@@ -368,7 +375,7 @@ trait AccountServiceTrait
      *
      * @return TransactionCurrency
      * @throws FireflyException
-     * @throws \JsonException
+     * @throws JsonException
      */
     protected function getCurrency(int $currencyId, string $currencyCode): TransactionCurrency
     {
@@ -391,20 +398,32 @@ trait AccountServiceTrait
     /**
      * Create the opposing "credit liability" transaction for credit liabilities.
      *
+     *
      * @param Account $account
+     * @param string  $direction
      * @param string  $openingBalance
      * @param Carbon  $openingBalanceDate
      *
      * @return TransactionGroup
      * @throws FireflyException
+     * @throws JsonException
      */
-    protected function updateCreditTransaction(Account $account, string $openingBalance, Carbon $openingBalanceDate): TransactionGroup
+    protected function updateCreditTransaction(Account $account, string $direction, string $openingBalance, Carbon $openingBalanceDate): TransactionGroup
     {
         Log::debug(sprintf('Now in %s', __METHOD__));
 
         if (0 === bccomp($openingBalance, '0')) {
-            Log::debug('Amount is zero, so will not update liability credit group.');
-            throw new FireflyException('Amount for update liability credit was unexpectedly 0.');
+            Log::debug('Amount is zero, so will not update liability credit/debit group.');
+            throw new FireflyException('Amount for update liability credit/debit was unexpectedly 0.');
+        }
+        // if direction is "debit" (i owe this debt), amount is negative.
+        // which means the liability will have a negative balance which the user must fill.
+        $openingBalance = app('steam')->negative($openingBalance);
+
+        // if direction is "credit" (I am owed this debt), amount is positive.
+        // which means the liability will have a positive balance which is drained when its paid back into any asset.
+        if ('credit' === $direction) {
+            $openingBalance = app('steam')->positive($openingBalance);
         }
 
         // create if not exists:
@@ -448,6 +467,7 @@ trait AccountServiceTrait
      *
      * @return TransactionGroup
      * @throws FireflyException
+     * @throws JsonException
      */
     protected function createCreditTransaction(Account $account, string $openingBalance, Carbon $openingBalanceDate): TransactionGroup
     {
@@ -459,7 +479,24 @@ trait AccountServiceTrait
         }
 
         $language = app('preferences')->getForUser($account->user, 'language', 'en_US')->data;
-        $amount   = app('steam')->positive($openingBalance);
+
+        // set source and/or destination based on whether the amount is positive or negative.
+        // first, assume the amount is positive and go from there:
+        // if amount is positive ("I am owed this debt"), source is special account, destination is the liability.
+        $sourceId   = null;
+        $sourceName = trans('firefly.liability_credit_description', ['account' => $account->name], $language);
+        $destId     = $account->id;
+        $destName   = null;
+        if (-1 === bccomp($openingBalance, '0')) {
+            // amount is negative, reverse it
+            $sourceId   = $account->id;
+            $sourceName = null;
+            $destId     = null;
+            $destName   = trans('firefly.liability_credit_description', ['account' => $account->name], $language);
+        }
+
+        // amount must be positive for the transaction to work.
+        $amount = app('steam')->positive($openingBalance);
 
         // get or grab currency:
         $currency = $this->accountRepository->getAccountCurrency($account);
@@ -475,10 +512,10 @@ trait AccountServiceTrait
                 [
                     'type'             => 'Liability credit',
                     'date'             => $openingBalanceDate,
-                    'source_id'        => null,
-                    'source_name'      => trans('firefly.liability_credit_description', ['account' => $account->name], $language),
-                    'destination_id'   => $account->id,
-                    'destination_name' => null,
+                    'source_id'        => $sourceId,
+                    'source_name'      => $sourceName,
+                    'destination_id'   => $destId,
+                    'destination_name' => $destName,
                     'user'             => $account->user_id,
                     'currency_id'      => $currency->id,
                     'order'            => 0,
@@ -515,7 +552,7 @@ trait AccountServiceTrait
     }
 
     /**
-     * See reference nr. 99
+     * TODO refactor to "getfirstjournal"
      *
      * @param TransactionGroup $group
      *
@@ -534,7 +571,7 @@ trait AccountServiceTrait
     }
 
     /**
-     * See reference nr. 98
+     * TODO Rename to getOpposingTransaction
      *
      * @param TransactionJournal $journal
      * @param Account            $account
@@ -581,6 +618,7 @@ trait AccountServiceTrait
      *
      * @return TransactionGroup
      * @throws FireflyException
+     * @throws JsonException
      */
     protected function updateOBGroupV2(Account $account, string $openingBalance, Carbon $openingBalanceDate): TransactionGroup
     {
@@ -643,6 +681,7 @@ trait AccountServiceTrait
      *
      * @return TransactionGroup
      * @throws FireflyException
+     * @throws JsonException
      */
     protected function createOBGroupV2(Account $account, string $openingBalance, Carbon $openingBalanceDate): TransactionGroup
     {

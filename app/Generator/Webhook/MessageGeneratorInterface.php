@@ -31,7 +31,6 @@ use Illuminate\Support\Collection;
  */
 interface MessageGeneratorInterface
 {
-
     /**
      *
      */
@@ -56,4 +55,11 @@ interface MessageGeneratorInterface
      * @param User $user
      */
     public function setUser(User $user): void;
+
+    /**
+     * @param Collection $webhooks
+     *
+     * @return void
+     */
+    public function setWebhooks(Collection $webhooks): void;
 }

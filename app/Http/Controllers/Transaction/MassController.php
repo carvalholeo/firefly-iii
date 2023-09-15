@@ -1,4 +1,5 @@
 <?php
+
 /**
  * MassController.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -38,9 +39,9 @@ use FireflyIII\Services\Internal\Update\JournalUpdateService;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Redirector;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View as IlluminateView;
 use InvalidArgumentException;
-use Log;
 
 /**
  * Class MassController.
@@ -53,7 +54,7 @@ class MassController extends Controller
     /**
      * MassController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -61,7 +62,7 @@ class MassController extends Controller
 
         $this->middleware(
             function ($request, $next) {
-                app('view')->share('title', (string) trans('firefly.transactions'));
+                app('view')->share('title', (string)trans('firefly.transactions'));
                 app('view')->share('mainTitleIcon', 'fa-exchange');
                 $this->repository = app(JournalRepositoryInterface::class);
 
@@ -79,7 +80,7 @@ class MassController extends Controller
      */
     public function delete(array $journals): IlluminateView
     {
-        $subTitle = (string) trans('firefly.mass_delete_journals');
+        $subTitle = (string)trans('firefly.mass_delete_journals');
 
         // put previous url in session
         $this->rememberPreviousUrl('transactions.mass-delete.url');
@@ -97,22 +98,27 @@ class MassController extends Controller
      */
     public function destroy(MassDeleteJournalRequest $request)
     {
+        Log::debug(sprintf('Now in %s', __METHOD__));
         $ids   = $request->get('confirm_mass_delete');
         $count = 0;
         if (is_array($ids)) {
+            Log::debug('Array of IDs', $ids);
             /** @var string $journalId */
             foreach ($ids as $journalId) {
-
+                Log::debug(sprintf('Searching for ID #%d', $journalId));
                 /** @var TransactionJournal $journal */
-                $journal = $this->repository->find((int) $journalId);
-                if (null !== $journal && (int) $journalId === $journal->id) {
+                $journal = $this->repository->find((int)$journalId);
+                if (null !== $journal && (int)$journalId === (int)$journal->id) {
                     $this->repository->destroyJournal($journal);
                     ++$count;
+                    Log::debug(sprintf('Deleted transaction journal #%d', $journalId));
+                    continue;
                 }
+                Log::debug(sprintf('Could not find transaction journal #%d', $journalId));
             }
         }
         app('preferences')->mark();
-        session()->flash('success', (string) trans_choice('firefly.mass_deleted_transactions_success', $count));
+        session()->flash('success', (string)trans_choice('firefly.mass_deleted_transactions_success', $count));
 
         // redirect to previous URL:
         return redirect($this->getPreviousUrl('transactions.mass-delete.url'));
@@ -127,7 +133,7 @@ class MassController extends Controller
      */
     public function edit(array $journals): IlluminateView
     {
-        $subTitle = (string) trans('firefly.mass_edit_journals');
+        $subTitle = (string)trans('firefly.mass_edit_journals');
 
         /** @var AccountRepositoryInterface $accountRepository */
         $accountRepository = app(AccountRepositoryInterface::class);
@@ -146,7 +152,7 @@ class MassController extends Controller
 
         // reverse amounts
         foreach ($journals as $index => $journal) {
-            $journals[$index]['amount']         = number_format((float) app('steam')->positive($journal['amount']), $journal['currency_decimal_places'], '.', '');
+            $journals[$index]['amount']         = app('steam')->bcround(app('steam')->positive($journal['amount']), $journal['currency_decimal_places']);
             $journals[$index]['foreign_amount'] = null === $journal['foreign_amount'] ?
                 null : app('steam')->positive($journal['foreign_amount']);
         }
@@ -168,13 +174,13 @@ class MassController extends Controller
     {
         $journalIds = $request->get('journals');
         if (!is_array($journalIds)) {
-            // See reference nr. 48
+            // TODO this is a weird error, should be caught.
             throw new FireflyException('This is not an array.');
         }
         $count = 0;
         /** @var string $journalId */
         foreach ($journalIds as $journalId) {
-            $integer = (int) $journalId;
+            $integer = (int)$journalId;
             try {
                 $this->updateJournal($integer, $request);
                 $count++;
@@ -184,7 +190,7 @@ class MassController extends Controller
         }
 
         app('preferences')->mark();
-        session()->flash('success', (string) trans_choice('firefly.mass_edited_transactions_success', $count));
+        session()->flash('success', (string)trans_choice('firefly.mass_edited_transactions_success', $count));
 
         // redirect to previous URL:
         return redirect($this->getPreviousUrl('transactions.mass-edit.url'));
@@ -224,7 +230,7 @@ class MassController extends Controller
         $service->setData($data);
         $service->update();
         // trigger rules
-        event(new UpdatedTransactionGroup($journal->transactionGroup));
+        event(new UpdatedTransactionGroup($journal->transactionGroup, true, true));
     }
 
     /**
@@ -233,7 +239,6 @@ class MassController extends Controller
      * @param string                 $key
      *
      * @return Carbon|null
-     * @codeCoverageIgnore
      */
     private function getDateFromRequest(MassEditJournalRequest $request, int $journalId, string $key): ?Carbon
     {
@@ -261,7 +266,6 @@ class MassController extends Controller
      * @param string                 $string
      *
      * @return string|null
-     * @codeCoverageIgnore
      */
     private function getStringFromRequest(MassEditJournalRequest $request, int $journalId, string $string): ?string
     {
@@ -273,7 +277,7 @@ class MassController extends Controller
             return null;
         }
 
-        return (string) $value[$journalId];
+        return (string)$value[$journalId];
     }
 
     /**
@@ -282,7 +286,6 @@ class MassController extends Controller
      * @param string                 $string
      *
      * @return int|null
-     * @codeCoverageIgnore
      */
     private function getIntFromRequest(MassEditJournalRequest $request, int $journalId, string $string): ?int
     {
@@ -294,6 +297,6 @@ class MassController extends Controller
             return null;
         }
 
-        return (int) $value[$journalId];
+        return (int)$value[$journalId];
     }
 }

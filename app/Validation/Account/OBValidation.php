@@ -26,20 +26,13 @@ namespace FireflyIII\Validation\Account;
 
 use FireflyIII\Models\Account;
 use FireflyIII\Models\AccountType;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Trait OBValidation
  */
 trait OBValidation
 {
-    /**
-     * @param array $accountTypes
-     *
-     * @return bool
-     */
-    abstract protected function canCreateTypes(array $accountTypes): bool;
-
     /**
      * @param array $array
      *
@@ -57,7 +50,7 @@ trait OBValidation
         if (null === $accountId && null === $accountName && false === $this->canCreateTypes($validTypes)) {
             // if both values are NULL we return false,
             // because the destination of a deposit can't be created.
-            $this->destError = (string) trans('validation.ob_dest_need_data');
+            $this->destError = (string)trans('validation.ob_dest_need_data');
             Log::error('Both values are NULL, cant create OB destination.');
             $result = false;
         }
@@ -72,20 +65,26 @@ trait OBValidation
             $search = $this->findExistingAccount($validTypes, $array);
             if (null === $search) {
                 Log::debug('findExistingAccount() returned NULL, so the result is false.', $validTypes);
-                $this->destError = (string) trans('validation.ob_dest_bad_data', ['id' => $accountId, 'name' => $accountName]);
+                $this->destError = (string)trans('validation.ob_dest_bad_data', ['id' => $accountId, 'name' => $accountName]);
                 $result          = false;
             }
             if (null !== $search) {
                 Log::debug(sprintf('findExistingAccount() returned #%d ("%s"), so the result is true.', $search->id, $search->name));
-                $this->destination = $search;
-                $result            = true;
+                $this->setDestination($search);
+                $result = true;
             }
         }
-        $result = $result ?? false;
         Log::debug(sprintf('validateOBDestination(%d, "%s") will return %s', $accountId, $accountName, var_export($result, true)));
 
         return $result;
     }
+
+    /**
+     * @param array $accountTypes
+     *
+     * @return bool
+     */
+    abstract protected function canCreateTypes(array $accountTypes): bool;
 
     /**
      * Source of an opening balance can either be an asset account
@@ -108,7 +107,7 @@ trait OBValidation
             // if both values are NULL return false,
             // because the source of a deposit can't be created.
             // (this never happens).
-            $this->sourceError = (string) trans('validation.ob_source_need_data');
+            $this->sourceError = (string)trans('validation.ob_source_need_data');
             $result            = false;
         }
 
@@ -128,8 +127,8 @@ trait OBValidation
             // the source resulted in an account, AND it's of a valid type.
             if (null !== $search && in_array($search->accountType->type, $validTypes, true)) {
                 Log::debug(sprintf('Found account of correct type: #%d, "%s"', $search->id, $search->name));
-                $this->source = $search;
-                $result       = true;
+                $this->setSource($search);
+                $result = true;
             }
         }
 
@@ -139,10 +138,10 @@ trait OBValidation
             $result = true;
 
             // set the source to be a (dummy) initial balance account.
-            $account              = new Account;
+            $account              = new Account();
             $accountType          = AccountType::whereType(AccountType::INITIAL_BALANCE)->first();
             $account->accountType = $accountType;
-            $this->source         = $account;
+            $this->setSource($account);
         }
 
         return $result ?? false;

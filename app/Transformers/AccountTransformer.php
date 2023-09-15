@@ -28,6 +28,7 @@ use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Account;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use JsonException;
+use Symfony\Component\HttpFoundation\ParameterBag;
 
 /**
  * Class AccountTransformer
@@ -40,10 +41,11 @@ class AccountTransformer extends AbstractTransformer
      *
      * AccountTransformer constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
+        $this->parameters = new ParameterBag();
         $this->repository = app(AccountRepositoryInterface::class);
     }
 
@@ -53,6 +55,7 @@ class AccountTransformer extends AbstractTransformer
      * @param Account $account
      *
      * @return array
+     * @throws FireflyException
      * @throws JsonException
      */
     public function transform(Account $account): array
@@ -61,8 +64,8 @@ class AccountTransformer extends AbstractTransformer
 
         // get account type:
         $fullType           = $account->accountType->type;
-        $accountType        = (string) config(sprintf('firefly.shortNamesByFullName.%s', $fullType));
-        $liabilityType      = (string) config(sprintf('firefly.shortLiabilityNameByFullName.%s', $fullType));
+        $accountType        = (string)config(sprintf('firefly.shortNamesByFullName.%s', $fullType));
+        $liabilityType      = (string)config(sprintf('firefly.shortLiabilityNameByFullName.%s', $fullType));
         $liabilityType      = '' === $liabilityType ? null : strtolower($liabilityType);
         $liabilityDirection = $this->repository->getMetaValue($account, 'liability_direction');
 
@@ -76,7 +79,7 @@ class AccountTransformer extends AbstractTransformer
         [$openingBalance, $openingBalanceDate] = $this->getOpeningBalance($account, $accountType);
         [$interest, $interestPeriod] = $this->getInterest($account, $accountType);
 
-        $openingBalance  = number_format((float) $openingBalance, $decimalPlaces, '.', '');
+        $openingBalance  = app('steam')->bcround($openingBalance, $decimalPlaces);
         $includeNetWorth = '0' !== $this->repository->getMetaValue($account, 'include_net_worth');
         $longitude       = null;
         $latitude        = null;
@@ -85,17 +88,17 @@ class AccountTransformer extends AbstractTransformer
         if (null !== $location) {
             $longitude = $location->longitude;
             $latitude  = $location->latitude;
-            $zoomLevel = (int) $location->zoom_level;
+            $zoomLevel = (int)$location->zoom_level;
         }
 
         // no order for some accounts:
-        $order = (int) $account->order;
-        if (!in_array(strtolower($accountType), ['liability', 'liabilities', 'asset'])) {
+        $order = (int)$account->order;
+        if (!in_array(strtolower($accountType), ['liability', 'liabilities', 'asset'], true)) {
             $order = null;
         }
 
         return [
-            'id'                      => (string) $account->id,
+            'id'                      => (string)$account->id,
             'created_at'              => $account->created_at->toAtomString(),
             'updated_at'              => $account->updated_at->toAtomString(),
             'active'                  => $account->active,
@@ -107,7 +110,7 @@ class AccountTransformer extends AbstractTransformer
             'currency_code'           => $currencyCode,
             'currency_symbol'         => $currencySymbol,
             'currency_decimal_places' => $decimalPlaces,
-            'current_balance'         => number_format((float) app('steam')->balance($account, $date), $decimalPlaces, '.', ''),
+            'current_balance'         => app('steam')->bcround(app('steam')->balance($account, $date), $decimalPlaces),
             'current_balance_date'    => $date->toAtomString(),
             'notes'                   => $this->repository->getNoteText($account),
             'monthly_payment_date'    => $monthlyPaymentDate,
@@ -115,7 +118,7 @@ class AccountTransformer extends AbstractTransformer
             'account_number'          => $this->repository->getMetaValue($account, 'account_number'),
             'iban'                    => '' === $account->iban ? null : $account->iban,
             'bic'                     => $this->repository->getMetaValue($account, 'BIC'),
-            'virtual_balance'         => number_format((float) $account->virtual_balance, $decimalPlaces, '.', ''),
+            'virtual_balance'         => app('steam')->bcround($account->virtual_balance, $decimalPlaces),
             'opening_balance'         => $openingBalance,
             'opening_balance_date'    => $openingBalanceDate,
             'liability_type'          => $liabilityType,
@@ -146,7 +149,7 @@ class AccountTransformer extends AbstractTransformer
     private function getAccountRole(Account $account, string $accountType): ?string
     {
         $accountRole = $this->repository->getMetaValue($account, 'account_role');
-        if ('asset' !== $accountType || '' === (string) $accountRole) {
+        if ('asset' !== $accountType || '' === (string)$accountRole) {
             $accountRole = null;
         }
 
@@ -154,6 +157,8 @@ class AccountTransformer extends AbstractTransformer
     }
 
     /**
+     * TODO duplicated in the V2 transformer.
+     *
      * @return Carbon
      */
     private function getDate(): Carbon
@@ -181,7 +186,7 @@ class AccountTransformer extends AbstractTransformer
         if (null === $currency) {
             $currency = app('amount')->getDefaultCurrencyByUser($account->user);
         }
-        $currencyId     = (string) $currency->id;
+        $currencyId     = (string)$currency->id;
         $currencyCode   = $currency->code;
         $decimalPlaces  = $currency->decimal_places;
         $currencySymbol = $currency->symbol;
@@ -205,7 +210,13 @@ class AccountTransformer extends AbstractTransformer
             $monthlyPaymentDate = $this->repository->getMetaValue($account, 'cc_monthly_payment_date');
         }
         if (null !== $monthlyPaymentDate) {
-            $monthlyPaymentDate = Carbon::createFromFormat('!Y-m-d', $monthlyPaymentDate, config('app.timezone'))->toAtomString();
+            // try classic date:
+            if (10 === strlen($monthlyPaymentDate)) {
+                $monthlyPaymentDate = Carbon::createFromFormat('!Y-m-d', $monthlyPaymentDate, config('app.timezone'))->toAtomString();
+            }
+            if (10 !== strlen($monthlyPaymentDate)) {
+                $monthlyPaymentDate = Carbon::parse($monthlyPaymentDate, config('app.timezone'))->toAtomString();
+            }
         }
 
         return [$creditCardType, $monthlyPaymentDate];
@@ -217,7 +228,7 @@ class AccountTransformer extends AbstractTransformer
      *
      * @return array
      *
-     * See reference nr. 20
+     * TODO refactor call to get~OpeningBalanceAmount / Date because it is a lot of queries.
      */
     private function getOpeningBalance(Account $account, string $accountType): array
     {
@@ -229,7 +240,7 @@ class AccountTransformer extends AbstractTransformer
             $openingBalanceDate = $this->repository->getOpeningBalanceDate($account);
         }
         if (null !== $openingBalanceDate) {
-            $openingBalanceDate = Carbon::createFromFormat('!Y-m-d', $openingBalanceDate, config('app.timezone'))->toAtomString();
+            $openingBalanceDate = Carbon::createFromFormat('Y-m-d H:i:s', $openingBalanceDate, config('app.timezone'))->toAtomString();
         }
 
         return [$openingBalance, $openingBalanceDate];

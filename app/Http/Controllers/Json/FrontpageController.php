@@ -1,4 +1,5 @@
 <?php
+
 /**
  * FrontpageController.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -22,11 +23,12 @@ declare(strict_types=1);
 
 namespace FireflyIII\Http\Controllers\Json;
 
+use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Http\Controllers\Controller;
 use FireflyIII\Models\PiggyBank;
 use FireflyIII\Repositories\PiggyBank\PiggyBankRepositoryInterface;
 use Illuminate\Http\JsonResponse;
-use Log;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
@@ -40,6 +42,7 @@ class FrontpageController extends Controller
      * @param PiggyBankRepositoryInterface $repository
      *
      * @return JsonResponse
+     * @throws FireflyException
      */
     public function piggyBanks(PiggyBankRepositoryInterface $repository): JsonResponse
     {
@@ -51,8 +54,8 @@ class FrontpageController extends Controller
             if (1 === bccomp($amount, '0')) {
                 // percentage!
                 $pct = 0;
-                if (0.0 !== (float) $piggyBank->targetamount) {
-                    $pct = round(($amount / $piggyBank->targetamount) * 100);
+                if (0 !== bccomp($piggyBank->targetamount, '0')) {
+                    $pct = (int)bcmul(bcdiv($amount, $piggyBank->targetamount), '100');
                 }
 
                 $entry = [
@@ -67,15 +70,15 @@ class FrontpageController extends Controller
             }
         }
         $html = '';
-        if (!empty($info)) {
+        if (0 !== count($info)) {
             try {
                 $html = view('json.piggy-banks', compact('info'))->render();
-
-            } catch (Throwable $e) { // @phpstan-ignore-line
+            } catch (Throwable $e) {
                 Log::error(sprintf('Cannot render json.piggy-banks: %s', $e->getMessage()));
+                Log::error($e->getTraceAsString());
                 $html = 'Could not render view.';
+                throw new FireflyException($html, 0, $e);
             }
-
         }
 
         return response()->json(['html' => $html]);

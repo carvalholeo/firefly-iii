@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Console\Commands\Upgrade;
 
+use FireflyIII\Console\Commands\ShowsFriendlyMessages;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Bill;
 use FireflyIII\Models\Preference;
@@ -33,12 +34,16 @@ use FireflyIII\Repositories\RuleGroup\RuleGroupRepositoryInterface;
 use FireflyIII\Repositories\User\UserRepositoryInterface;
 use FireflyIII\User;
 use Illuminate\Console\Command;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class MigrateToRules
  */
 class MigrateToRules extends Command
 {
+    use ShowsFriendlyMessages;
+
     public const CONFIG_NAME = '480_bills_to_rules';
     /**
      * The console command description.
@@ -66,16 +71,16 @@ class MigrateToRules extends Command
      * Execute the console command.
      *
      * @return int
+     * @throws ContainerExceptionInterface
      * @throws FireflyException
+     * @throws NotFoundExceptionInterface
      */
     public function handle(): int
     {
         $this->stupidLaravel();
-        $start = microtime(true);
-
 
         if ($this->isExecuted() && true !== $this->option('force')) {
-            $this->warn('This command has already been executed.');
+            $this->friendlyInfo('This command has already been executed.');
 
             return 0;
         }
@@ -88,14 +93,12 @@ class MigrateToRules extends Command
         }
 
         if (0 === $this->count) {
-            $this->line('All bills are OK.');
+            $this->friendlyPositive('All bills are OK.');
         }
         if (0 !== $this->count) {
-            $this->line(sprintf('Verified and fixed %d bill(s).', $this->count));
+            $this->friendlyInfo(sprintf('Verified and fixed %d bill(s).', $this->count));
         }
 
-        $end = round(microtime(true) - $start, 2);
-        $this->info(sprintf('Verified and fixed bills in %s seconds.', $end));
         $this->markAsExecuted();
 
         return 0;
@@ -106,7 +109,7 @@ class MigrateToRules extends Command
      * executed. This leads to noticeable slow-downs and class calls. To prevent this, this method should
      * be called from the handle method instead of using the constructor to initialize the command.
      *
-     * @codeCoverageIgnore
+
      */
     private function stupidLaravel(): void
     {
@@ -119,15 +122,14 @@ class MigrateToRules extends Command
 
     /**
      * @return bool
-     * @throws FireflyException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     private function isExecuted(): bool
     {
         $configVar = app('fireflyconfig')->get(self::CONFIG_NAME, false);
         if (null !== $configVar) {
-            return (bool) $configVar->data;
+            return (bool)$configVar->data;
         }
 
         return false;
@@ -148,14 +150,14 @@ class MigrateToRules extends Command
 
         /** @var Preference $lang */
         $lang       = app('preferences')->getForUser($user, 'language', 'en_US');
-        $groupTitle = (string) trans('firefly.rulegroup_for_bills_title', [], $lang->data);
+        $groupTitle = (string)trans('firefly.rulegroup_for_bills_title', [], $lang->data);
         $ruleGroup  = $this->ruleGroupRepository->findByTitle($groupTitle);
 
         if (null === $ruleGroup) {
             $ruleGroup = $this->ruleGroupRepository->store(
                 [
-                    'title'       => (string) trans('firefly.rulegroup_for_bills_title', [], $lang->data),
-                    'description' => (string) trans('firefly.rulegroup_for_bills_description', [], $lang->data),
+                    'title'       => (string)trans('firefly.rulegroup_for_bills_title', [], $lang->data),
+                    'description' => (string)trans('firefly.rulegroup_for_bills_description', [], $lang->data),
                     'active'      => true,
                 ]
             );
@@ -166,7 +168,6 @@ class MigrateToRules extends Command
         foreach ($bills as $bill) {
             $this->migrateBill($ruleGroup, $bill, $lang);
         }
-
     }
 
     /**
@@ -187,8 +188,8 @@ class MigrateToRules extends Command
             'active'          => true,
             'strict'          => false,
             'stop_processing' => false, // field is no longer used.
-            'title'           => (string) trans('firefly.rule_for_bill_title', ['name' => $bill->name], $language->data),
-            'description'     => (string) trans('firefly.rule_for_bill_description', ['name' => $bill->name], $language->data),
+            'title'           => (string)trans('firefly.rule_for_bill_title', ['name' => $bill->name], $language->data),
+            'description'     => (string)trans('firefly.rule_for_bill_description', ['name' => $bill->name], $language->data),
             'trigger'         => 'store-journal',
             'triggers'        => [
                 [

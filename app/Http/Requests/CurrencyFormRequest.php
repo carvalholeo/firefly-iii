@@ -1,4 +1,5 @@
 <?php
+
 /**
  * CurrencyFormRequest.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -32,7 +33,8 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class CurrencyFormRequest extends FormRequest
 {
-    use ConvertsDataTypes, ChecksLogin;
+    use ConvertsDataTypes;
+    use ChecksLogin;
 
     /**
      * Returns the data required by the controller.
@@ -45,7 +47,7 @@ class CurrencyFormRequest extends FormRequest
             'name'           => $this->convertString('name'),
             'code'           => $this->convertString('code'),
             'symbol'         => $this->convertString('symbol'),
-            'decimal_places' => $this->integer('decimal_places'),
+            'decimal_places' => $this->convertInteger('decimal_places'),
             'enabled'        => $this->boolean('enabled'),
         ];
     }

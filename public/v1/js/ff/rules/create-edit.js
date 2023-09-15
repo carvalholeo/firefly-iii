@@ -162,7 +162,7 @@ function onAddNewAction() {
     "use strict";
     console.log('Now in onAddNewAction()');
 
-    var selectQuery = 'select[name^="actions["][name$="][type]"]';
+    var selectQuery  = 'select[name^="actions["][name$="][type]"]';
     var selectResult = $(selectQuery);
 
     console.log('Select query is "' + selectQuery + '" and the result length is ' + selectResult.length);
@@ -190,7 +190,7 @@ function onAddNewTrigger() {
     "use strict";
     console.log('Now in onAddNewTrigger()');
 
-    var selectQuery = 'select[name^="triggers["][name$="][type]"]';
+    var selectQuery  = 'select[name^="triggers["][name$="][type]"]';
     var selectResult = $(selectQuery);
 
     console.log('Select query is "' + selectQuery + '" and the result length is ' + selectResult.length);
@@ -217,9 +217,9 @@ function onAddNewTrigger() {
 function updateActionInput(selectList) {
     console.log('Now in updateActionInput() for a select list, currently with value "' + selectList.val() + '".');
     // the actual row this select list is in:
-    var parent = selectList.parent().parent();
+    var parent      = selectList.parent().parent();
     // the text input we're looking for:
-    var inputQuery = 'input[name^="actions["][name$="][value]"]';
+    var inputQuery  = 'input[name^="actions["][name$="][value]"]';
     var inputResult = parent.find(inputQuery);
 
     console.log('Searching for children in this row with query "' + inputQuery + '" resulted in ' + inputResult.length + ' results.');
@@ -232,11 +232,17 @@ function updateActionInput(selectList) {
             break;
         case 'clear_category':
         case 'clear_budget':
+        case 'append_descr_to_notes':
+        case 'append_notes_to_descr':
+        case 'switch_accounts':
+        case 'move_descr_to_notes':
+        case 'move_notes_to_descr':
         case 'clear_notes':
         case 'delete_transaction':
         case 'remove_all_tags':
             console.log('Select list value is ' + selectList.val() + ', so input needs to be disabled.');
-            inputResult.attr('disabled', 'disabled');
+            inputResult.prop('disabled', true);
+            inputResult.typeahead('destroy');
             break;
         case 'set_budget':
             console.log('Select list value is ' + selectList.val() + ', so input needs auto complete.');
@@ -291,9 +297,9 @@ function updateActionInput(selectList) {
 function updateTriggerInput(selectList) {
     console.log('Now in updateTriggerInput() for a select list, currently with value "' + selectList.val() + '".');
     // the actual row this select list is in:
-    var parent = selectList.parent().parent();
+    var parent      = selectList.parent().parent();
     // the text input we're looking for:
-    var inputQuery = 'input[name^="triggers["][name$="][value]"]';
+    var inputQuery  = 'input[name^="triggers["][name$="][value]"]';
     var inputResult = parent.find(inputQuery);
 
     console.log('Searching for children in this row with query "' + inputQuery + '" resulted in ' + inputResult.length + ' results.');
@@ -343,9 +349,12 @@ function updateTriggerInput(selectList) {
         case 'has_no_tag':
         case 'no_notes':
         case 'any_notes':
+        case 'exists':
+        case 'reconciled':
         case 'has_any_tag':
         case 'has_attachments':
         case 'source_is_cash':
+        case 'has_no_attachments':
         case 'destination_is_cash':
         case 'account_is_cash':
         case 'no_external_url':
@@ -364,7 +373,7 @@ function updateTriggerInput(selectList) {
         case 'amount_exactly':
             console.log('Set value to type=number');
             inputResult.prop('type', 'number');
-            inputResult.prop('step','any');
+            inputResult.prop('step', 'any');
             break;
         default:
             console.log('Select list value is ' + selectList.val() + ', destroy auto complete, do nothing else.');
@@ -383,9 +392,9 @@ function createAutoComplete(input, URL) {
     input.typeahead('destroy');
 
     // append URL:
-    var lastChar = URL[URL.length -1];
+    var lastChar      = URL[URL.length - 1];
     var urlParamSplit = '?';
-    if('&' === lastChar) {
+    if ('&' === lastChar) {
         urlParamSplit = '';
     }
     var source = new Bloodhound({
@@ -395,6 +404,15 @@ function createAutoComplete(input, URL) {
                                         url: URL + urlParamSplit + 'uid=' + uid,
                                         filter: function (list) {
                                             return $.map(list, function (item) {
+                                                if (item.hasOwnProperty('active') && item.active === true) {
+                                                    return {name: item.name};
+                                                }
+                                                if (item.hasOwnProperty('active') && item.active === false) {
+                                                    return;
+                                                }
+                                                if (item.hasOwnProperty('active')) {
+                                                    console.log(item.active);
+                                                }
                                                 return {name: item.name};
                                             });
                                         }
@@ -404,6 +422,15 @@ function createAutoComplete(input, URL) {
                                         wildcard: '%QUERY',
                                         filter: function (list) {
                                             return $.map(list, function (item) {
+                                                if (item.hasOwnProperty('active') && item.active === true) {
+                                                    return {name: item.name};
+                                                }
+                                                if (item.hasOwnProperty('active') && item.active === false) {
+                                                    return;
+                                                }
+                                                if (item.hasOwnProperty('active')) {
+                                                    console.log(item.active);
+                                                }
                                                 return {name: item.name};
                                             });
                                         }

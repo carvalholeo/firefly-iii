@@ -23,9 +23,10 @@ declare(strict_types=1);
 
 namespace FireflyIII\Helpers\Update;
 
-use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Services\FireflyIIIOrg\Update\UpdateRequestInterface;
-use Log;
+use Illuminate\Support\Facades\Log;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Trait UpdateTrait
@@ -39,9 +40,8 @@ trait UpdateTrait
      * 'level' => 'info' / 'success' / 'error'
      *
      * @return array
-     * @throws FireflyException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function getLatestRelease(): array
     {

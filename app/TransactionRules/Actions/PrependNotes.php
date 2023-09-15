@@ -1,4 +1,5 @@
 <?php
+
 /**
  * PrependNotes.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -22,18 +23,18 @@ declare(strict_types=1);
 
 namespace FireflyIII\TransactionRules\Actions;
 
+use FireflyIII\Events\TriggeredAuditLog;
 use FireflyIII\Models\Note;
 use FireflyIII\Models\RuleAction;
 use FireflyIII\Models\TransactionJournal;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class PrependNotes.
  */
 class PrependNotes implements ActionInterface
 {
-    /** @var RuleAction The rule action */
-    private $action;
+    private RuleAction $action;
 
     /**
      * TriggerInterface constructor.
@@ -50,21 +51,27 @@ class PrependNotes implements ActionInterface
      */
     public function actOnArray(array $journal): bool
     {
-        $dbNote = Note
-            ::
-            where('noteable_id', (int) $journal['transaction_journal_id'])
-            ->where('noteable_type', TransactionJournal::class)
-            ->first(['notes.*']);
+        $dbNote = Note::where('noteable_id', (int)$journal['transaction_journal_id'])
+                      ->where('noteable_type', TransactionJournal::class)
+                      ->first(['notes.*']);
         if (null === $dbNote) {
-            $dbNote                = new Note;
-            $dbNote->noteable_id   = (int) $journal['transaction_journal_id'];
+            $dbNote                = new Note();
+            $dbNote->noteable_id   = (int)$journal['transaction_journal_id'];
             $dbNote->noteable_type = TransactionJournal::class;
             $dbNote->text          = '';
         }
+        $before = $dbNote->text;
         Log::debug(sprintf('RuleAction PrependNotes prepended "%s" to "%s".', $this->action->action_value, $dbNote->text));
         $text         = sprintf('%s%s', $this->action->action_value, $dbNote->text);
         $dbNote->text = $text;
         $dbNote->save();
+
+        // journal
+        /** @var TransactionJournal $object */
+        $object = TransactionJournal::where('user_id', $journal['user_id'])->find($journal['transaction_journal_id']);
+
+        // audit log
+        event(new TriggeredAuditLog($this->action->rule, $object, 'update_notes', $before, $text));
 
         return true;
     }

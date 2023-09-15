@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AddTag.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,10 +24,13 @@ declare(strict_types=1);
 namespace FireflyIII\TransactionRules\Actions;
 
 use DB;
+use FireflyIII\Events\Model\Rule\RuleActionFailedOnArray;
+use FireflyIII\Events\TriggeredAuditLog;
 use FireflyIII\Factory\TagFactory;
 use FireflyIII\Models\RuleAction;
+use FireflyIII\Models\TransactionJournal;
 use FireflyIII\User;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class AddTag.
@@ -58,7 +62,7 @@ class AddTag implements ActionInterface
 
         if (null === $tag) {
             // could not find, could not create tag.
-            Log::error(sprintf('RuleAction AddTag. Could not find or create tag "%s"', $this->action->action_value));
+            event(new RuleActionFailedOnArray($this->action, $journal, trans('rules.find_or_create_tag_failed', ['tag' => $this->action->action_value])));
 
             return false;
         }
@@ -71,12 +75,16 @@ class AddTag implements ActionInterface
             // add to journal:
             DB::table('tag_transaction_journal')->insert(['tag_id' => $tag->id, 'transaction_journal_id' => $journal['transaction_journal_id']]);
             Log::debug(sprintf('RuleAction AddTag. Added tag #%d ("%s") to journal %d.', $tag->id, $tag->tag, $journal['transaction_journal_id']));
+            $object = TransactionJournal::find($journal['transaction_journal_id']);
 
+            // event for audit log entry
+            event(new TriggeredAuditLog($this->action->rule, $object, 'add_tag', null, $tag->tag));
             return true;
         }
         Log::debug(
             sprintf('RuleAction AddTag fired but tag %d ("%s") was already added to journal %d.', $tag->id, $tag->tag, $journal['transaction_journal_id'])
         );
+        event(new RuleActionFailedOnArray($this->action, $journal, trans('rules.tag_already_added', ['tag' => $this->action->action_value])));
 
         return false;
     }

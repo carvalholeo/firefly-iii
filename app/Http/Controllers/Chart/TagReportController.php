@@ -1,4 +1,5 @@
 <?php
+
 /**
  * TagReportController.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -37,7 +38,8 @@ use Illuminate\Support\Collection;
  */
 class TagReportController extends Controller
 {
-    use AugumentData, TransactionCalculation;
+    use AugumentData;
+    use TransactionCalculation;
 
     /** @var GeneratorInterface Chart generation methods. */
     protected $generator;
@@ -48,7 +50,7 @@ class TagReportController extends Controller
     /**
      * TagReportController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -86,10 +88,10 @@ class TagReportController extends Controller
                     $objectName               = $journal['budget_name'] ?? trans('firefly.no_budget');
                     $title                    = sprintf('%s (%s)', $objectName, $currency['currency_name']);
                     $result[$title]           = $result[$title] ?? [
-                            'amount'          => '0',
-                            'currency_symbol' => $currency['currency_symbol'],
-                            'currency_code'   => $currency['currency_code'],
-                        ];
+                        'amount'          => '0',
+                        'currency_symbol' => $currency['currency_symbol'],
+                        'currency_code'   => $currency['currency_code'],
+                    ];
                     $amount                   = app('steam')->positive($journal['amount']);
                     $result[$title]['amount'] = bcadd($result[$title]['amount'], $amount);
                 }
@@ -122,10 +124,10 @@ class TagReportController extends Controller
                     $objectName               = $journal['category_name'] ?? trans('firefly.no_category');
                     $title                    = sprintf('%s (%s)', $objectName, $currency['currency_name']);
                     $result[$title]           = $result[$title] ?? [
-                            'amount'          => '0',
-                            'currency_symbol' => $currency['currency_symbol'],
-                            'currency_code'   => $currency['currency_code'],
-                        ];
+                        'amount'          => '0',
+                        'currency_symbol' => $currency['currency_symbol'],
+                        'currency_code'   => $currency['currency_code'],
+                    ];
                     $amount                   = app('steam')->positive($journal['amount']);
                     $result[$title]['amount'] = bcadd($result[$title]['amount'], $amount);
                 }
@@ -158,10 +160,10 @@ class TagReportController extends Controller
                     $objectName               = $journal['category_name'] ?? trans('firefly.no_category');
                     $title                    = sprintf('%s (%s)', $objectName, $currency['currency_name']);
                     $result[$title]           = $result[$title] ?? [
-                            'amount'          => '0',
-                            'currency_symbol' => $currency['currency_symbol'],
-                            'currency_code'   => $currency['currency_code'],
-                        ];
+                        'amount'          => '0',
+                        'currency_symbol' => $currency['currency_symbol'],
+                        'currency_code'   => $currency['currency_code'],
+                    ];
                     $amount                   = app('steam')->positive($journal['amount']);
                     $result[$title]['amount'] = bcadd($result[$title]['amount'], $amount);
                 }
@@ -194,10 +196,10 @@ class TagReportController extends Controller
                     $objectName               = $journal['destination_account_name'] ?? trans('firefly.empty');
                     $title                    = sprintf('%s (%s)', $objectName, $currency['currency_name']);
                     $result[$title]           = $result[$title] ?? [
-                            'amount'          => '0',
-                            'currency_symbol' => $currency['currency_symbol'],
-                            'currency_code'   => $currency['currency_code'],
-                        ];
+                        'amount'          => '0',
+                        'currency_symbol' => $currency['currency_symbol'],
+                        'currency_code'   => $currency['currency_code'],
+                    ];
                     $amount                   = app('steam')->positive($journal['amount']);
                     $result[$title]['amount'] = bcadd($result[$title]['amount'], $amount);
                 }
@@ -230,10 +232,10 @@ class TagReportController extends Controller
                     $objectName               = $journal['destination_account_name'] ?? trans('firefly.empty');
                     $title                    = sprintf('%s (%s)', $objectName, $currency['currency_name']);
                     $result[$title]           = $result[$title] ?? [
-                            'amount'          => '0',
-                            'currency_symbol' => $currency['currency_symbol'],
-                            'currency_code'   => $currency['currency_code'],
-                        ];
+                        'amount'          => '0',
+                        'currency_symbol' => $currency['currency_symbol'],
+                        'currency_code'   => $currency['currency_code'],
+                    ];
                     $amount                   = app('steam')->positive($journal['amount']);
                     $result[$title]['amount'] = bcadd($result[$title]['amount'], $amount);
                 }
@@ -268,17 +270,17 @@ class TagReportController extends Controller
             // add things to chart Data for each currency:
             $spentKey             = sprintf('%d-spent', $currency['currency_id']);
             $chartData[$spentKey] = $chartData[$spentKey] ?? [
-                    'label'           => sprintf(
-                        '%s (%s)',
-                        (string) trans('firefly.spent_in_specific_tag', ['tag' => $tag->tag]),
-                        $currency['currency_name']
-                    ),
-                    'type'            => 'bar',
-                    'currency_symbol' => $currency['currency_symbol'],
-                    'currency_code'   => $currency['currency_code'],
-                    'currency_id'     => $currency['currency_id'],
-                    'entries'         => $this->makeEntries($start, $end),
-                ];
+                'label'           => sprintf(
+                    '%s (%s)',
+                    (string)trans('firefly.spent_in_specific_tag', ['tag' => $tag->tag]),
+                    $currency['currency_name']
+                ),
+                'type'            => 'bar',
+                'currency_symbol' => $currency['currency_symbol'],
+                'currency_code'   => $currency['currency_code'],
+                'currency_id'     => $currency['currency_id'],
+                'entries'         => $this->makeEntries($start, $end),
+            ];
 
             foreach ($currency['tags'] as $currentTag) {
                 foreach ($currentTag['transaction_journals'] as $journal) {
@@ -295,17 +297,17 @@ class TagReportController extends Controller
             // add things to chart Data for each currency:
             $spentKey             = sprintf('%d-earned', $currency['currency_id']);
             $chartData[$spentKey] = $chartData[$spentKey] ?? [
-                    'label'           => sprintf(
-                        '%s (%s)',
-                        (string) trans('firefly.earned_in_specific_tag', ['tag' => $tag->tag]),
-                        $currency['currency_name']
-                    ),
-                    'type'            => 'bar',
-                    'currency_symbol' => $currency['currency_symbol'],
-                    'currency_code'   => $currency['currency_code'],
-                    'currency_id'     => $currency['currency_id'],
-                    'entries'         => $this->makeEntries($start, $end),
-                ];
+                'label'           => sprintf(
+                    '%s (%s)',
+                    (string)trans('firefly.earned_in_specific_tag', ['tag' => $tag->tag]),
+                    $currency['currency_name']
+                ),
+                'type'            => 'bar',
+                'currency_symbol' => $currency['currency_symbol'],
+                'currency_code'   => $currency['currency_code'],
+                'currency_id'     => $currency['currency_id'],
+                'entries'         => $this->makeEntries($start, $end),
+            ];
 
             foreach ($currency['tags'] as $currentTag) {
                 foreach ($currentTag['transaction_journals'] as $journal) {
@@ -323,7 +325,7 @@ class TagReportController extends Controller
     }
 
     /**
-     * See reference nr. 54
+     * TODO duplicate function
      *
      * @param Carbon $start
      * @param Carbon $end
@@ -368,10 +370,10 @@ class TagReportController extends Controller
                     $objectName               = $journal['source_account_name'] ?? trans('firefly.empty');
                     $title                    = sprintf('%s (%s)', $objectName, $currency['currency_name']);
                     $result[$title]           = $result[$title] ?? [
-                            'amount'          => '0',
-                            'currency_symbol' => $currency['currency_symbol'],
-                            'currency_code'   => $currency['currency_code'],
-                        ];
+                        'amount'          => '0',
+                        'currency_symbol' => $currency['currency_symbol'],
+                        'currency_code'   => $currency['currency_code'],
+                    ];
                     $amount                   = app('steam')->positive($journal['amount']);
                     $result[$title]['amount'] = bcadd($result[$title]['amount'], $amount);
                 }
@@ -404,10 +406,10 @@ class TagReportController extends Controller
                     $objectName               = $journal['source_account_name'] ?? trans('firefly.empty');
                     $title                    = sprintf('%s (%s)', $objectName, $currency['currency_name']);
                     $result[$title]           = $result[$title] ?? [
-                            'amount'          => '0',
-                            'currency_symbol' => $currency['currency_symbol'],
-                            'currency_code'   => $currency['currency_code'],
-                        ];
+                        'amount'          => '0',
+                        'currency_symbol' => $currency['currency_symbol'],
+                        'currency_code'   => $currency['currency_code'],
+                    ];
                     $amount                   = app('steam')->positive($journal['amount']);
                     $result[$title]['amount'] = bcadd($result[$title]['amount'], $amount);
                 }
@@ -438,10 +440,10 @@ class TagReportController extends Controller
             foreach ($currency['tags'] as $tag) {
                 $title          = sprintf('%s (%s)', $tag['name'], $currency['currency_name']);
                 $result[$title] = $result[$title] ?? [
-                        'amount'          => '0',
-                        'currency_symbol' => $currency['currency_symbol'],
-                        'currency_code'   => $currency['currency_code'],
-                    ];
+                    'amount'          => '0',
+                    'currency_symbol' => $currency['currency_symbol'],
+                    'currency_code'   => $currency['currency_code'],
+                ];
                 foreach ($tag['transaction_journals'] as $journal) {
                     $amount                   = app('steam')->positive($journal['amount']);
                     $result[$title]['amount'] = bcadd($result[$title]['amount'], $amount);
@@ -472,10 +474,10 @@ class TagReportController extends Controller
             foreach ($currency['tags'] as $tag) {
                 $title          = sprintf('%s (%s)', $tag['name'], $currency['currency_name']);
                 $result[$title] = $result[$title] ?? [
-                        'amount'          => '0',
-                        'currency_symbol' => $currency['currency_symbol'],
-                        'currency_code'   => $currency['currency_code'],
-                    ];
+                    'amount'          => '0',
+                    'currency_symbol' => $currency['currency_symbol'],
+                    'currency_code'   => $currency['currency_code'],
+                ];
                 foreach ($tag['transaction_journals'] as $journal) {
                     $amount                   = app('steam')->positive($journal['amount']);
                     $result[$title]['amount'] = bcadd($result[$title]['amount'], $amount);

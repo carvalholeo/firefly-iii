@@ -30,19 +30,19 @@ use FireflyIII\Models\ObjectGroup;
 use FireflyIII\Models\TransactionJournal;
 use FireflyIII\Repositories\Bill\BillRepositoryInterface;
 use Illuminate\Support\Collection;
+use Log;
 
 /**
  * Class BillTransformer
  */
 class BillTransformer extends AbstractTransformer
 {
-    /** @var BillRepositoryInterface */
-    private $repository;
+    private BillRepositoryInterface $repository;
 
     /**
      * BillTransformer constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -60,7 +60,6 @@ class BillTransformer extends AbstractTransformer
     {
         $paidData = $this->paidData($bill);
         $payDates = $this->payDates($bill);
-
         $currency = $bill->transactionCurrency;
         $notes    = $this->repository->getNoteText($bill);
         $notes    = '' === $notes ? null : $notes;
@@ -72,8 +71,8 @@ class BillTransformer extends AbstractTransformer
         /** @var ObjectGroup $objectGroup */
         $objectGroup = $bill->objectGroups->first();
         if (null !== $objectGroup) {
-            $objectGroupId    = (int) $objectGroup->id;
-            $objectGroupOrder = (int) $objectGroup->order;
+            $objectGroupId    = (int)$objectGroup->id;
+            $objectGroupOrder = (int)$objectGroup->order;
             $objectGroupTitle = $objectGroup->title;
         }
 
@@ -91,7 +90,6 @@ class BillTransformer extends AbstractTransformer
         if (null !== $paidData['next_expected_match']) {
             $nextExpectedMatch = Carbon::createFromFormat('!Y-m-d', $paidData['next_expected_match'], config('app.timezone'))->toAtomString();
         }
-
         $nextExpectedMatchDiff = trans('firefly.not_expected_period');
         // converting back and forth is bad code but OK.
         $temp = new Carbon($nextExpectedMatch);
@@ -102,30 +100,30 @@ class BillTransformer extends AbstractTransformer
         $current = $payDatesFormatted[0] ?? null;
         if (null !== $current && !$temp->isToday()) {
             $temp2                 = Carbon::createFromFormat('Y-m-d\TH:i:sP', $current);
-            $nextExpectedMatchDiff = $temp2->diffForHumans(today(), CarbonInterface::DIFF_RELATIVE_TO_NOW);
+            $nextExpectedMatchDiff = $temp2->diffForHumans(today(config('app.timezone')), CarbonInterface::DIFF_RELATIVE_TO_NOW);
         }
         unset($temp, $temp2);
 
         return [
-            'id'                       => (int) $bill->id,
+            'id'                       => (int)$bill->id,
             'created_at'               => $bill->created_at->toAtomString(),
             'updated_at'               => $bill->updated_at->toAtomString(),
-            'currency_id'              => (string) $bill->transaction_currency_id,
+            'currency_id'              => (string)$bill->transaction_currency_id,
             'currency_code'            => $currency->code,
             'currency_symbol'          => $currency->symbol,
-            'currency_decimal_places'  => (int) $currency->decimal_places,
+            'currency_decimal_places'  => (int)$currency->decimal_places,
             'name'                     => $bill->name,
-            'amount_min'               => number_format((float) $bill->amount_min, $currency->decimal_places, '.', ''),
-            'amount_max'               => number_format((float) $bill->amount_max, $currency->decimal_places, '.', ''),
+            'amount_min'               => app('steam')->bcround($bill->amount_min, $currency->decimal_places),
+            'amount_max'               => app('steam')->bcround($bill->amount_max, $currency->decimal_places),
             'date'                     => $bill->date->toAtomString(),
             'end_date'                 => $bill->end_date?->toAtomString(),
             'extension_date'           => $bill->extension_date?->toAtomString(),
             'repeat_freq'              => $bill->repeat_freq,
-            'skip'                     => (int) $bill->skip,
+            'skip'                     => (int)$bill->skip,
             'active'                   => $bill->active,
-            'order'                    => (int) $bill->order,
+            'order'                    => (int)$bill->order,
             'notes'                    => $notes,
-            'object_group_id'          => $objectGroupId ? (string) $objectGroupId : null,
+            'object_group_id'          => $objectGroupId ? (string)$objectGroupId : null,
             'object_group_order'       => $objectGroupOrder,
             'object_group_title'       => $objectGroupTitle,
 
@@ -152,28 +150,36 @@ class BillTransformer extends AbstractTransformer
      */
     protected function paidData(Bill $bill): array
     {
-        //Log::debug(sprintf('Now in paidData for bill #%d', $bill->id));
+        Log::debug(sprintf('Now in paidData for bill #%d', $bill->id));
         if (null === $this->parameters->get('start') || null === $this->parameters->get('end')) {
-            //  Log::debug('parameters are NULL, return empty array');
+            Log::debug('parameters are NULL, return empty array');
 
             return [
                 'paid_dates'          => [],
                 'next_expected_match' => null,
             ];
         }
-        //Log::debug(sprintf('Parameters are start:%s end:%s', $this->parameters->get('start')->format('Y-m-d'), $this->parameters->get('end')->format('Y-m-d')));
+        // 2023-07-1 sub one day from the start date to fix a possible bug (see #7704)
+        // 2023-07-18 this particular date is used to search for the last paid date.
+        // 2023-07-18 the cloned $searchDate is used to grab the correct transactions.
+        /** @var Carbon $start */
+        $start = clone $this->parameters->get('start');
+        $start->subDay();
+
+        $searchStart = clone $start;
+        //Log::debug(sprintf('Parameters are start:%s end:%s', $start->format('Y-m-d'), $this->parameters->get('end')->format('Y-m-d')));
 
         /*
          *  Get from database when bill was paid.
          */
-        $set = $this->repository->getPaidDatesInRange($bill, $this->parameters->get('start'), $this->parameters->get('end'));
+        $set = $this->repository->getPaidDatesInRange($bill, $searchStart, $this->parameters->get('end'));
         //Log::debug(sprintf('Count %d entries in getPaidDatesInRange()', $set->count()));
 
         /*
          * Grab from array the most recent payment. If none exist, fall back to the start date and pretend *that* was the last paid date.
          */
-        //Log::debug(sprintf('Grab last paid date from function, return %s if it comes up with nothing.', $this->parameters->get('start')->format('Y-m-d')));
-        $lastPaidDate = $this->lastPaidDate($set, $this->parameters->get('start'));
+        //Log::debug(sprintf('Grab last paid date from function, return %s if it comes up with nothing.', $start->format('Y-m-d')));
+        $lastPaidDate = $this->lastPaidDate($set, $start);
         //Log::debug(sprintf('Result of lastPaidDate is %s', $lastPaidDate->format('Y-m-d')));
 
         /*
@@ -192,7 +198,7 @@ class BillTransformer extends AbstractTransformer
         }
         if ($nextMatch->isSameDay($lastPaidDate)) {
             /*
-             * Add another period because its the same day as the last paid date.
+             * Add another period because it's the same day as the last paid date.
              */
             //Log::debug('Because the last paid date was on the same day as our next expected match, add another day.');
             $nextMatch = app('navigation')->addPeriod($nextMatch, $bill->repeat_freq, $bill->skip);
@@ -203,8 +209,8 @@ class BillTransformer extends AbstractTransformer
         $result = [];
         foreach ($set as $entry) {
             $result[] = [
-                'transaction_group_id'   => (int) $entry->transaction_group_id,
-                'transaction_journal_id' => (int) $entry->id,
+                'transaction_group_id'   => (int)$entry->transaction_group_id,
+                'transaction_journal_id' => (int)$entry->id,
                 'date'                   => $entry->date->format('Y-m-d'),
             ];
         }
@@ -254,9 +260,11 @@ class BillTransformer extends AbstractTransformer
 
             return [];
         }
-        $set          = new Collection;
+        $set          = new Collection();
         $currentStart = clone $this->parameters->get('start');
-        $loop         = 0;
+        // 2023-06-23 subDay to fix 7655
+        $currentStart->subDay();
+        $loop = 0;
         while ($currentStart <= $this->parameters->get('end')) {
             $nextExpectedMatch = $this->nextDateMatch($bill, $currentStart);
             // If nextExpectedMatch is after end, we continue:

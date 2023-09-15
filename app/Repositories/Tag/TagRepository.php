@@ -1,4 +1,5 @@
 <?php
+
 /**
  * TagRepository.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -33,8 +34,9 @@ use FireflyIII\Models\Note;
 use FireflyIII\Models\Tag;
 use FireflyIII\Models\TransactionType;
 use FireflyIII\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
-use Log;
+use Illuminate\Support\Facades\Log;
 use Storage;
 
 /**
@@ -108,6 +110,16 @@ class TagRepository implements TagRepositoryInterface
     }
 
     /**
+     * @param User|Authenticatable|null $user
+     */
+    public function setUser(User | Authenticatable | null $user): void
+    {
+        if (null !== $user) {
+            $this->user = $user;
+        }
+    }
+
+    /**
      * @param int $tagId
      *
      * @return Tag|null
@@ -124,6 +136,7 @@ class TagRepository implements TagRepositoryInterface
      */
     public function findByTag(string $tag): ?Tag
     {
+        /** @var Tag|null */
         return $this->user->tags()->where('tag', $tag)->first();
     }
 
@@ -134,12 +147,8 @@ class TagRepository implements TagRepositoryInterface
      */
     public function firstUseDate(Tag $tag): ?Carbon
     {
-        $journal = $tag->transactionJournals()->orderBy('date', 'ASC')->first();
-        if (null !== $journal) {
-            return $journal->date;
-        }
-
-        return null;
+        /** @var Carbon|null */
+        return $tag->transactionJournals()->orderBy('date', 'ASC')->first()?->date;
     }
 
     /**
@@ -224,12 +233,8 @@ class TagRepository implements TagRepositoryInterface
      */
     public function lastUseDate(Tag $tag): ?Carbon
     {
-        $journal = $tag->transactionJournals()->orderBy('date', 'DESC')->first();
-        if (null !== $journal) {
-            return $journal->date;
-        }
-
-        return null;
+        /** @var Carbon|null */
+        return $tag->transactionJournals()->orderBy('date', 'DESC')->first()?->date;
     }
 
     /**
@@ -239,6 +244,7 @@ class TagRepository implements TagRepositoryInterface
      */
     public function newestTag(): ?Tag
     {
+        /** @var Tag|null */
         return $this->user->tags()->whereNotNull('date')->orderBy('date', 'DESC')->first();
     }
 
@@ -247,6 +253,7 @@ class TagRepository implements TagRepositoryInterface
      */
     public function oldestTag(): ?Tag
     {
+        /** @var Tag|null */
         return $this->user->tags()->whereNotNull('date')->orderBy('date', 'ASC')->first();
     }
 
@@ -282,14 +289,6 @@ class TagRepository implements TagRepositoryInterface
         }
 
         return $tags->take($limit)->get('tags.*');
-    }
-
-    /**
-     * @param User $user
-     */
-    public function setUser(User $user): void
-    {
-        $this->user = $user;
     }
 
     /**
@@ -330,21 +329,21 @@ class TagRepository implements TagRepositoryInterface
 
         /** @var array $journal */
         foreach ($journals as $journal) {
-            $currencyId        = (int) $journal['currency_id'];
+            $currencyId        = (int)$journal['currency_id'];
             $sums[$currencyId] = $sums[$currencyId] ?? [
-                    'currency_id'                    => $currencyId,
-                    'currency_name'                  => $journal['currency_name'],
-                    'currency_symbol'                => $journal['currency_symbol'],
-                    'currency_decimal_places'        => $journal['currency_decimal_places'],
-                    TransactionType::WITHDRAWAL      => '0',
-                    TransactionType::DEPOSIT         => '0',
-                    TransactionType::TRANSFER        => '0',
-                    TransactionType::RECONCILIATION  => '0',
-                    TransactionType::OPENING_BALANCE => '0',
-                ];
+                'currency_id'                    => $currencyId,
+                'currency_name'                  => $journal['currency_name'],
+                'currency_symbol'                => $journal['currency_symbol'],
+                'currency_decimal_places'        => $journal['currency_decimal_places'],
+                TransactionType::WITHDRAWAL      => '0',
+                TransactionType::DEPOSIT         => '0',
+                TransactionType::TRANSFER        => '0',
+                TransactionType::RECONCILIATION  => '0',
+                TransactionType::OPENING_BALANCE => '0',
+            ];
 
             // add amount to correct type:
-            $amount = app('steam')->positive((string) $journal['amount']);
+            $amount = app('steam')->positive((string)$journal['amount']);
             $type   = $journal['transaction_type_type'];
             if (TransactionType::WITHDRAWAL === $type) {
                 $amount = bcmul($amount, '-1');
@@ -354,24 +353,22 @@ class TagRepository implements TagRepositoryInterface
             $foreignCurrencyId = $journal['foreign_currency_id'];
             if (null !== $foreignCurrencyId && 0 !== $foreignCurrencyId) {
                 $sums[$foreignCurrencyId] = $sums[$foreignCurrencyId] ?? [
-                        'currency_id'                    => $foreignCurrencyId,
-                        'currency_name'                  => $journal['foreign_currency_name'],
-                        'currency_symbol'                => $journal['foreign_currency_symbol'],
-                        'currency_decimal_places'        => $journal['foreign_currency_decimal_places'],
-                        TransactionType::WITHDRAWAL      => '0',
-                        TransactionType::DEPOSIT         => '0',
-                        TransactionType::TRANSFER        => '0',
-                        TransactionType::RECONCILIATION  => '0',
-                        TransactionType::OPENING_BALANCE => '0',
-                    ];
+                    'currency_id'                    => $foreignCurrencyId,
+                    'currency_name'                  => $journal['foreign_currency_name'],
+                    'currency_symbol'                => $journal['foreign_currency_symbol'],
+                    'currency_decimal_places'        => $journal['foreign_currency_decimal_places'],
+                    TransactionType::WITHDRAWAL      => '0',
+                    TransactionType::DEPOSIT         => '0',
+                    TransactionType::TRANSFER        => '0',
+                    TransactionType::RECONCILIATION  => '0',
+                    TransactionType::OPENING_BALANCE => '0',
+                ];
                 // add foreign amount to correct type:
-                $amount = app('steam')->positive((string) $journal['foreign_amount']);
-                $type   = $journal['transaction_type_type'];
+                $amount = app('steam')->positive((string)$journal['foreign_amount']);
                 if (TransactionType::WITHDRAWAL === $type) {
                     $amount = bcmul($amount, '-1');
                 }
                 $sums[$foreignCurrencyId][$type] = bcadd($sums[$foreignCurrencyId][$type], $amount);
-
             }
         }
 
@@ -433,7 +430,7 @@ class TagRepository implements TagRepositoryInterface
             if (!(null === $data['latitude'] && null === $data['longitude'] && null === $data['zoom_level'])) {
                 $location = $this->getLocation($tag);
                 if (null === $location) {
-                    $location = new Location;
+                    $location = new Location();
                     $location->locatable()->associate($tag);
                 }
 
@@ -455,7 +452,7 @@ class TagRepository implements TagRepositoryInterface
      */
     public function getLocation(Tag $tag): ?Location
     {
+        /** @var Location|null */
         return $tag->locations()->first();
     }
-
 }

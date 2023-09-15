@@ -1,4 +1,5 @@
 <?php
+
 /**
  * IntroController.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -26,7 +27,7 @@ use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Http\Controllers\Controller;
 use FireflyIII\Support\Http\Controllers\GetConfigurationData;
 use Illuminate\Http\JsonResponse;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class IntroController.
@@ -49,13 +50,12 @@ class IntroController extends Controller
         $specificPage  = $specificPage ?? '';
         $steps         = $this->getBasicSteps($route);
         $specificSteps = $this->getSpecificSteps($route, $specificPage);
-        if (empty($specificSteps)) {
+        if (0 === count($specificSteps)) {
             Log::debug(sprintf('No specific steps for route "%s" and page "%s"', $route, $specificPage));
 
             return response()->json($steps);
         }
         if ($this->hasOutroStep($route)) {
-
             // save last step:
             $lastStep = $steps[count($steps) - 1];
             // remove last step:
@@ -63,7 +63,6 @@ class IntroController extends Controller
             // merge arrays and add last step again
             $steps   = array_merge($steps, $specificSteps);
             $steps[] = $lastStep;
-
         }
         if (!$this->hasOutroStep($route)) {
             $steps = array_merge($steps, $specificSteps);
@@ -118,7 +117,7 @@ class IntroController extends Controller
         app('preferences')->set($key, false);
         app('preferences')->mark();
 
-        return response()->json(['message' => (string) trans('firefly.intro_boxes_after_refresh')]);
+        return response()->json(['message' => (string)trans('firefly.intro_boxes_after_refresh')]);
     }
 
     /**
@@ -142,5 +141,4 @@ class IntroController extends Controller
 
         return response()->json(['result' => sprintf('Reported demo watched for route "%s" (%s): %s.', $route, $specialPage, $key)]);
     }
-
 }

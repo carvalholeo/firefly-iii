@@ -1,4 +1,5 @@
 <?php
+
 /**
  * CurrencyCode.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -46,6 +47,6 @@ class CurrencyCode implements BinderInterface
                 return $currency;
             }
         }
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
     }
 }

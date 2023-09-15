@@ -24,8 +24,8 @@ declare(strict_types=1);
 
 namespace FireflyIII\Validation;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Validator;
-use Log;
 
 /**
  * Trait CurrencyValidation
@@ -34,6 +34,8 @@ use Log;
  */
 trait CurrencyValidation
 {
+    public const TEST = 'Test';
+
     /**
      * If the transactions contain foreign amounts, there must also be foreign currency information.
      *
@@ -41,31 +43,39 @@ trait CurrencyValidation
      */
     protected function validateForeignCurrencyInformation(Validator $validator): void
     {
+        if ($validator->errors()->count() > 0) {
+            return;
+        }
         Log::debug('Now in validateForeignCurrencyInformation()');
         $transactions = $this->getTransactionsArray($validator);
 
         foreach ($transactions as $index => $transaction) {
+            if (!is_array($transaction)) {
+                continue;
+            }
             // if foreign amount is present, then the currency must be as well.
             if (array_key_exists('foreign_amount', $transaction)
                 && !(array_key_exists('foreign_currency_id', $transaction)
                      || array_key_exists(
-                         'foreign_currency_code', $transaction
+                         'foreign_currency_code',
+                         $transaction
                      ))
                 && 0 !== bccomp('0', $transaction['foreign_amount'])
             ) {
                 $validator->errors()->add(
                     'transactions.' . $index . '.foreign_amount',
-                    (string) trans('validation.require_currency_info')
+                    (string)trans('validation.require_currency_info')
                 );
             }
             // if the currency is present, then the amount must be present as well.
             if ((array_key_exists('foreign_currency_id', $transaction) || array_key_exists('foreign_currency_code', $transaction))
                 && !array_key_exists(
-                    'foreign_amount', $transaction
+                    'foreign_amount',
+                    $transaction
                 )) {
                 $validator->errors()->add(
                     'transactions.' . $index . '.foreign_amount',
-                    (string) trans('validation.require_currency_amount')
+                    (string)trans('validation.require_currency_amount')
                 );
             }
         }

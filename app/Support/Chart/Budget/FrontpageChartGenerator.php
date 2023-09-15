@@ -1,4 +1,5 @@
 <?php
+
 /**
  * FrontpageChartGenerator.php
  * Copyright (c) 2020 james@firefly-iii.org
@@ -42,7 +43,6 @@ class FrontpageChartGenerator
     private Carbon                          $end;
     private string                          $monthAndDayFormat;
     private Carbon                          $start;
-    private User                            $user;
 
     /**
      * FrontpageChartGenerator constructor.
@@ -64,9 +64,9 @@ class FrontpageChartGenerator
     {
         $budgets = $this->budgetRepository->getActiveBudgets();
         $data    = [
-            ['label' => (string) trans('firefly.spent_in_budget'), 'entries' => [], 'type' => 'bar'],
-            ['label' => (string) trans('firefly.left_to_spend'), 'entries' => [], 'type' => 'bar'],
-            ['label' => (string) trans('firefly.overspent'), 'entries' => [], 'type' => 'bar'],
+            ['label' => (string)trans('firefly.spent_in_budget'), 'entries' => [], 'type' => 'bar'],
+            ['label' => (string)trans('firefly.left_to_spend'), 'entries' => [], 'type' => 'bar'],
+            ['label' => (string)trans('firefly.overspent'), 'entries' => [], 'type' => 'bar'],
         ];
 
         // loop al budgets:
@@ -144,7 +144,8 @@ class FrontpageChartGenerator
     }
 
     /**
-     * For each limit, the expenses from the time range of the limit are collected. Each row from the result is processed individually.
+     * For each limit, the expenses from the time range of the limit are collected. Each row from the result is
+     * processed individually.
      *
      * @param array       $data
      * @param Budget      $budget
@@ -158,7 +159,7 @@ class FrontpageChartGenerator
         /** @var array $entry */
         foreach ($spent as $entry) {
             // only spent the entry where the entry's currency matches the budget limit's currency
-            if ($entry['currency_id'] === (int) $limit->transaction_currency_id) {
+            if ($entry['currency_id'] === (int)$limit->transaction_currency_id) {
                 $data = $this->processRow($data, $budget, $limit, $entry);
             }
         }
@@ -169,8 +170,8 @@ class FrontpageChartGenerator
     /**
      * Each row of expenses from a budget limit is in another currency (note $entry['currency_name']).
      *
-     * Each one is added to the $data array. If the limit's date range is different from the global $start and $end dates,
-     * for example when a limit only partially falls into this month, the title is expanded to clarify.
+     * Each one is added to the $data array. If the limit's date range is different from the global $start and $end
+     * dates, for example when a limit only partially falls into this month, the title is expanded to clarify.
      *
      * @param array       $data
      * @param Budget      $budget
@@ -220,16 +221,14 @@ class FrontpageChartGenerator
      * A basic setter for the user. Also updates the repositories with the right user.
      *
      * @param User $user
-     * @throws \FireflyIII\Exceptions\FireflyException
      */
     public function setUser(User $user): void
     {
-        $this->user = $user;
         $this->budgetRepository->setUser($user);
         $this->blRepository->setUser($user);
         $this->opsRepository->setUser($user);
 
         $locale                  = app('steam')->getLocale();
-        $this->monthAndDayFormat = (string) trans('config.month_and_day_js', [], $locale);
+        $this->monthAndDayFormat = (string)trans('config.month_and_day_js', [], $locale);
     }
 }

@@ -25,7 +25,7 @@ namespace FireflyIII\Console\Commands\Upgrade;
 
 use DB;
 use Exception;
-use FireflyIII\Exceptions\FireflyException;
+use FireflyIII\Console\Commands\ShowsFriendlyMessages;
 use FireflyIII\Factory\TransactionGroupFactory;
 use FireflyIII\Models\Budget;
 use FireflyIII\Models\Category;
@@ -36,7 +36,9 @@ use FireflyIII\Repositories\Journal\JournalRepositoryInterface;
 use FireflyIII\Services\Internal\Destroy\JournalDestroyService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
-use Log;
+use Illuminate\Support\Facades\Log;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * This command will take split transactions and migrate them to "transaction groups".
@@ -47,19 +49,11 @@ use Log;
  */
 class MigrateToGroups extends Command
 {
+    use ShowsFriendlyMessages;
+
     public const CONFIG_NAME = '480_migrated_to_groups';
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
     protected $description = 'Migrates a pre-4.7.8 transaction structure to the 4.7.8+ transaction structure.';
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected                             $signature = 'firefly-iii:migrate-to-groups {--F|force : Force the migration, even if it fired before.}';
+    protected $signature   = 'firefly-iii:migrate-to-groups {--F|force : Force the migration, even if it fired before.}';
     private JournalCLIRepositoryInterface $cliRepository;
     private int                           $count;
     private TransactionGroupFactory       $groupFactory;
@@ -70,40 +64,32 @@ class MigrateToGroups extends Command
      * Execute the console command.
      *
      * @return int
-     * @throws Exception
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function handle(): int
     {
         $this->stupidLaravel();
-        $start = microtime(true);
 
         if ($this->isMigrated() && true !== $this->option('force')) {
-            $this->info('Database already seems to be migrated.');
+            $this->friendlyInfo('Database is already migrated.');
 
             return 0;
         }
 
         if (true === $this->option('force')) {
-            $this->warn('Forcing the migration.');
+            $this->friendlyWarning('Forcing the migration.');
         }
 
 
-        Log::debug('---- start group migration ----');
         $this->makeGroupsFromSplitJournals();
-        $end = round(microtime(true) - $start, 2);
-        $this->info(sprintf('Migrate split journals to groups in %s seconds.', $end));
-
-        $start = microtime(true);
         $this->makeGroupsFromAll();
-        Log::debug('---- end group migration ----');
-        $end = round(microtime(true) - $start, 2);
-        $this->info(sprintf('Migrate all journals to groups in %s seconds.', $end));
 
         if (0 !== $this->count) {
-            $this->line(sprintf('Migrated %d transaction journal(s).', $this->count));
+            $this->friendlyInfo(sprintf('Migrated %d transaction journal(s).', $this->count));
         }
         if (0 === $this->count) {
-            $this->line('No journals to migrate to groups.');
+            $this->friendlyPositive('No journals to migrate to groups.');
         }
         $this->markAsMigrated();
 
@@ -115,7 +101,7 @@ class MigrateToGroups extends Command
      * executed. This leads to noticeable slow-downs and class calls. To prevent this, this method should
      * be called from the handle method instead of using the constructor to initialize the command.
      *
-     * @codeCoverageIgnore
+
      */
     private function stupidLaravel(): void
     {
@@ -128,15 +114,14 @@ class MigrateToGroups extends Command
 
     /**
      * @return bool
-     * @throws FireflyException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     private function isMigrated(): bool
     {
         $configVar = app('fireflyconfig')->get(self::CONFIG_NAME, false);
         if (null !== $configVar) {
-            return (bool) $configVar->data;
+            return (bool)$configVar->data;
         }
 
         return false;
@@ -149,14 +134,11 @@ class MigrateToGroups extends Command
     {
         $splitJournals = $this->cliRepository->getSplitJournals();
         if ($splitJournals->count() > 0) {
-            $this->info(sprintf('Going to convert %d split transaction(s). Please hold..', $splitJournals->count()));
+            $this->friendlyLine(sprintf('Going to convert %d split transaction(s). Please hold..', $splitJournals->count()));
             /** @var TransactionJournal $journal */
             foreach ($splitJournals as $journal) {
                 $this->makeMultiGroup($journal);
             }
-        }
-        if (0 === $splitJournals->count()) {
-            $this->info('Found no split transaction journals. Nothing to do.');
         }
     }
 
@@ -169,11 +151,9 @@ class MigrateToGroups extends Command
     {
         // double check transaction count.
         if ($journal->transactions->count() <= 2) {
-
             Log::debug(sprintf('Will not try to convert journal #%d because it has 2 or less transactions.', $journal->id));
 
             return;
-
         }
         Log::debug(sprintf('Will now try to convert journal #%d', $journal->id));
 
@@ -221,8 +201,7 @@ class MigrateToGroups extends Command
             $opposingTr = $this->findOpposingTransaction($journal, $transaction);
 
             if (null === $opposingTr) {
-
-                $this->error(
+                $this->friendlyError(
                     sprintf(
                         'Journal #%d has no opposing transaction for transaction #%d. Cannot upgrade this entry.',
                         $journal->id,
@@ -230,7 +209,6 @@ class MigrateToGroups extends Command
                     )
                 );
                 continue;
-
             }
 
             // overrule journal category with transaction category.
@@ -296,7 +274,7 @@ class MigrateToGroups extends Command
                 implode(', #', $group->transactionJournals->pluck('id')->toArray())
             )
         );
-        $this->line(
+        $this->friendlyInfo(
             sprintf(
                 'Migrated journal #%d into group #%d with these journals: #%s',
                 $journal->id,
@@ -330,7 +308,7 @@ class MigrateToGroups extends Command
     {
         $set = $journal->transactions->filter(
             static function (Transaction $subject) use ($transaction) {
-                $amount     = (float) $transaction->amount * -1 === (float) $subject->amount;
+                $amount     = (float)$transaction->amount * -1 === (float)$subject->amount;  // intentional float
                 $identifier = $transaction->identifier === $subject->identifier;
                 Log::debug(sprintf('Amount the same? %s', var_export($amount, true)));
                 Log::debug(sprintf('ID the same?     %s', var_export($identifier, true)));
@@ -353,21 +331,21 @@ class MigrateToGroups extends Command
         Log::debug('Now in getTransactionBudget()');
 
         // try to get a budget ID from the left transaction:
-        /** @var Budget $budget */
+        /** @var Budget|null $budget */
         $budget = $left->budgets()->first();
         if (null !== $budget) {
             Log::debug(sprintf('Return budget #%d, from transaction #%d', $budget->id, $left->id));
 
-            return (int) $budget->id;
+            return (int)$budget->id;
         }
 
         // try to get a budget ID from the right transaction:
-        /** @var Budget $budget */
+        /** @var Budget|null $budget */
         $budget = $right->budgets()->first();
         if (null !== $budget) {
             Log::debug(sprintf('Return budget #%d, from transaction #%d', $budget->id, $right->id));
 
-            return (int) $budget->id;
+            return (int)$budget->id;
         }
         Log::debug('Neither left or right have a budget, return NULL');
 
@@ -386,21 +364,21 @@ class MigrateToGroups extends Command
         Log::debug('Now in getTransactionCategory()');
 
         // try to get a category ID from the left transaction:
-        /** @var Category $category */
+        /** @var Category|null $category */
         $category = $left->categories()->first();
         if (null !== $category) {
             Log::debug(sprintf('Return category #%d, from transaction #%d', $category->id, $left->id));
 
-            return (int) $category->id;
+            return (int)$category->id;
         }
 
         // try to get a category ID from the left transaction:
-        /** @var Category $category */
+        /** @var Category|null $category */
         $category = $right->categories()->first();
         if (null !== $category) {
             Log::debug(sprintf('Return category #%d, from transaction #%d', $category->id, $category->id));
 
-            return (int) $category->id;
+            return (int)$category->id;
         }
         Log::debug('Neither left or right have a category, return NULL');
 
@@ -417,14 +395,14 @@ class MigrateToGroups extends Command
         $total            = count($orphanedJournals);
         if ($total > 0) {
             Log::debug(sprintf('Going to convert %d transaction journals. Please hold..', $total));
-            $this->line(sprintf('Going to convert %d transaction journals. Please hold..', $total));
+            $this->friendlyInfo(sprintf('Going to convert %d transaction journals. Please hold..', $total));
             /** @var array $array */
             foreach ($orphanedJournals as $array) {
                 $this->giveGroup($array);
             }
         }
         if (0 === $total) {
-            $this->info('No need to convert transaction journals.');
+            $this->friendlyPositive('No need to convert transaction journals.');
         }
     }
 

@@ -30,7 +30,6 @@ use FireflyIII\Models\RuleGroup;
  */
 class RuleGroupTransformer extends AbstractTransformer
 {
-
     /**
      * Transform the rule group
      *
@@ -41,7 +40,7 @@ class RuleGroupTransformer extends AbstractTransformer
     public function transform(RuleGroup $ruleGroup): array
     {
         return [
-            'id'          => (int) $ruleGroup->id,
+            'id'          => (int)$ruleGroup->id,
             'created_at'  => $ruleGroup->created_at->toAtomString(),
             'updated_at'  => $ruleGroup->updated_at->toAtomString(),
             'title'       => $ruleGroup->title,

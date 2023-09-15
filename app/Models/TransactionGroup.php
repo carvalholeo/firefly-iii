@@ -1,4 +1,5 @@
 <?php
+
 /**
  * TransactionGroup.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -31,6 +32,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -57,9 +59,10 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * @method static \Illuminate\Database\Eloquent\Builder|TransactionGroup whereUserId($value)
  * @method static Builder|TransactionGroup withTrashed()
  * @method static Builder|TransactionGroup withoutTrashed()
- * @mixin Eloquent
  * @property int|null                             $user_group_id
  * @method static \Illuminate\Database\Eloquent\Builder|TransactionGroup whereUserGroupId($value)
+ * @property-read \FireflyIII\Models\UserGroup|null $userGroup
+ * @mixin Eloquent
  */
 class TransactionGroup extends Model
 {
@@ -93,24 +96,35 @@ class TransactionGroup extends Model
      */
     public static function routeBinder(string $value): TransactionGroup
     {
+        Log::debug(sprintf('Now in %s("%s")', __METHOD__, $value));
         if (auth()->check()) {
-            $groupId = (int) $value;
+            $groupId = (int)$value;
             /** @var User $user */
             $user = auth()->user();
+            Log::debug(sprintf('User authenticated as %s', $user->email));
             /** @var TransactionGroup $group */
             $group = $user->transactionGroups()
                           ->with(['transactionJournals', 'transactionJournals.transactions'])
                           ->where('transaction_groups.id', $groupId)->first(['transaction_groups.*']);
             if (null !== $group) {
+                Log::debug(sprintf('Found group #%d.', $group->id));
                 return $group;
             }
         }
+        Log::debug('Found no group.');
 
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
     }
 
     /**
-     * @codeCoverageIgnore
+     * @return BelongsTo
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
      * @return HasMany
      */
     public function transactionJournals(): HasMany
@@ -119,12 +133,10 @@ class TransactionGroup extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
-    public function user(): BelongsTo
+    public function userGroup(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(UserGroup::class);
     }
-
 }

@@ -47,7 +47,7 @@ class ShowController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/transactions/listTransaction
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/transactions/listTransaction
      *
      * Show all transactions.
      *
@@ -55,11 +55,10 @@ class ShowController extends Controller
      *
      * @return JsonResponse
      * @throws FireflyException
-     * @codeCoverageIgnore
      */
     public function index(Request $request): JsonResponse
     {
-        $pageSize = (int) app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
         $type     = $request->get('type') ?? 'default';
         $this->parameters->set('type', $type);
 
@@ -100,14 +99,13 @@ class ShowController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/transactions/getTransactionByJournal
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/transactions/getTransactionByJournal
      *
      * Show a single transaction, by transaction journal.
      *
      * @param TransactionJournal $transactionJournal
      *
      * @return JsonResponse
-     * @codeCoverageIgnore
      */
     public function showJournal(TransactionJournal $transactionJournal): JsonResponse
     {
@@ -116,14 +114,13 @@ class ShowController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/transactions/getTransaction
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/transactions/getTransaction
      *
      * Show a single transaction.
      *
      * @param TransactionGroup $transactionGroup
      *
      * @return JsonResponse
-     * @codeCoverageIgnore
      */
     public function show(TransactionGroup $transactionGroup): JsonResponse
     {
@@ -151,5 +148,4 @@ class ShowController extends Controller
 
         return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
     }
-
 }

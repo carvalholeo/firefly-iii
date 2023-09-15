@@ -24,6 +24,9 @@ declare(strict_types=1);
 namespace FireflyIII\Models;
 
 use Eloquent;
+use FireflyIII\Enums\WebhookDelivery;
+use FireflyIII\Enums\WebhookResponse;
+use FireflyIII\Enums\WebhookTrigger;
 use FireflyIII\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -66,31 +69,18 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * @method static Builder|Webhook whereUserId($value)
  * @method static \Illuminate\Database\Query\Builder|Webhook withTrashed()
  * @method static \Illuminate\Database\Query\Builder|Webhook withoutTrashed()
- * @mixin Eloquent
  * @property string                           $title
  * @property string                           $secret
  * @method static Builder|Webhook whereSecret($value)
  * @method static Builder|Webhook whereTitle($value)
  * @property int|null                         $user_group_id
  * @method static Builder|Webhook whereUserGroupId($value)
+ * @mixin Eloquent
  */
 class Webhook extends Model
 {
     use SoftDeletes;
 
-    // dont forget to update the config in firefly.php
-    // triggers
-    public const DELIVERY_JSON = 300;
-    public const RESPONSE_ACCOUNTS     = 210;
-    public const RESPONSE_NONE         = 220;
-
-    // actions
-    public const RESPONSE_TRANSACTIONS = 200;
-    public const TRIGGER_DESTROY_TRANSACTION = 120;
-    public const TRIGGER_STORE_TRANSACTION   = 100;
-
-    // delivery
-    public const TRIGGER_UPDATE_TRANSACTION  = 110;
     protected $casts
                         = [
             'active'   => 'boolean',
@@ -98,7 +88,88 @@ class Webhook extends Model
             'response' => 'integer',
             'delivery' => 'integer',
         ];
-    protected $fillable = ['active', 'trigger', 'response', 'delivery', 'user_id', 'url', 'title', 'secret'];
+    protected $fillable = ['active', 'trigger', 'response', 'delivery', 'user_id', 'user_group_id', 'url', 'title', 'secret'];
+
+    /**
+     * @return array
+     */
+    public static function getDeliveries(): array
+    {
+        $array = [];
+        $set   = WebhookDelivery::cases();
+        foreach ($set as $item) {
+            $array[$item->value] = $item->name;
+        }
+        return $array;
+    }
+
+    /**
+     * @return array
+     */
+    public static function getDeliveriesForValidation(): array
+    {
+        $array = [];
+        $set   = WebhookDelivery::cases();
+        foreach ($set as $item) {
+            $array[$item->name]  = $item->value;
+            $array[$item->value] = $item->value;
+        }
+        return $array;
+    }
+
+    /**
+     * @return array
+     */
+    public static function getResponses(): array
+    {
+        $array = [];
+        $set   = WebhookResponse::cases();
+        foreach ($set as $item) {
+            $array[$item->value] = $item->name;
+        }
+        return $array;
+    }
+
+    /**
+     * @return array
+     */
+    public static function getResponsesForValidation(): array
+    {
+        $array = [];
+        $set   = WebhookResponse::cases();
+        foreach ($set as $item) {
+            $array[$item->name]  = $item->value;
+            $array[$item->value] = $item->value;
+        }
+        return $array;
+    }
+
+    /**
+     * @return array
+     */
+    public static function getTriggers(): array
+    {
+        $array = [];
+        $set   = WebhookTrigger::cases();
+        foreach ($set as $item) {
+            $array[$item->value] = $item->name;
+        }
+        return $array;
+    }
+
+    /**
+     * @return array
+     */
+    public static function getTriggersForValidation(): array
+    {
+        $array = [];
+        $set   = WebhookTrigger::cases();
+        foreach ($set as $item) {
+            $array[$item->name]  = $item->value;
+            $array[$item->value] = $item->value;
+        }
+        return $array;
+    }
 
     /**
      * Route binder. Converts the key in the URL to the specified object (or throw 404).
@@ -111,7 +182,7 @@ class Webhook extends Model
     public static function routeBinder(string $value): Webhook
     {
         if (auth()->check()) {
-            $webhookId = (int) $value;
+            $webhookId = (int)$value;
             /** @var User $user */
             $user = auth()->user();
             /** @var Webhook $webhook */
@@ -120,11 +191,10 @@ class Webhook extends Model
                 return $webhook;
             }
         }
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function user(): BelongsTo
@@ -133,7 +203,6 @@ class Webhook extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return HasMany
      */
     public function webhookMessages(): HasMany

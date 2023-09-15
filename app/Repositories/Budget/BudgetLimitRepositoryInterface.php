@@ -28,6 +28,7 @@ use FireflyIII\Models\Budget;
 use FireflyIII\Models\BudgetLimit;
 use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
 
 /**
@@ -35,7 +36,6 @@ use Illuminate\Support\Collection;
  */
 interface BudgetLimitRepositoryInterface
 {
-
     /**
      * Tells you which amount has been budgeted (for the given budgets)
      * in the selected query. Returns a positive amount as a string.
@@ -72,7 +72,7 @@ interface BudgetLimitRepositoryInterface
     public function find(Budget $budget, TransactionCurrency $currency, Carbon $start, Carbon $end): ?BudgetLimit;
 
     /**
-     * See reference nr. 11
+     * TODO this method is not multi currency aware.
      *
      * @param Carbon|null $start
      * @param Carbon|null $end
@@ -100,9 +100,9 @@ interface BudgetLimitRepositoryInterface
     public function getBudgetLimits(Budget $budget, Carbon $start = null, Carbon $end = null): Collection;
 
     /**
-     * @param User $user
+     * @param User|Authenticatable|null $user
      */
-    public function setUser(User $user): void;
+    public function setUser(User | Authenticatable | null $user): void;
 
     /**
      * @param array $data
@@ -128,5 +128,4 @@ interface BudgetLimitRepositoryInterface
      * @return BudgetLimit|null
      */
     public function updateLimitAmount(Budget $budget, Carbon $start, Carbon $end, string $amount): ?BudgetLimit;
-
 }

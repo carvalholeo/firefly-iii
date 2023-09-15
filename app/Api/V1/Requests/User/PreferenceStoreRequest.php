@@ -27,9 +27,13 @@ use FireflyIII\Support\Request\ChecksLogin;
 use FireflyIII\Support\Request\ConvertsDataTypes;
 use Illuminate\Foundation\Http\FormRequest;
 
+/**
+ * Class PreferenceStoreRequest
+ */
 class PreferenceStoreRequest extends FormRequest
 {
-    use ChecksLogin, ConvertsDataTypes;
+    use ChecksLogin;
+    use ConvertsDataTypes;
 
     /**
      * @return array
@@ -47,7 +51,7 @@ class PreferenceStoreRequest extends FormRequest
             $array['data'] = false;
         }
         if (is_numeric($array['data'])) {
-            $array['data'] = (float) $array['data'];
+            $array['data'] = (float)$array['data']; // intentional float.
         }
 
         return $array;
@@ -63,5 +67,4 @@ class PreferenceStoreRequest extends FormRequest
             'data' => 'required',
         ];
     }
-
 }

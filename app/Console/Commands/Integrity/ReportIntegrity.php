@@ -24,16 +24,18 @@ declare(strict_types=1);
 namespace FireflyIII\Console\Commands\Integrity;
 
 use Artisan;
+use FireflyIII\Console\Commands\ShowsFriendlyMessages;
 use Illuminate\Console\Command;
 use Schema;
 
 /**
  * Class ReportIntegrity
  *
- * @codeCoverageIgnore
+
  */
 class ReportIntegrity extends Command
 {
+    use ShowsFriendlyMessages;
 
     /**
      * The console command description.
@@ -58,14 +60,14 @@ class ReportIntegrity extends Command
             return 1;
         }
         $commands = [
+            'firefly-iii:create-group-memberships',
             'firefly-iii:report-empty-objects',
             'firefly-iii:report-sum',
+            'firefly-iii:upgrade-group-information',
         ];
         foreach ($commands as $command) {
-            $this->line(sprintf('Now executing %s', $command));
-            Artisan::call($command);
-            $result = Artisan::output();
-            echo $result;
+            $this->friendlyLine(sprintf('Now executing %s', $command));
+            $this->call($command);
         }
 
         return 0;

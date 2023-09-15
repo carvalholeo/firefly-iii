@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Preference.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -83,12 +84,15 @@ class Preference extends Model
             $user = auth()->user();
             /** @var Preference|null $preference */
             $preference = $user->preferences()->where('name', $value)->first();
+            if (null === $preference) {
+                $preference = $user->preferences()->where('id', (int)$value)->first();
+            }
             if (null !== $preference) {
                 return $preference;
             }
             $default = config('firefly.default_preferences');
             if (array_key_exists($value, $default)) {
-                $preference          = new Preference;
+                $preference          = new Preference();
                 $preference->name    = $value;
                 $preference->data    = $default[$value];
                 $preference->user_id = $user->id;
@@ -97,11 +101,10 @@ class Preference extends Model
                 return $preference;
             }
         }
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function user(): BelongsTo

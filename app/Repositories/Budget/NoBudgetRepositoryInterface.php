@@ -26,6 +26,7 @@ namespace FireflyIII\Repositories\Budget;
 use Carbon\Carbon;
 use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
 
 /**
@@ -44,9 +45,9 @@ interface NoBudgetRepositoryInterface
     public function getNoBudgetPeriodReport(Collection $accounts, Carbon $start, Carbon $end): array;
 
     /**
-     * @param User $user
+     * @param User|Authenticatable|null $user
      */
-    public function setUser(User $user): void;
+    public function setUser(User | Authenticatable | null $user): void;
 
     /**
      * @param Collection $accounts
@@ -58,7 +59,6 @@ interface NoBudgetRepositoryInterface
      */
     public function spentInPeriodWoBudgetMc(Collection $accounts, Carbon $start, Carbon $end): array;
 
-    /** @noinspection MoreThanThreeArgumentsInspection */
     /**
      * @param Carbon                   $start
      * @param Carbon                   $end
@@ -68,5 +68,4 @@ interface NoBudgetRepositoryInterface
      * @return array
      */
     public function sumExpenses(Carbon $start, Carbon $end, ?Collection $accounts = null, ?TransactionCurrency $currency = null): array;
-
 }

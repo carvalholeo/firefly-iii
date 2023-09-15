@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ReportGeneratorFactory.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -28,7 +29,7 @@ use FireflyIII\Exceptions\FireflyException;
 /**
  * Class ReportGeneratorFactory.
  *
- * @codeCoverageIgnore
+
  */
 class ReportGeneratorFactory
 {

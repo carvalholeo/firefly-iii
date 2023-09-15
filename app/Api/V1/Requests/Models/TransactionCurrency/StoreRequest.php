@@ -31,11 +31,12 @@ use Illuminate\Foundation\Http\FormRequest;
 /**
  * Class StoreRequest
  *
- * @codeCoverageIgnore
+
  */
 class StoreRequest extends FormRequest
 {
-    use ConvertsDataTypes, ChecksLogin;
+    use ConvertsDataTypes;
+    use ChecksLogin;
 
     /**
      * Get all data from the request.
@@ -57,7 +58,7 @@ class StoreRequest extends FormRequest
             'name'           => $this->convertString('name'),
             'code'           => $this->convertString('code'),
             'symbol'         => $this->convertString('symbol'),
-            'decimal_places' => $this->integer('decimal_places'),
+            'decimal_places' => $this->convertInteger('decimal_places'),
             'default'        => $default,
             'enabled'        => $enabled,
         ];
@@ -74,7 +75,7 @@ class StoreRequest extends FormRequest
             'name'           => 'required|between:1,255|unique:transaction_currencies,name',
             'code'           => 'required|between:3,51|unique:transaction_currencies,code',
             'symbol'         => 'required|between:1,51|unique:transaction_currencies,symbol',
-            'decimal_places' => 'between:0,20|numeric|min:0|max:20',
+            'decimal_places' => 'between:0,20|numeric|min:0|max:12',
             'enabled'        => [new IsBoolean()],
             'default'        => [new IsBoolean()],
 

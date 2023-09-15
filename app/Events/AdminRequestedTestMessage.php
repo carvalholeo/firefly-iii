@@ -26,12 +26,12 @@ namespace FireflyIII\Events;
 
 use FireflyIII\User;
 use Illuminate\Queue\SerializesModels;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class AdminRequestedTestMessage.
  *
- * @codeCoverageIgnore
+
  */
 class AdminRequestedTestMessage extends Event
 {

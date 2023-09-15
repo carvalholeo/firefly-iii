@@ -9,17 +9,37 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="color-scheme" content="light dark">
 
     {# CSS things #}
 
     {# libraries #}
     <link href="v1/lib/bs/css/bootstrap.min.css?v={{ FF_VERSION }}" rel="stylesheet" type="text/css" nonce="{{ JS_NONCE }}">
     <link href="v1/lib/fa/css/font-awesome.min.css?v={{ FF_VERSION }}" rel="stylesheet" type="text/css" nonce="{{ JS_NONCE }}">
-    <link href="v1/css/daterangepicker.css?v={{ FF_VERSION }}" rel="stylesheet" type="text/css" nonce="{{ JS_NONCE }}">
 
     {# the theme #}
     <link href="v1/lib/adminlte/css/AdminLTE.min.css?v={{ FF_VERSION }}" rel="stylesheet" type="text/css" nonce="{{ JS_NONCE }}">
-    <link href="v1/lib/adminlte/css/skins/skin-blue-light.min.css?v={{ FF_VERSION }}" rel="stylesheet" type="text/css" nonce="{{ JS_NONCE }}">
+    {% if 'browser' == darkMode %}
+        <script nonce="{{ JS_NONCE }}">
+            // If `prefers-color-scheme` is not supported, fall back to light mode.
+            // In this case, light.css will be downloaded with `highest` priority.
+            if (window.matchMedia('(prefers-color-scheme: dark)').media === 'not all') {
+                document.documentElement.style.display = 'none';
+                document.head.insertAdjacentHTML(
+                    'beforeend',
+                    '<link rel="stylesheet" href="v1/lib/adminlte/css/skins/skin-light.min.css?v={{ FF_VERSION }}" nonce="{{ JS_NONCE }}" onload="document.documentElement.style.display = \'\'">',
+                );
+            }
+        </script>
+        <link href="v1/lib/adminlte/css/skins/skin-dark.min.css?v={{ FF_VERSION }}" rel="stylesheet" type="text/css" nonce="{{ JS_NONCE }}"  media="(prefers-color-scheme: dark)">
+        <link href="v1/lib/adminlte/css/skins/skin-light.min.css?v={{ FF_VERSION }}" rel="stylesheet" type="text/css" nonce="{{ JS_NONCE }}" media="(prefers-color-scheme: light)">
+    {% endif %}
+    {% if 'dark' == darkMode %}
+        <link href="v1/lib/adminlte/css/skins/skin-dark.min.css?v={{ FF_VERSION }}" rel="stylesheet" type="text/css" nonce="{{ JS_NONCE }}">
+    {% endif %}
+    {% if 'light' == darkMode %}
+        <link href="v1/lib/adminlte/css/skins/skin-light.min.css?v={{ FF_VERSION }}" rel="stylesheet" type="text/css" nonce="{{ JS_NONCE }}">
+    {% endif %}
 
     {# Firefly III customisations #}
     <link href="v1/css/firefly.css?v={{ FF_VERSION }}" rel="stylesheet" type="text/css" nonce="{{ JS_NONCE }}">
@@ -60,18 +80,6 @@
     </script>
     <noscript><p><img src="//{{ config('firefly.tracker_url') }}/matomo.php?idsite={{ config('firefly.tracker_site_id') }}&amp;rec=1" style="border:0;" alt="" /></p></noscript>
 {% endif %}
-
-<script nonce="{{ JS_NONCE }}">
-    // Initialize the service worker
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('serviceworker.js?v={{ FF_VERSION }}', {
-            scope: '{{ route('index') }}'
-        }).then(
-            () => console.log('ServiceWorker registration successful'),
-            (err) => console.log('ServiceWorker registration failed: ', err)
-        );
-    }
-</script>
 
 </body>
 </html>

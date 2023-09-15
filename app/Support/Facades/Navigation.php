@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Navigation.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -26,7 +27,6 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @codeCoverageIgnore
  * Class Navigation.
  *
  * @method Carbon addPeriod(Carbon $theDate, string $repeatFreq, int $skip)

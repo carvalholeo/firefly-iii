@@ -31,11 +31,12 @@ use Illuminate\Queue\SerializesModels;
  * Sends user link for new password.
  * Class RequestedNewPassword
  *
- * @codeCoverageIgnore
+
  */
 class RequestedNewPassword extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable;
+    use SerializesModels;
 
     public string $url;
 
@@ -58,6 +59,6 @@ class RequestedNewPassword extends Mailable
     {
         return $this
             ->markdown('emails.password')
-            ->subject((string) trans('email.reset_pw_subject'));
+            ->subject((string)trans('email.reset_pw_subject'));
     }
 }

@@ -35,7 +35,8 @@ trait DateCalculation
      * Calculate the number of days passed left until end date, as seen from start date.
      * If today is between start and end, today will be used instead of end.
      *
-     * If both are in the past OR both are in the future, simply return the number of days in the period with a minimum of 1
+     * If both are in the past OR both are in the future, simply return the number of days in the period with a minimum
+     * of 1
      *
      * @param Carbon $start
      * @param Carbon $end
@@ -45,7 +46,7 @@ trait DateCalculation
     public function activeDaysLeft(Carbon $start, Carbon $end): int
     {
         $difference = $start->diffInDays($end) + 1;
-        $today      = Carbon::now()->startOfDay();
+        $today      = today(config('app.timezone'))->startOfDay();
 
         if ($start->lte($today) && $end->gte($today)) {
             $difference = $today->diffInDays($end);
@@ -67,7 +68,7 @@ trait DateCalculation
     protected function activeDaysPassed(Carbon $start, Carbon $end): int
     {
         $difference = $start->diffInDays($end) + 1;
-        $today      = Carbon::now()->startOfDay();
+        $today      = today(config('app.timezone'))->startOfDay();
 
         if ($start->lte($today) && $end->gte($today)) {
             $difference = $start->diffInDays($today) + 1;
@@ -84,7 +85,6 @@ trait DateCalculation
      */
     protected function calculateStep(Carbon $start, Carbon $end): string
     {
-
         $step   = '1D';
         $months = $start->diffInMonths($end);
         if ($months > 3) {
@@ -167,5 +167,4 @@ trait DateCalculation
 
         return $loop;
     }
-
 }

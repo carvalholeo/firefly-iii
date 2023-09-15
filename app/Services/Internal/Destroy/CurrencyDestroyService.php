@@ -23,13 +23,12 @@ declare(strict_types=1);
 
 namespace FireflyIII\Services\Internal\Destroy;
 
-use Exception;
 use FireflyIII\Models\TransactionCurrency;
 
 /**
  * Class CurrencyDestroyService
  *
- * @codeCoverageIgnore
+
  */
 class CurrencyDestroyService
 {
@@ -38,12 +37,6 @@ class CurrencyDestroyService
      */
     public function destroy(TransactionCurrency $currency): void
     {
-
-        try {
-            $currency->delete();
-        } catch (Exception $e) { // @phpstan-ignore-line
-            // @ignoreException
-        }
+        $currency->delete();
     }
-
 }

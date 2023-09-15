@@ -68,9 +68,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * @method static \Illuminate\Database\Eloquent\Builder|Category whereUserId($value)
  * @method static Builder|Category withTrashed()
  * @method static Builder|Category withoutTrashed()
- * @mixin Eloquent
  * @property int|null                             $user_group_id
  * @method static \Illuminate\Database\Eloquent\Builder|Category whereUserGroupId($value)
+ * @mixin Eloquent
  */
 class Category extends Model
 {
@@ -89,7 +89,7 @@ class Category extends Model
             'encrypted'  => 'boolean',
         ];
     /** @var array Fields that can be filled */
-    protected $fillable = ['user_id', 'name'];
+    protected $fillable = ['user_id', 'user_group_id', 'name'];
     /** @var array Hidden from view */
     protected $hidden = ['encrypted'];
 
@@ -104,7 +104,7 @@ class Category extends Model
     public static function routeBinder(string $value): Category
     {
         if (auth()->check()) {
-            $categoryId = (int) $value;
+            $categoryId = (int)$value;
             /** @var User $user */
             $user = auth()->user();
             /** @var Category $category */
@@ -113,11 +113,18 @@ class Category extends Model
                 return $category;
             }
         }
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
     }
 
     /**
-     * @codeCoverageIgnore
+     * @return BelongsTo
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
      * @return MorphMany
      */
     public function attachments(): MorphMany
@@ -126,7 +133,6 @@ class Category extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * Get all of the category's notes.
      */
     public function notes(): MorphMany
@@ -135,7 +141,6 @@ class Category extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsToMany
      */
     public function transactionJournals(): BelongsToMany
@@ -144,20 +149,10 @@ class Category extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsToMany
      */
     public function transactions(): BelongsToMany
     {
         return $this->belongsToMany(Transaction::class, 'category_transaction', 'category_id');
-    }
-
-    /**
-     * @codeCoverageIgnore
-     * @return BelongsTo
-     */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
     }
 }

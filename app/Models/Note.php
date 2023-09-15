@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Note.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -76,9 +77,8 @@ class Note extends Model
     protected $fillable = ['title', 'text', 'noteable_id', 'noteable_type'];
 
     /**
-     * @codeCoverageIgnore
      *
-     * Get all of the owning noteable models.
+     * Get all the owning noteable models.
      */
     public function noteable(): MorphTo
     {

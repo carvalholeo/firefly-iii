@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LoginController.php
  * Copyright (c) 2020 james@firefly-iii.org
@@ -33,13 +34,14 @@ use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Foundation\Auth\ThrottlesLogins;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Redirector;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
-use Log;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class LoginController
@@ -48,11 +50,12 @@ use Log;
  * redirecting them to your home screen. The controller uses a trait
  * to conveniently provide its functionality to your applications.
  *
- * @codeCoverageIgnore
+
  */
 class LoginController extends Controller
 {
-    use AuthenticatesUsers, ThrottlesLogins;
+    use AuthenticatesUsers;
+    use ThrottlesLogins;
 
     /**
      * Where to redirect users after login.
@@ -78,9 +81,6 @@ class LoginController extends Controller
     /**
      * Handle a login request to the application.
      *
-     * @param Request $request
-     *
-     * @return JsonResponse|RedirectResponse
      *
      * @throws ValidationException
      */
@@ -90,7 +90,7 @@ class LoginController extends Controller
         Log::info('User is trying to login.');
 
         $this->validateLogin($request);
-        Log::debug('Login data is valid.');
+        Log::debug('Login data is present.');
 
         /** Copied directly from AuthenticatesUsers, but with logging added: */
         // If the class is using the ThrottlesLogins trait, we can automatically throttle
@@ -116,7 +116,7 @@ class LoginController extends Controller
 
             return $this->sendLoginResponse($request);
         }
-        Log::warning('Login attempt failed.');
+        app('log')->warning('Login attempt failed.');
 
         /** Copied directly from AuthenticatesUsers, but with logging added: */
         // If the login attempt was unsuccessful we will increment the number of attempts
@@ -164,7 +164,7 @@ class LoginController extends Controller
      *
      * @param Request $request
      *
-     * @return Response
+     * @return RedirectResponse|Redirector|Response
      */
     public function logout(Request $request)
     {
@@ -203,8 +203,8 @@ class LoginController extends Controller
      *
      * @return Factory|Application|View|Redirector|RedirectResponse
      * @throws FireflyException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function showLoginForm(Request $request)
     {
@@ -212,7 +212,7 @@ class LoginController extends Controller
 
         $count = DB::table('users')->count();
         $guard = config('auth.defaults.guard');
-        $title = (string) trans('firefly.login_page_title');
+        $title = (string)trans('firefly.login_page_title');
 
         if (0 === $count && 'web' === $guard) {
             return redirect(route('register'));

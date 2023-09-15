@@ -1,4 +1,5 @@
 <?php
+
 /**
  * RemoveAllTags.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,22 +24,49 @@ declare(strict_types=1);
 namespace FireflyIII\TransactionRules\Actions;
 
 use DB;
-use Log;
+use FireflyIII\Events\Model\Rule\RuleActionFailedOnArray;
+use FireflyIII\Events\TriggeredAuditLog;
+use FireflyIII\Models\RuleAction;
+use FireflyIII\Models\TransactionJournal;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class RemoveAllTags.
  */
 class RemoveAllTags implements ActionInterface
 {
+    private RuleAction $action;
+
+    /**
+     * TriggerInterface constructor.
+     *
+     * @param RuleAction $action
+     */
+    public function __construct(RuleAction $action)
+    {
+        $this->action = $action;
+    }
+
     /**
      * @inheritDoc
      */
     public function actOnArray(array $journal): bool
     {
-        Log::debug(sprintf('RuleAction ClearCategory removed all tags from journal %d.', $journal['transaction_journal_id']));
         DB::table('tag_transaction_journal')->where('transaction_journal_id', $journal['transaction_journal_id'])->delete();
+        $count = DB::table('tag_transaction_journal')->where('transaction_journal_id', $journal['transaction_journal_id'])->count();
+        if (0 === $count) {
+            Log::debug(sprintf('RuleAction RemoveAllTags, journal #%d has no tags.', $journal['transaction_journal_id']));
+            event(new RuleActionFailedOnArray($this->action, $journal, trans('rules.no_tags_to_remove')));
+            return false;
+        }
+        Log::debug(sprintf('RuleAction RemoveAllTags removed all tags from journal %d.', $journal['transaction_journal_id']));
+
+        /** @var TransactionJournal $object */
+        $object = TransactionJournal::where('user_id', $journal['user_id'])->find($journal['transaction_journal_id']);
+
+        // audit log
+        event(new TriggeredAuditLog($this->action->rule, $object, 'clear_all_tags', null, null));
 
         return true;
     }
-
 }

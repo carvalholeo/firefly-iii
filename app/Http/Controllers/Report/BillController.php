@@ -24,12 +24,12 @@ declare(strict_types=1);
 namespace FireflyIII\Http\Controllers\Report;
 
 use Carbon\Carbon;
+use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Helpers\Report\ReportHelperInterface;
 use FireflyIII\Http\Controllers\Controller;
 use FireflyIII\Support\CacheProperties;
 use Illuminate\Support\Collection;
-use JsonException;
-use Log;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
@@ -43,10 +43,11 @@ class BillController extends Controller
      * @param Carbon     $end
      *
      * @return mixed|string
+     * @throws FireflyException
      */
-    public function overview(Collection $accounts, Carbon $start, Carbon $end)
-    {   // chart properties for cache:
-        $cache = new CacheProperties;
+    public function overview(Collection $accounts, Carbon $start, Carbon $end)   // chart properties for cache:
+    {
+        $cache = new CacheProperties();
         $cache->addProperty($start);
         $cache->addProperty($end);
         $cache->addProperty('bill-report');
@@ -59,15 +60,15 @@ class BillController extends Controller
         $report = $helper->getBillReport($accounts, $start, $end);
         try {
             $result = view('reports.partials.bills', compact('report'))->render();
-
-        } catch (Throwable $e) { // @phpstan-ignore-line
-            Log::debug(sprintf('Could not render reports.partials.budgets: %s', $e->getMessage()));
+        } catch (Throwable $e) {
+            Log::error(sprintf('Could not render reports.partials.budgets: %s', $e->getMessage()));
+            Log::error($e->getTraceAsString());
             $result = 'Could not render view.';
+            throw new FireflyException($result, 0, $e);
         }
 
         $cache->store($result);
 
         return $result;
-
     }
 }

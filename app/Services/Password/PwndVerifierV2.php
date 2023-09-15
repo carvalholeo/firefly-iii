@@ -1,4 +1,5 @@
 <?php
+
 /**
  * PwndVerifierV2.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -25,13 +26,12 @@ namespace FireflyIII\Services\Password;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
-use Log;
-use RuntimeException;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class PwndVerifierV2.
  *
- * @codeCoverageIgnore
+
  */
 class PwndVerifierV2 implements Verifier
 {
@@ -54,7 +54,8 @@ class PwndVerifierV2 implements Verifier
                 'User-Agent'  => sprintf('Firefly III v%s', config('firefly.version')),
                 'Add-Padding' => 'true',
             ],
-            'timeout' => 3.1415];
+            'timeout' => 3.1415,
+        ];
 
         Log::debug(sprintf('hash prefix is %s', $prefix));
         Log::debug(sprintf('rest is %s', $rest));
@@ -62,7 +63,7 @@ class PwndVerifierV2 implements Verifier
         try {
             $client = new Client();
             $res    = $client->request('GET', $url, $opt);
-        } catch (GuzzleException|RequestException $e) {
+        } catch (GuzzleException | RequestException $e) {
             Log::error(sprintf('Could not verify password security: %s', $e->getMessage()));
 
             return true;
@@ -71,12 +72,7 @@ class PwndVerifierV2 implements Verifier
         if (404 === $res->getStatusCode()) {
             return true;
         }
-        try {
-            $strpos = stripos($res->getBody()->getContents(), $rest);
-        } catch (RuntimeException $e) { // @phpstan-ignore-line
-            Log::error(sprintf('Could not get body from Pwnd result: %s', $e->getMessage()));
-            $strpos = false;
-        }
+        $strpos = stripos($res->getBody()->getContents(), $rest);
         if (false === $strpos) {
             Log::debug(sprintf('%s was not found in result body. Return true.', $rest));
 

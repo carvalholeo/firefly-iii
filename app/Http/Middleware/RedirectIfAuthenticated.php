@@ -1,4 +1,5 @@
 <?php
+
 /**
  * RedirectIfAuthenticated.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -29,7 +30,7 @@ use Illuminate\Support\Facades\Auth;
 /**
  * Class RedirectIfAuthenticated
  *
- * @codeCoverageIgnore
+
  */
 class RedirectIfAuthenticated
 {

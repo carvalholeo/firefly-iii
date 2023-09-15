@@ -80,11 +80,9 @@ class RecurrenceMeta extends Model
 
     /**
      * @return BelongsTo
-     * @codeCoverageIgnore
      */
     public function recurrence(): BelongsTo
     {
         return $this->belongsTo(Recurrence::class);
     }
-
 }

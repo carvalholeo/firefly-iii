@@ -1,4 +1,5 @@
 <?php
+
 /**
  * JournalRepositoryInterface.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -29,6 +30,7 @@ use FireflyIII\Models\TransactionGroup;
 use FireflyIII\Models\TransactionJournal;
 use FireflyIII\Models\TransactionJournalLink;
 use FireflyIII\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
 
 /**
@@ -51,7 +53,6 @@ interface JournalRepositoryInterface
     public function destroyJournal(TransactionJournal $journal): void;
 
     /**
-     * See reference nr. 1
      * Find a specific journal.
      *
      * @param int $journalId
@@ -126,7 +127,7 @@ interface JournalRepositoryInterface
     public function getSourceAccount(TransactionJournal $journal): Account;
 
     /**
-     * See reference nr. 5
+     * TODO Maybe to account repository? Do this wen reconcile is API only.
      *
      * @param int $journalId
      */
@@ -143,9 +144,9 @@ interface JournalRepositoryInterface
     public function searchJournalDescriptions(string $search, int $limit): Collection;
 
     /**
-     * @param User $user
+     * @param User|Authenticatable|null $user
      */
-    public function setUser(User $user);
+    public function setUser(User | Authenticatable | null $user): void;
 
     /**
      * Update budget for a journal.

@@ -23,18 +23,21 @@ declare(strict_types=1);
 
 namespace FireflyIII\Console\Commands\Upgrade;
 
-use Exception;
-use FireflyIII\Exceptions\FireflyException;
+use FireflyIII\Console\Commands\ShowsFriendlyMessages;
 use FireflyIII\Models\Note;
 use FireflyIII\Models\TransactionJournalMeta;
 use Illuminate\Console\Command;
-use Log;
+use Illuminate\Support\Facades\Log;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class MigrateJournalNotes
  */
 class MigrateJournalNotes extends Command
 {
+    use ShowsFriendlyMessages;
+
     public const CONFIG_NAME = '480_migrate_notes';
     /**
      * The console command description.
@@ -53,14 +56,15 @@ class MigrateJournalNotes extends Command
      * Execute the console command.
      *
      * @return int
-     * @throws FireflyException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function handle(): int
     {
         $start = microtime(true);
 
         if ($this->isExecuted() && true !== $this->option('force')) {
-            $this->warn('This command has already been executed.');
+            $this->friendlyInfo('This command has already been executed.');
 
             return 0;
         }
@@ -79,25 +83,20 @@ class MigrateJournalNotes extends Command
             $note->text = $meta->data;
             $note->save();
             Log::debug(sprintf('Migrated meta note #%d to Note #%d', $meta->id, $note->id));
-            try {
-                $meta->delete();
-
-            } catch (Exception $e) { // @phpstan-ignore-line
-                Log::error(sprintf('Could not delete old meta entry #%d: %s', $meta->id, $e->getMessage()));
-            }
+            $meta->delete();
 
             $count++;
         }
 
         if (0 === $count) {
-            $this->line('No notes to migrate.');
+            $this->friendlyPositive('No notes to migrate.');
         }
         if (0 !== $count) {
-            $this->line(sprintf('Migrated %d note(s).', $count));
+            $this->friendlyInfo(sprintf('Migrated %d note(s).', $count));
         }
 
         $end = round(microtime(true) - $start, 2);
-        $this->info(sprintf('Migrated notes in %s seconds.', $end));
+        $this->friendlyInfo(sprintf('Migrated notes in %s seconds.', $end));
         $this->markAsExecuted();
 
         return 0;
@@ -105,15 +104,14 @@ class MigrateJournalNotes extends Command
 
     /**
      * @return bool
-     * @throws FireflyException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     private function isExecuted(): bool
     {
         $configVar = app('fireflyconfig')->get(self::CONFIG_NAME, false);
         if (null !== $configVar) {
-            return (bool) $configVar->data;
+            return (bool)$configVar->data;
         }
 
         return false;

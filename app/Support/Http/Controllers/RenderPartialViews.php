@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Support\Http\Controllers;
 
+use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Helpers\Report\PopupReportInterface;
 use FireflyIII\Models\Account;
 use FireflyIII\Models\AccountType;
@@ -35,7 +36,7 @@ use FireflyIII\Repositories\Budget\BudgetRepositoryInterface;
 use FireflyIII\Repositories\Category\CategoryRepositoryInterface;
 use FireflyIII\Repositories\Tag\TagRepositoryInterface;
 use FireflyIII\Support\Search\OperatorQuerySearch;
-use Log;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
@@ -44,13 +45,13 @@ use Throwable;
  */
 trait RenderPartialViews
 {
-
     /**
      * View for transactions in a budget for an account.
      *
      * @param array $attributes
      *
      * @return string
+     * @throws FireflyException
      */
     protected function budgetEntry(array $attributes): string // generate view for report.
     {
@@ -59,18 +60,19 @@ trait RenderPartialViews
 
         /** @var BudgetRepositoryInterface $budgetRepository */
         $budgetRepository = app(BudgetRepositoryInterface::class);
-        $budget           = $budgetRepository->find((int) $attributes['budgetId']);
+        $budget           = $budgetRepository->find((int)$attributes['budgetId']);
 
         $accountRepos = app(AccountRepositoryInterface::class);
-        $account      = $accountRepos->find((int) $attributes['accountId']);
+        $account      = $accountRepos->find((int)$attributes['accountId']);
 
         $journals = $popupHelper->balanceForBudget($budget, $account, $attributes);
 
         try {
             $view = view('popup.report.balance-amount', compact('journals', 'budget', 'account'))->render();
-        } catch (Throwable $e) { // @phpstan-ignore-line
+        } catch (Throwable $e) {
             Log::error(sprintf('Could not render: %s', $e->getMessage()));
             $view = 'Firefly III could not render the view. Please see the log files.';
+            throw new FireflyException($view, 0, $e);
         }
 
         return $view;
@@ -80,6 +82,7 @@ trait RenderPartialViews
      * Get options for budget report.
      *
      * @return string
+     * @throws FireflyException
      */
     protected function budgetReportOptions(): string // render a view
     {
@@ -89,9 +92,10 @@ trait RenderPartialViews
 
         try {
             $result = view('reports.options.budget', compact('budgets'))->render();
-        } catch (Throwable $e) {// @phpstan-ignore-line
+        } catch (Throwable $e) {
             Log::error(sprintf('Cannot render reports.options.tag: %s', $e->getMessage()));
             $result = 'Could not render view.';
+            throw new FireflyException($result, 0, $e);
         }
 
         return $result;
@@ -103,6 +107,7 @@ trait RenderPartialViews
      * @param array $attributes
      *
      * @return string
+     * @throws FireflyException
      */
     protected function budgetSpentAmount(array $attributes): string // generate view for report.
     {
@@ -112,17 +117,18 @@ trait RenderPartialViews
         /** @var PopupReportInterface $popupHelper */
         $popupHelper = app(PopupReportInterface::class);
 
-        $budget = $budgetRepository->find((int) $attributes['budgetId']);
+        $budget = $budgetRepository->find((int)$attributes['budgetId']);
         if (null === $budget) {
-            $budget = new Budget;
+            $budget = new Budget();
         }
         $journals = $popupHelper->byBudget($budget, $attributes);
 
         try {
             $view = view('popup.report.budget-spent-amount', compact('journals', 'budget'))->render();
-        } catch (Throwable $e) { // @phpstan-ignore-line
+        } catch (Throwable $e) {
             Log::error(sprintf('Could not render: %s', $e->getMessage()));
             $view = 'Firefly III could not render the view. Please see the log files.';
+            throw new FireflyException($view, 0, $e);
         }
 
         return $view;
@@ -134,6 +140,7 @@ trait RenderPartialViews
      * @param array $attributes
      *
      * @return string
+     * @throws FireflyException
      */
     protected function categoryEntry(array $attributes): string // generate view for report.
     {
@@ -142,14 +149,15 @@ trait RenderPartialViews
 
         /** @var CategoryRepositoryInterface $categoryRepository */
         $categoryRepository = app(CategoryRepositoryInterface::class);
-        $category           = $categoryRepository->find((int) $attributes['categoryId']);
+        $category           = $categoryRepository->find((int)$attributes['categoryId']);
         $journals           = $popupHelper->byCategory($category, $attributes);
 
         try {
             $view = view('popup.report.category-entry', compact('journals', 'category'))->render();
-        } catch (Throwable $e) { // @phpstan-ignore-line
+        } catch (Throwable $e) {
             Log::error(sprintf('Could not render: %s', $e->getMessage()));
             $view = 'Firefly III could not render the view. Please see the log files.';
+            throw new FireflyException($view, 0, $e);
         }
 
         return $view;
@@ -159,6 +167,7 @@ trait RenderPartialViews
      * Get options for category report.
      *
      * @return string
+     * @throws FireflyException
      */
     protected function categoryReportOptions(): string // render a view
     {
@@ -168,9 +177,10 @@ trait RenderPartialViews
 
         try {
             $result = view('reports.options.category', compact('categories'))->render();
-        } catch (Throwable $e) { // @phpstan-ignore-line
+        } catch (Throwable $e) {
             Log::error(sprintf('Cannot render reports.options.category: %s', $e->getMessage()));
             $result = 'Could not render view.';
+            throw new FireflyException($result, 0, $e);
         }
 
         return $result;
@@ -180,6 +190,7 @@ trait RenderPartialViews
      * Get options for double report.
      *
      * @return string
+     * @throws FireflyException
      */
     protected function doubleReportOptions(): string // render a view
     {
@@ -209,9 +220,10 @@ trait RenderPartialViews
 
         try {
             $result = view('reports.options.double', compact('set'))->render();
-        } catch (Throwable $e) { // @phpstan-ignore-line
+        } catch (Throwable $e) {
             Log::error(sprintf('Cannot render reports.options.tag: %s', $e->getMessage()));
             $result = 'Could not render view.';
+            throw new FireflyException($result, 0, $e);
         }
 
         return $result;
@@ -223,6 +235,7 @@ trait RenderPartialViews
      * @param array $attributes
      *
      * @return string
+     * @throws FireflyException
      */
     protected function expenseEntry(array $attributes): string // generate view for report.
     {
@@ -232,7 +245,7 @@ trait RenderPartialViews
         /** @var PopupReportInterface $popupHelper */
         $popupHelper = app(PopupReportInterface::class);
 
-        $account = $accountRepository->find((int) $attributes['accountId']);
+        $account = $accountRepository->find((int)$attributes['accountId']);
 
         if (null === $account) {
             return 'This is an unknown account. Apologies.';
@@ -242,9 +255,10 @@ trait RenderPartialViews
 
         try {
             $view = view('popup.report.expense-entry', compact('journals', 'account'))->render();
-        } catch (Throwable $e) { // @phpstan-ignore-line
+        } catch (Throwable $e) {
             Log::error(sprintf('Could not render: %s', $e->getMessage()));
             $view = 'Firefly III could not render the view. Please see the log files.';
+            throw new FireflyException($view, 0, $e);
         }
 
         return $view;
@@ -256,6 +270,7 @@ trait RenderPartialViews
      * @param Rule $rule
      *
      * @return array
+     * @throws FireflyException
      */
     protected function getCurrentActions(Rule $rule): array // get info from object and present.
     {
@@ -276,10 +291,10 @@ trait RenderPartialViews
                         'count'      => $count,
                     ]
                 )->render();
-
-            } catch (Throwable $e) { // @phpstan-ignore-line
+            } catch (Throwable $e) {
                 Log::debug(sprintf('Throwable was thrown in getCurrentActions(): %s', $e->getMessage()));
                 Log::error($e->getTraceAsString());
+                throw new FireflyException(sprintf('Could not render: %s', $e->getMessage()), 0, $e);
             }
 
             ++$index;
@@ -294,17 +309,16 @@ trait RenderPartialViews
      * @param Rule $rule
      *
      * @return array
-     *
+     * @throws FireflyException
      */
     protected function getCurrentTriggers(Rule $rule): array // get info from object and present.
     {
-        // See reference nr. 38
+        // TODO duplicated code.
         $operators = config('search.operators');
         $triggers  = [];
         foreach ($operators as $key => $operator) {
             if ('user_action' !== $key && false === $operator['alias']) {
-
-                $triggers[$key] = (string) trans(sprintf('firefly.rule_trigger_%s_choice', $key));
+                $triggers[$key] = (string)trans(sprintf('firefly.rule_trigger_%s_choice', $key));
             }
         }
         asort($triggers);
@@ -317,20 +331,25 @@ trait RenderPartialViews
             if ('user_action' !== $entry->trigger_type) {
                 $count = ($index + 1);
                 try {
+                    $rootOperator = OperatorQuerySearch::getRootOperator($entry->trigger_type);
+                    if (str_starts_with($rootOperator, '-')) {
+                        $rootOperator = substr($rootOperator, 1);
+                    }
                     $renderedEntries[] = view(
                         'rules.partials.trigger',
                         [
-                            'oldTrigger' => OperatorQuerySearch::getRootOperator($entry->trigger_type),
-                            'oldValue'   => $entry->trigger_value,
-                            'oldChecked' => $entry->stop_processing,
-                            'count'      => $count,
-                            'triggers'   => $triggers,
+                            'oldTrigger'    => $rootOperator,
+                            'oldValue'      => $entry->trigger_value,
+                            'oldChecked'    => $entry->stop_processing,
+                            'oldProhibited' => str_starts_with($entry->trigger_type, '-'),
+                            'count'         => $count,
+                            'triggers'      => $triggers,
                         ]
                     )->render();
-
-                } catch (Throwable $e) { // @phpstan-ignore-line
+                } catch (Throwable $e) {
                     Log::debug(sprintf('Throwable was thrown in getCurrentTriggers(): %s', $e->getMessage()));
                     Log::error($e->getTraceAsString());
+                    throw new FireflyException(sprintf('Could not render: %s', $e->getMessage()), 0, $e);
                 }
 
                 ++$index;
@@ -346,6 +365,7 @@ trait RenderPartialViews
      * @param array $attributes
      *
      * @return string
+     * @throws FireflyException
      */
     protected function incomeEntry(array $attributes): string // generate view for report.
     {
@@ -354,7 +374,7 @@ trait RenderPartialViews
 
         /** @var PopupReportInterface $popupHelper */
         $popupHelper = app(PopupReportInterface::class);
-        $account     = $accountRepository->find((int) $attributes['accountId']);
+        $account     = $accountRepository->find((int)$attributes['accountId']);
 
         if (null === $account) {
             return 'This is an unknown category. Apologies.';
@@ -364,9 +384,10 @@ trait RenderPartialViews
 
         try {
             $view = view('popup.report.income-entry', compact('journals', 'account'))->render();
-        } catch (Throwable $e) { // @phpstan-ignore-line
+        } catch (Throwable $e) {
             Log::error(sprintf('Could not render: %s', $e->getMessage()));
             $view = 'Firefly III could not render the view. Please see the log files.';
+            throw new FireflyException($view, 0, $e);
         }
 
         return $view;
@@ -376,15 +397,16 @@ trait RenderPartialViews
      * Get options for default report.
      *
      * @return string
+     * @throws FireflyException
      */
     protected function noReportOptions(): string // render a view
     {
-
         try {
             $result = view('reports.options.no-options')->render();
-        } catch (Throwable $e) { // @phpstan-ignore-line
+        } catch (Throwable $e) {
             Log::error(sprintf('Cannot render reports.options.no-options: %s', $e->getMessage()));
             $result = 'Could not render view.';
+            throw new FireflyException($result, 0, $e);
         }
 
         return $result;
@@ -394,6 +416,7 @@ trait RenderPartialViews
      * Get options for tag report.
      *
      * @return string
+     * @throws FireflyException
      */
     protected function tagReportOptions(): string // render a view
     {
@@ -404,9 +427,10 @@ trait RenderPartialViews
 
         try {
             $result = view('reports.options.tag', compact('tags'))->render();
-        } catch (Throwable $e) { // @phpstan-ignore-line
+        } catch (Throwable $e) {
             Log::error(sprintf('Cannot render reports.options.tag: %s', $e->getMessage()));
             $result = 'Could not render view.';
+            throw new FireflyException($result, 0, $e);
         }
 
         return $result;

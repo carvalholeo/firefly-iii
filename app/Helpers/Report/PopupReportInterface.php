@@ -1,4 +1,5 @@
 <?php
+
 /**
  * PopupReportInterface.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -31,7 +32,6 @@ use FireflyIII\Models\Category;
  */
 interface PopupReportInterface
 {
-
     /**
      * Get balances for budget.
      *

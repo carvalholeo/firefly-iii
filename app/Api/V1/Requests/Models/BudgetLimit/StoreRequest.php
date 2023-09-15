@@ -30,11 +30,12 @@ use Illuminate\Foundation\Http\FormRequest;
 /**
  * Class StoreRequest
  *
- * @codeCoverageIgnore
+
  */
 class StoreRequest extends FormRequest
 {
-    use ConvertsDataTypes, ChecksLogin;
+    use ConvertsDataTypes;
+    use ChecksLogin;
 
     /**
      * Get all data from the request.
@@ -47,7 +48,7 @@ class StoreRequest extends FormRequest
             'start'         => $this->getCarbonDate('start'),
             'end'           => $this->getCarbonDate('end'),
             'amount'        => $this->convertString('amount'),
-            'currency_id'   => $this->integer('currency_id'),
+            'currency_id'   => $this->convertInteger('currency_id'),
             'currency_code' => $this->convertString('currency_code'),
         ];
     }
@@ -64,8 +65,7 @@ class StoreRequest extends FormRequest
             'end'           => 'required|after:start|date',
             'amount'        => 'required|gt:0',
             'currency_id'   => 'numeric|exists:transaction_currencies,id',
-            'currency_code' => 'min:3|max:3|exists:transaction_currencies,code',
+            'currency_code' => 'min:3|max:51|exists:transaction_currencies,code',
         ];
     }
-
 }

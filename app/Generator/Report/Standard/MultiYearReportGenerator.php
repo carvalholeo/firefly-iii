@@ -1,4 +1,5 @@
 <?php
+
 /**
  * MultiYearReportGenerator.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,15 +24,16 @@ declare(strict_types=1);
 namespace FireflyIII\Generator\Report\Standard;
 
 use Carbon\Carbon;
+use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Generator\Report\ReportGeneratorInterface;
 use Illuminate\Support\Collection;
-use Log;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
  * Class MonthReportGenerator.
  *
- * @codeCoverageIgnore
+
  */
 class MultiYearReportGenerator implements ReportGeneratorInterface
 {
@@ -46,6 +48,7 @@ class MultiYearReportGenerator implements ReportGeneratorInterface
      * Generates the report.
      *
      * @return string
+     * @throws FireflyException
      */
     public function generate(): string
     {
@@ -58,12 +61,12 @@ class MultiYearReportGenerator implements ReportGeneratorInterface
                 'reports.default.multi-year',
                 compact('accountIds', 'reportType')
             )->with('start', $this->start)->with('end', $this->end)->render();
-        } catch (Throwable $e) { // @phpstan-ignore-line
+        } catch (Throwable $e) {
             Log::error(sprintf('Cannot render reports.default.multi-year: %s', $e->getMessage()));
+            Log::error($e->getTraceAsString());
             $result = sprintf('Could not render report view: %s', $e->getMessage());
+            throw new FireflyException($result, 0, $e);
         }
-
-        return $result;
     }
 
     /**

@@ -58,13 +58,16 @@ class UserRole extends Model
     public const CHANGE_RULES        = 'change_rules';
     public const CHANGE_TRANSACTIONS = 'change_tx';
     public const FULL                = 'full';
+    public const MANAGE_CURRENCIES   = 'manage_currencies';
+    public const MANAGE_WEBHOOKS     = 'manage_webhooks';
     public const OWNER               = 'owner';
     public const READ_ONLY           = 'ro';
     public const VIEW_REPORTS        = 'view_reports';
+
+
     protected $fillable = ['title'];
 
     /**
-     * @codeCoverageIgnore
      *
      * @return HasMany
      */

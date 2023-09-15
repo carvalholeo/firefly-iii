@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ConfigurationController.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -22,14 +23,15 @@ declare(strict_types=1);
 
 namespace FireflyIII\Http\Controllers\Admin;
 
-use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Http\Controllers\Controller;
 use FireflyIII\Http\Middleware\IsDemoUser;
 use FireflyIII\Http\Requests\ConfigurationRequest;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
-use Log;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class ConfigurationController.
@@ -39,7 +41,7 @@ class ConfigurationController extends Controller
     /**
      * ConfigurationController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -47,7 +49,7 @@ class ConfigurationController extends Controller
 
         $this->middleware(
             static function ($request, $next) {
-                app('view')->share('title', (string) trans('firefly.administration'));
+                app('view')->share('title', (string)trans('firefly.administration'));
                 app('view')->share('mainTitleIcon', 'fa-hand-spock-o');
 
                 return $next($request);
@@ -60,13 +62,12 @@ class ConfigurationController extends Controller
      * Show configuration index.
      *
      * @return Factory|View
-     * @throws FireflyException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function index()
     {
-        $subTitle     = (string) trans('firefly.instance_configuration');
+        $subTitle     = (string)trans('firefly.instance_configuration');
         $subTitleIcon = 'fa-wrench';
 
         Log::channel('audit')->info('User visits admin config index.');
@@ -102,7 +103,7 @@ class ConfigurationController extends Controller
         app('fireflyconfig')->set('is_demo_site', $data['is_demo_site']);
 
         // flash message
-        session()->flash('success', (string) trans('firefly.configuration_updated'));
+        session()->flash('success', (string)trans('firefly.configuration_updated'));
         app('preferences')->mark();
 
         return redirect()->route('admin.configuration.index');

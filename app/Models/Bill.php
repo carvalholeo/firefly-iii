@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Bill.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -24,6 +25,7 @@ namespace FireflyIII\Models;
 
 use Eloquent;
 use FireflyIII\User;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -48,8 +50,8 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * @property string                               $amount_min
  * @property string                               $amount_max
  * @property Carbon                               $date
- * @property string|null                          $end_date
- * @property string|null                          $extension_date
+ * @property Carbon|null                          $end_date
+ * @property Carbon|null                          $extension_date
  * @property string                               $repeat_freq
  * @property int                                  $skip
  * @property bool                                 $automatch
@@ -93,9 +95,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * @method static \Illuminate\Database\Eloquent\Builder|Bill whereUserId($value)
  * @method static Builder|Bill withTrashed()
  * @method static Builder|Bill withoutTrashed()
- * @mixin Eloquent
  * @property int|null                             $user_group_id
  * @method static \Illuminate\Database\Eloquent\Builder|Bill whereUserGroupId($value)
+ * @mixin Eloquent
  */
 class Bill extends Model
 {
@@ -123,8 +125,22 @@ class Bill extends Model
 
     /** @var array Fields that can be filled */
     protected $fillable
-        = ['name', 'match', 'amount_min', 'user_id', 'amount_max', 'date', 'repeat_freq', 'skip',
-           'automatch', 'active', 'transaction_currency_id', 'end_date', 'extension_date'];
+        = [
+            'name',
+            'match',
+            'amount_min',
+            'user_id',
+            'user_group_id',
+            'amount_max',
+            'date',
+            'repeat_freq',
+            'skip',
+            'automatch',
+            'active',
+            'transaction_currency_id',
+            'end_date',
+            'extension_date',
+        ];
     /** @var array Hidden from view */
     protected $hidden = ['amount_min_encrypted', 'amount_max_encrypted', 'name_encrypted', 'match_encrypted'];
 
@@ -139,7 +155,7 @@ class Bill extends Model
     public static function routeBinder(string $value): Bill
     {
         if (auth()->check()) {
-            $billId = (int) $value;
+            $billId = (int)$value;
             /** @var User $user */
             $user = auth()->user();
             /** @var Bill $bill */
@@ -148,11 +164,18 @@ class Bill extends Model
                 return $bill;
             }
         }
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
     }
 
     /**
-     * @codeCoverageIgnore
+     * @return BelongsTo
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
      * @return MorphMany
      */
     public function attachments(): MorphMany
@@ -161,7 +184,6 @@ class Bill extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * Get all of the notes.
      */
     public function notes(): MorphMany
@@ -178,27 +200,25 @@ class Bill extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      *
      * @param mixed $value
      */
     public function setAmountMaxAttribute($value): void
     {
-        $this->attributes['amount_max'] = (string) $value;
+        $this->attributes['amount_max'] = (string)$value;
     }
 
     /**
      * @param mixed $value
      *
-     * @codeCoverageIgnore
+
      */
     public function setAmountMinAttribute($value): void
     {
-        $this->attributes['amount_min'] = (string) $value;
+        $this->attributes['amount_min'] = (string)$value;
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function transactionCurrency(): BelongsTo
@@ -207,7 +227,6 @@ class Bill extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return HasMany
      */
     public function transactionJournals(): HasMany
@@ -216,11 +235,26 @@ class Bill extends Model
     }
 
     /**
-     * @codeCoverageIgnore
-     * @return BelongsTo
+     * Get the max amount
+     *
+     * @return Attribute
      */
-    public function user(): BelongsTo
+    protected function amountMax(): Attribute
     {
-        return $this->belongsTo(User::class);
+        return Attribute::make(
+            get: fn ($value) => (string)$value,
+        );
+    }
+
+    /**
+     * Get the min amount
+     *
+     * @return Attribute
+     */
+    protected function amountMin(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => (string)$value,
+        );
     }
 }

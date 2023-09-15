@@ -45,7 +45,7 @@ class ShowController extends Controller
     /**
      * AvailableBudgetController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -64,20 +64,19 @@ class ShowController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/available_budgets/getAvailableBudget
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/available_budgets/getAvailableBudget
      *
      * Display a listing of the resource.
      *
      * @return JsonResponse
      * @throws FireflyException
-     * @codeCoverageIgnore
      */
     public function index(): JsonResponse
     {
         $manager = $this->getManager();
 
         // types to get, page size:
-        $pageSize = (int) app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
 
         $start = $this->parameters->get('start');
         $end   = $this->parameters->get('end');
@@ -89,7 +88,7 @@ class ShowController extends Controller
 
         // make paginator:
         $paginator = new LengthAwarePaginator($availableBudgets, $count, $pageSize, $this->parameters->get('page'));
-        $paginator->setPath(route('api.v1.available_budgets.index') . $this->buildParams());
+        $paginator->setPath(route('api.v1.available-budgets.index') . $this->buildParams());
 
         /** @var AvailableBudgetTransformer $transformer */
         $transformer = app(AvailableBudgetTransformer::class);
@@ -103,14 +102,13 @@ class ShowController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/available_budgets/getAvailableBudget
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/available_budgets/getAvailableBudget
      *
      * Display the specified resource.
      *
      * @param AvailableBudget $availableBudget
      *
      * @return JsonResponse
-     * @codeCoverageIgnore
      */
     public function show(AvailableBudget $availableBudget): JsonResponse
     {
@@ -124,5 +122,4 @@ class ShowController extends Controller
 
         return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
     }
-
 }

@@ -23,11 +23,9 @@ declare(strict_types=1);
 
 namespace FireflyIII\Services\Internal\Destroy;
 
-use Exception;
 use FireflyIII\Models\Bill;
 
 /**
- * @codeCoverageIgnore
  * Class BillDestroyService
  */
 class BillDestroyService
@@ -37,11 +35,6 @@ class BillDestroyService
      */
     public function destroy(Bill $bill): void
     {
-        try {
-            $bill->delete();
-        } catch (Exception $e) { // @phpstan-ignore-line
-            // @ignoreException
-        }
+        $bill->delete();
     }
-
 }

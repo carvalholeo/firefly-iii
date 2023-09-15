@@ -1,4 +1,5 @@
 <?php
+
 /**
  * UserRepositoryInterface.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -22,8 +23,10 @@ declare(strict_types=1);
 
 namespace FireflyIII\Repositories\User;
 
+use FireflyIII\Models\InvitedUser;
 use FireflyIII\Models\Role;
 use FireflyIII\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
 
 /**
@@ -31,7 +34,6 @@ use Illuminate\Support\Collection;
  */
 interface UserRepositoryInterface
 {
-
     /**
      * Returns a collection of all users.
      *
@@ -101,6 +103,13 @@ interface UserRepositoryInterface
     public function deleteEmptyGroups(): void;
 
     /**
+     * @param InvitedUser $invite
+     *
+     * @return void
+     */
+    public function deleteInvite(InvitedUser $invite): void;
+
+    /**
      * @param User $user
      *
      * @return bool
@@ -129,6 +138,11 @@ interface UserRepositoryInterface
     public function first(): ?User;
 
     /**
+     * @return Collection
+     */
+    public function getInvitedUsers(): Collection;
+
+    /**
      * @param string $role
      *
      * @return Role|null
@@ -143,6 +157,14 @@ interface UserRepositoryInterface
     public function getRoleByUser(User $user): ?string;
 
     /**
+     * @param User $user
+     * @param int  $groupId
+     *
+     * @return array
+     */
+    public function getRolesInGroup(User $user, int $groupId): array;
+
+    /**
      * Return basic user information.
      *
      * @param User $user
@@ -152,12 +174,27 @@ interface UserRepositoryInterface
     public function getUserData(User $user): array;
 
     /**
-     * @param User   $user
-     * @param string $role
+     * @param User|Authenticatable|null $user
+     * @param string                    $role
      *
      * @return bool
      */
-    public function hasRole(User $user, string $role): bool;
+    public function hasRole(User | Authenticatable | null $user, string $role): bool;
+
+    /**
+     * @param User|Authenticatable|null $user
+     * @param string                    $email
+     *
+     * @return InvitedUser
+     */
+    public function inviteUser(User | Authenticatable | null $user, string $email): InvitedUser;
+
+    /**
+     * @param string $code
+     *
+     * @return void
+     */
+    public function redeemCode(string $code): void;
 
     /**
      * Remove any role the user has.
@@ -198,8 +235,8 @@ interface UserRepositoryInterface
     public function update(User $user, array $data): User;
 
     /**
-     * This updates the users email address. Same as changeEmail just without most logging. This makes sure that the undo/confirm routine can't catch this one.
-     * The user is NOT blocked.
+     * This updates the users email address. Same as changeEmail just without most logging. This makes sure that the
+     * undo/confirm routine can't catch this one. The user is NOT blocked.
      *
      * @param User   $user
      * @param string $newEmail
@@ -209,4 +246,11 @@ interface UserRepositoryInterface
      *
      */
     public function updateEmail(User $user, string $newEmail): bool;
+
+    /**
+     * @param string $code
+     *
+     * @return bool
+     */
+    public function validateInviteCode(string $code): bool;
 }

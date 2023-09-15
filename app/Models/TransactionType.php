@@ -1,4 +1,5 @@
 <?php
+
 /**
  * TransactionType.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -58,28 +59,20 @@ class TransactionType extends Model
 {
     use SoftDeletes;
 
-    /** @var string */
-    public const DEPOSIT = 'Deposit';
-    /** @var string */
-    public const INVALID = 'Invalid';
-    /** @var string */
+    public const DEPOSIT          = 'Deposit';
+    public const INVALID          = 'Invalid';
     public const LIABILITY_CREDIT = 'Liability credit';
-    /** @var string */
-    public const OPENING_BALANCE = 'Opening balance';
-    /** @var string */
-    public const RECONCILIATION = 'Reconciliation';
-    /** @var string */
-    public const TRANSFER = 'Transfer';
-    /** @var string */
-    public const WITHDRAWAL = 'Withdrawal';
-    /** @var string[] */
+    public const OPENING_BALANCE  = 'Opening balance';
+    public const RECONCILIATION   = 'Reconciliation';
+    public const TRANSFER         = 'Transfer';
+    public const WITHDRAWAL       = 'Withdrawal';
+
     protected $casts
-        = [
+                        = [
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
         ];
-    /** @var string[] */
     protected $fillable = ['type'];
 
     /**
@@ -103,7 +96,6 @@ class TransactionType extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return bool
      */
     public function isDeposit(): bool
@@ -112,7 +104,6 @@ class TransactionType extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return bool
      */
     public function isOpeningBalance(): bool
@@ -121,7 +112,6 @@ class TransactionType extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return bool
      */
     public function isTransfer(): bool
@@ -130,7 +120,6 @@ class TransactionType extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return bool
      */
     public function isWithdrawal(): bool
@@ -139,7 +128,6 @@ class TransactionType extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return HasMany
      */
     public function transactionJournals(): HasMany

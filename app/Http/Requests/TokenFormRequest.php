@@ -1,4 +1,5 @@
 <?php
+
 /**
  * TokenFormRequest.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -28,7 +29,7 @@ use Illuminate\Foundation\Http\FormRequest;
 /**
  * Class TokenFormRequest.
  *
- * @codeCoverageIgnore
+
  */
 class TokenFormRequest extends FormRequest
 {

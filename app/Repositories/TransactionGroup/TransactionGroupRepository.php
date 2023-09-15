@@ -45,9 +45,11 @@ use FireflyIII\Services\Internal\Destroy\TransactionGroupDestroyService;
 use FireflyIII\Services\Internal\Update\GroupUpdateService;
 use FireflyIII\Support\NullArrayObject;
 use FireflyIII\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Log;
+use Illuminate\Support\Facades\Log;
+use JsonException;
 
 /**
  * Class TransactionGroupRepository
@@ -65,7 +67,18 @@ class TransactionGroupRepository implements TransactionGroupRepositoryInterface
         $journal = $this->user->transactionJournals()->find($journalId);
 
         return $journal->attachments()->count();
+    }
 
+    /**
+     * Find a transaction group by its ID.
+     *
+     * @param int $groupId
+     *
+     * @return TransactionGroup|null
+     */
+    public function find(int $groupId): ?TransactionGroup
+    {
+        return $this->user->transactionGroups()->find($groupId);
     }
 
     /**
@@ -73,7 +86,8 @@ class TransactionGroupRepository implements TransactionGroupRepositoryInterface
      */
     public function destroy(TransactionGroup $group): void
     {
-        $service = new TransactionGroupDestroyService;
+        Log::debug(sprintf('Now in %s', __METHOD__));
+        $service = new TransactionGroupDestroyService();
         $service->destroy($group);
     }
 
@@ -143,18 +157,6 @@ class TransactionGroupRepository implements TransactionGroupRepositoryInterface
     }
 
     /**
-     * Find a transaction group by its ID.
-     *
-     * @param int $groupId
-     *
-     * @return TransactionGroup|null
-     */
-    public function find(int $groupId): ?TransactionGroup
-    {
-        return $this->user->transactionGroups()->find($groupId);
-    }
-
-    /**
      * Return all attachments for all journals in the group.
      *
      * @param TransactionGroup $group
@@ -174,17 +176,47 @@ class TransactionGroupRepository implements TransactionGroupRepositoryInterface
         $result = [];
         /** @var Attachment $attachment */
         foreach ($set as $attachment) {
-            $journalId                = (int) $attachment->attachable_id;
-            $result[$journalId]       = $result[$journalId] ?? [];
-            $current                  = $attachment->toArray();
-            $current['file_exists']   = true;
-            $current['notes']         = $repository->getNoteText($attachment);
+            $journalId              = (int)$attachment->attachable_id;
+            $result[$journalId]     = $result[$journalId] ?? [];
+            $current                = $attachment->toArray();
+            $current['file_exists'] = true;
+            $current['notes']       = $repository->getNoteText($attachment);
+            // already determined that this attachable is a TransactionJournal.
             $current['journal_title'] = $attachment->attachable->description; // @phpstan-ignore-line
             $result[$journalId][]     = $current;
-
         }
 
         return $result;
+    }
+
+    /**
+     * @param User|Authenticatable|null $user
+     */
+    public function setUser(User | Authenticatable | null $user): void
+    {
+        if (null !== $user) {
+            $this->user = $user;
+        }
+    }
+
+    /**
+     * Get the note text for a journal (by ID).
+     *
+     * @param int $journalId
+     *
+     * @return string|null
+     */
+    public function getNoteText(int $journalId): ?string
+    {
+        /** @var Note|null $note */
+        $note = Note::where('noteable_id', $journalId)
+                    ->where('noteable_type', TransactionJournal::class)
+                    ->first();
+        if (null === $note) {
+            return null;
+        }
+
+        return $note->text;
     }
 
     /**
@@ -198,20 +230,21 @@ class TransactionGroupRepository implements TransactionGroupRepositoryInterface
     {
         $return   = [];
         $journals = $group->transactionJournals->pluck('id')->toArray();
-        $set      = TransactionJournalLink
-            ::where(
-                static function (Builder $q) use ($journals) {
-                    $q->whereIn('source_id', $journals);
-                    $q->orWhereIn('destination_id', $journals);
-                }
-            )
-            ->with(['source', 'destination', 'source.transactions'])
-            ->leftJoin('link_types', 'link_types.id', '=', 'journal_links.link_type_id')
-            ->get(['journal_links.*', 'link_types.inward', 'link_types.outward', 'link_types.editable']);
+        $set      = TransactionJournalLink::where(
+            static function (Builder $q) use ($journals) {
+                $q->whereIn('source_id', $journals);
+                $q->orWhereIn('destination_id', $journals);
+            }
+        )
+                                          ->with(['source', 'destination', 'source.transactions'])
+                                          ->leftJoin('link_types', 'link_types.id', '=', 'journal_links.link_type_id')
+                                          ->get(['journal_links.*', 'link_types.inward', 'link_types.outward', 'link_types.editable']);
         /** @var TransactionJournalLink $entry */
         foreach ($set as $entry) {
             $journalId          = in_array($entry->source_id, $journals, true) ? $entry->source_id : $entry->destination_id;
             $return[$journalId] = $return[$journalId] ?? [];
+
+            // phpstan: the editable field is provided by the query.
 
             if ($journalId === $entry->source_id) {
                 $amount               = $this->getFormattedAmount($entry->destination);
@@ -221,7 +254,7 @@ class TransactionGroupRepository implements TransactionGroupRepositoryInterface
                     'link'           => $entry->outward,
                     'group'          => $entry->destination->transaction_group_id,
                     'description'    => $entry->destination->description,
-                    'editable'       => 1 === $entry->editable,
+                    'editable'       => 1 === (int)$entry->editable, // @phpstan-ignore-line
                     'amount'         => $amount,
                     'foreign_amount' => $foreignAmount,
                 ];
@@ -234,7 +267,7 @@ class TransactionGroupRepository implements TransactionGroupRepositoryInterface
                     'link'           => $entry->inward,
                     'group'          => $entry->source->transaction_group_id,
                     'description'    => $entry->source->description,
-                    'editable'       => 1 === $entry->editable,
+                    'editable'       => 1 === (int)$entry->editable, // @phpstan-ignore-line
                     'amount'         => $amount,
                     'foreign_amount' => $foreignAmount,
                 ];
@@ -262,7 +295,6 @@ class TransactionGroupRepository implements TransactionGroupRepositoryInterface
         }
         if (TransactionType::WITHDRAWAL !== $type) {
             $return = app('amount')->formatAnything($currency, $amount);
-
         }
 
         return $return;
@@ -277,7 +309,10 @@ class TransactionGroupRepository implements TransactionGroupRepositoryInterface
     {
         /** @var Transaction $transaction */
         $transaction = $journal->transactions->first();
-        if (null === $transaction->foreign_amount) {
+        if (null === $transaction->foreign_amount || '' === $transaction->foreign_amount) {
+            return '';
+        }
+        if (0 === bccomp('0', $transaction->foreign_amount)) {
             return '';
         }
         $currency = $transaction->foreignCurrency;
@@ -316,12 +351,11 @@ class TransactionGroupRepository implements TransactionGroupRepositoryInterface
      */
     public function getMetaDateFields(int $journalId, array $fields): NullArrayObject
     {
-        $query  = DB
-            ::table('journal_meta')
-            ->where('transaction_journal_id', $journalId)
-            ->whereIn('name', $fields)
-            ->whereNull('deleted_at')
-            ->get(['name', 'data']);
+        $query  = DB::table('journal_meta')
+                    ->where('transaction_journal_id', $journalId)
+                    ->whereIn('name', $fields)
+                    ->whereNull('deleted_at')
+                    ->get(['name', 'data']);
         $return = [];
 
         foreach ($query as $row) {
@@ -341,12 +375,11 @@ class TransactionGroupRepository implements TransactionGroupRepositoryInterface
      */
     public function getMetaFields(int $journalId, array $fields): NullArrayObject
     {
-        $query  = DB
-            ::table('journal_meta')
-            ->where('transaction_journal_id', $journalId)
-            ->whereIn('name', $fields)
-            ->whereNull('deleted_at')
-            ->get(['name', 'data']);
+        $query  = DB::table('journal_meta')
+                    ->where('transaction_journal_id', $journalId)
+                    ->whereIn('name', $fields)
+                    ->whereNull('deleted_at')
+                    ->get(['name', 'data']);
         $return = [];
 
         foreach ($query as $row) {
@@ -357,54 +390,31 @@ class TransactionGroupRepository implements TransactionGroupRepositoryInterface
     }
 
     /**
-     * Get the note text for a journal (by ID).
-     *
-     * @param int $journalId
-     *
-     * @return string|null
-     */
-    public function getNoteText(int $journalId): ?string
-    {
-        /** @var Note|null $note */
-        $note = Note
-            ::where('noteable_id', $journalId)
-            ->where('noteable_type', TransactionJournal::class)
-            ->first();
-        if (null === $note) {
-            return null;
-        }
-
-        return $note->text;
-    }
-
-    /**
      * Return all piggy bank events for all journals in the group.
      *
      * @param TransactionGroup $group
      *
      * @return array
      * @throws FireflyException
-     * @throws \JsonException
+     * @throws JsonException
      */
     public function getPiggyEvents(TransactionGroup $group): array
     {
         $return   = [];
         $journals = $group->transactionJournals->pluck('id')->toArray();
         $currency = app('amount')->getDefaultCurrencyByUser($this->user);
-        $data     = PiggyBankEvent
-            ::whereIn('transaction_journal_id', $journals)
-            ->with('piggyBank', 'piggyBank.account')
-            ->get(['piggy_bank_events.*']);
+        $data     = PiggyBankEvent::whereIn('transaction_journal_id', $journals)
+                                  ->with('piggyBank', 'piggyBank.account')
+                                  ->get(['piggy_bank_events.*']);
         /** @var PiggyBankEvent $row */
         foreach ($data as $row) {
             if (null === $row->piggyBank) {
                 continue;
             }
             // get currency preference.
-            $currencyPreference = AccountMeta
-                ::where('account_id', $row->piggyBank->account_id)
-                ->where('name', 'currency_id')
-                ->first();
+            $currencyPreference = AccountMeta::where('account_id', $row->piggyBank->account_id)
+                                             ->where('name', 'currency_id')
+                                             ->first();
             if (null !== $currencyPreference) {
                 $currency = TransactionCurrency::where('id', $currencyPreference->data)->first();
             }
@@ -412,7 +422,7 @@ class TransactionGroupRepository implements TransactionGroupRepositoryInterface
                 $currencyCode = app('preferences')->getForUser($this->user, 'currencyPreference', 'EUR')->data;
                 $currency     = TransactionCurrency::where('code', $currencyCode)->first();
             }
-            $journalId          = (int) $row->transaction_journal_id;
+            $journalId          = (int)$row->transaction_journal_id;
             $return[$journalId] = $return[$journalId] ?? [];
 
             $return[$journalId][] = [
@@ -445,22 +455,13 @@ class TransactionGroupRepository implements TransactionGroupRepositoryInterface
      */
     public function getTags(int $journalId): array
     {
-        $result = DB
-            ::table('tag_transaction_journal')
-            ->leftJoin('tags', 'tag_transaction_journal.tag_id', '=', 'tags.id')
-            ->where('tag_transaction_journal.transaction_journal_id', $journalId)
-            ->orderBy('tags.tag', 'ASC')
-            ->get(['tags.tag']);
+        $result = DB::table('tag_transaction_journal')
+                    ->leftJoin('tags', 'tag_transaction_journal.tag_id', '=', 'tags.id')
+                    ->where('tag_transaction_journal.transaction_journal_id', $journalId)
+                    ->orderBy('tags.tag', 'ASC')
+                    ->get(['tags.tag']);
 
         return $result->pluck('tag')->toArray();
-    }
-
-    /**
-     * @param User $user
-     */
-    public function setUser(User $user): void
-    {
-        $this->user = $user;
     }
 
     /**
@@ -469,6 +470,7 @@ class TransactionGroupRepository implements TransactionGroupRepositoryInterface
      * @return TransactionGroup
      * @throws DuplicateTransactionException
      * @throws FireflyException
+     * @throws JsonException
      */
     public function store(array $data): TransactionGroup
     {
@@ -478,10 +480,10 @@ class TransactionGroupRepository implements TransactionGroupRepositoryInterface
         try {
             return $factory->create($data);
         } catch (DuplicateTransactionException $e) {
-            Log::warning('Group repository caught group factory with a duplicate exception!');
+            app('log')->warning('Group repository caught group factory with a duplicate exception!');
             throw new DuplicateTransactionException($e->getMessage(), 0, $e);
         } catch (FireflyException $e) {
-            Log::warning('Group repository caught group factory with an exception!');
+            app('log')->warning('Group repository caught group factory with an exception!');
             Log::error($e->getMessage());
             Log::error($e->getTraceAsString());
             throw new FireflyException($e->getMessage(), 0, $e);
@@ -494,6 +496,7 @@ class TransactionGroupRepository implements TransactionGroupRepositoryInterface
      *
      * @return TransactionGroup
      *
+     * @throws DuplicateTransactionException
      * @throws FireflyException
      */
     public function update(TransactionGroup $transactionGroup, array $data): TransactionGroup

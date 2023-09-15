@@ -1,3 +1,23 @@
+/*
+ * index.js
+ * Copyright (c) 2022 james@firefly-iii.org
+ *
+ * This file is part of Firefly III (https://github.com/firefly-iii).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 export default {
     "config": {
         "html_language": "nl",
@@ -40,6 +60,7 @@ export default {
         "liabilities_accounts": "Passiva"
     },
     "firefly": {
+        "administration_index": "Financi\u00eble administratie",
         "actions": "Acties",
         "edit": "Wijzig",
         "delete": "Verwijder",
@@ -49,6 +70,9 @@ export default {
         "new_budget": "Nieuw budget",
         "new_asset_account": "Nieuwe betaalrekening",
         "newTransfer": "Nieuwe overschrijving",
+        "submission_options": "Inzending opties",
+        "apply_rules_checkbox": "Regels toepassen",
+        "fire_webhooks_checkbox": "Webhooks starten",
         "newDeposit": "Nieuwe inkomsten",
         "newWithdrawal": "Nieuwe uitgave",
         "bills_paid": "Betaalde contracten",
@@ -81,9 +105,9 @@ export default {
         "rule_trigger_destination_account_nr_contains_choice": "Doelrekeningnummer \/ IBAN bevat..",
         "rule_trigger_transaction_type_choice": "Transactietype is..",
         "rule_trigger_category_is_choice": "Categorie is..",
-        "rule_trigger_amount_less_choice": "Bedrag is minder dan..",
+        "rule_trigger_amount_less_choice": "Bedrag is kleiner dan of gelijk aan ..",
         "rule_trigger_amount_is_choice": "Bedrag is..",
-        "rule_trigger_amount_more_choice": "Bedrag is meer dan..",
+        "rule_trigger_amount_more_choice": "Bedrag is groter dan of gelijk aan..",
         "rule_trigger_description_starts_choice": "Omschrijving begint met..",
         "rule_trigger_description_ends_choice": "Omschrijving eindigt op..",
         "rule_trigger_description_contains_choice": "Omschrijving bevat..",
@@ -116,28 +140,28 @@ export default {
         "rule_trigger_external_id_is_choice": "Externe ID is..",
         "rule_trigger_internal_reference_is_choice": "Interne referentie is..",
         "rule_trigger_journal_id_choice": "Transactiejournaal ID is..",
-        "rule_trigger_any_external_url_choice": "De transactie heeft een externe URL",
+        "rule_trigger_any_external_url_choice": "Transactie heeft een externe URL",
         "rule_trigger_no_external_url_choice": "De transactie heeft geen externe URL",
         "rule_trigger_id_choice": "Transactie-ID is..",
-        "rule_action_delete_transaction_choice": "VERWIJDER transactie (!)",
-        "rule_action_set_category_choice": "Geef categorie..",
+        "rule_action_delete_transaction_choice": "VERWIJDER transactie(!)",
+        "rule_action_set_category_choice": "Stel categorie in op ..",
         "rule_action_clear_category_choice": "Geef geen categorie",
-        "rule_action_set_budget_choice": "Sla op onder budget..",
+        "rule_action_set_budget_choice": "Stel budget in op ..",
         "rule_action_clear_budget_choice": "Maak budget-veld leeg",
-        "rule_action_add_tag_choice": "Voeg tag toe..",
-        "rule_action_remove_tag_choice": "Haal tag weg..",
+        "rule_action_add_tag_choice": "Voeg tag toe ..",
+        "rule_action_remove_tag_choice": "Haal tag weg ..",
         "rule_action_remove_all_tags_choice": "Haal alle tags weg",
-        "rule_action_set_description_choice": "Geef omschrijving..",
-        "rule_action_update_piggy_choice": "Bedrag +\/- bij spaarpotje..",
+        "rule_action_set_description_choice": "Stel beschrijving in op ..",
+        "rule_action_update_piggy_choice": "Voeg toe \/ verwijder het transactiebedrag in spaarpotje ..",
         "rule_action_append_description_choice": "Zet .. achter de omschrijving",
         "rule_action_prepend_description_choice": "Zet .. voor de omschrijving",
-        "rule_action_set_source_account_choice": "Verander bronrekening naar..",
-        "rule_action_set_destination_account_choice": "Verander doelrekening naar..",
-        "rule_action_append_notes_choice": "Vul notitie aan met..",
+        "rule_action_set_source_account_choice": "Verander bronrekening naar ..",
+        "rule_action_set_destination_account_choice": "Verander doelrekening naar ..",
+        "rule_action_append_notes_choice": "Vul notitie aan met ..",
         "rule_action_prepend_notes_choice": "Zet .. voor notitie",
         "rule_action_clear_notes_choice": "Verwijder notitie",
-        "rule_action_set_notes_choice": "Verander notitie in..",
-        "rule_action_link_to_bill_choice": "Link naar een contract..",
+        "rule_action_set_notes_choice": "Stel notities in op ..",
+        "rule_action_link_to_bill_choice": "Link naar een contract ..",
         "rule_action_convert_deposit_choice": "Verander de transactie in inkomsten",
         "rule_action_convert_withdrawal_choice": "Verander de transactie in een uitgave",
         "rule_action_convert_transfer_choice": "Verander de transactie in een overschrijving",

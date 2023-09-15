@@ -11,32 +11,42 @@
                 <div class="box-header with-border">
                     <h3 class="box-title">{{ 'transaction_journal_information'|_ }}</h3>
                     <div class="btn-group btn-group-xs pull-right">
-                        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            {{ 'actions'|_}} <span class="caret"></span>
+                        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown"
+                                aria-haspopup="true" aria-expanded="false">
+                            {{ 'actions'|_ }} <span class="caret"></span>
                         </button>
                         <ul class="dropdown-menu">
                             {# edit + delete #}
-                            <li><a href="{{ route('transactions.edit', [transactionGroup.id]) }}"><span class="fa fa-pencil"></span> {{ 'edit'|_ }}</a></li>
-                            <li><a href="{{ route('transactions.delete', [transactionGroup.id]) }}"><span class="fa fa-trash"></span> {{ 'delete'|_ }}</a></li>
+                            <li><a href="{{ route('transactions.edit', [transactionGroup.id]) }}"><span
+                                        class="fa fa-pencil"></span> {{ 'edit'|_ }}</a></li>
+                            <li><a href="{{ route('transactions.delete', [transactionGroup.id]) }}"><span
+                                        class="fa fa-trash"></span> {{ 'delete'|_ }}</a></li>
                             <li role="separator" class="divider"></li>
 
                             {# convert to different type #}
                             {% if groupArray.transactions[0].type != 'withdrawal' %}
-                                <li><a href="{{ route('transactions.convert.index', ['withdrawal', transactionGroup.id]) }}"><span class="fa fa-exchange"></span> {{ 'convert_to_withdrawal'|_ }}</a></li>
+                                <li>
+                                    <a href="{{ route('transactions.convert.index', ['withdrawal', transactionGroup.id]) }}"><span
+                                            class="fa fa-exchange"></span> {{ 'convert_to_withdrawal'|_ }}</a></li>
                             {% endif %}
 
                             {% if groupArray.transactions[0].type != 'deposit' %}
-                                <li><a href="{{ route('transactions.convert.index', ['deposit', transactionGroup.id]) }}"><span class="fa fa-exchange"></span> {{ 'convert_to_deposit'|_ }}</a></li>
+                                <li>
+                                    <a href="{{ route('transactions.convert.index', ['deposit', transactionGroup.id]) }}"><span
+                                            class="fa fa-exchange"></span> {{ 'convert_to_deposit'|_ }}</a></li>
                             {% endif %}
 
                             {% if groupArray.transactions[0].type != 'transfer' %}
-                                <li><a href="{{ route('transactions.convert.index', ['transfer', transactionGroup.id]) }}"><span class="fa fa-exchange"></span> {{ 'convert_to_transfer'|_ }}</a></li>
+                                <li>
+                                    <a href="{{ route('transactions.convert.index', ['transfer', transactionGroup.id]) }}"><span
+                                            class="fa fa-exchange"></span> {{ 'convert_to_transfer'|_ }}</a></li>
                             {% endif %}
 
                             {#  clone #}
                             {% if groupArray.transactions[0].type != 'opening balance' and groupArray.transactions[0].type != 'reconciliation' %}
                                 <li role="separator" class="divider"></li>
-                                <li><a href="#" class="clone-transaction" data-id="{{ transactionGroup.id }}"><span class="fa fa-copy"></span> {{ 'clone'|_ }}</a></li>
+                                <li><a href="#" class="clone-transaction" data-id="{{ transactionGroup.id }}"><span
+                                            class="fa fa-copy"></span> {{ 'clone'|_ }}</a></li>
                             {% endif %}
 
                         </ul>
@@ -46,7 +56,7 @@
                     <table class="table table-hover">
                         <tbody>
                         <tr>
-                            <td>{{ trans('list.type') }}</td>
+                            <td style="width:40%;">{{ trans('list.type') }}</td>
                             <td>{{ first.transactiontype.type|_ }}</td>
                         </tr>
                         <tr>
@@ -69,6 +79,19 @@
                     </table>
                 </div>
             </div>
+            {% if groupLogEntries|length > 0 %}
+                <div class="box">
+                    <div class="box-header with-border">
+                        <h3 class="box-title">
+                            {{ 'audit_log_entries'|_ }}
+                        </h3>
+                    </div>
+                    <div class="box-body no-padding">
+                        {% include 'list.ale' with {logEntries: groupLogEntries} %}
+                    </div>
+                </div>
+            {% endif %}
+
         </div>
         <div class="col-lg-6">
             <div class="box box-primary">
@@ -80,7 +103,7 @@
                         <tbody>
                         {% if first.transactiontype.type != 'Withdrawal' or splits == 1 %}
                             <tr>
-                                <td>
+                                <td style="width:40%;">
                                     {{ trans_choice('firefly.source_accounts', accounts['source']|length ) }}
                                 </td>
                                 <td>
@@ -124,10 +147,12 @@
                             <td style="width:30%;">{{ 'total_amount'|_ }}</td>
                             <td>
                                 {% for amount in amounts %}
-                                    {% if first.transactiontype.type == 'Withdrawal' or first.transactiontype.type == 'Deposit' %}
+                                    {% if first.transactiontype.type == 'Withdrawal' %}
                                         {{ formatAmountBySymbol(amount.amount*-1,amount.symbol, amount.decimal_places) }}{% if loop.index0 != amounts|length -1 %}, {% endif %}
+                                    {% elseif first.transactiontype.type == 'Deposit' %}
+                                        {{ formatAmountBySymbol(amount.amount,amount.symbol, amount.decimal_places) }}{% if loop.index0 != amounts|length -1 %}, {% endif %}
                                     {% elseif first.transactiontype.type == 'Transfer' %}
-                                        <span class="text-info">
+                                        <span class="text-info money-transfer">
                                         {{ formatAmountBySymbol(amount.amount, amount.symbol, amount.decimal_places, false) }}{% if loop.index0 != amounts|length -1 %}, {% endif %}
                                     </span>
                                     {% elseif first.transactiontype.type == 'Opening balance' %}
@@ -183,38 +208,58 @@
 
 
                         <div class="btn-group btn-group-xs pull-right">
-                            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                {{ 'actions'|_}} <span class="caret"></span>
+                            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown"
+                                    aria-haspopup="true" aria-expanded="false">
+                                {{ 'actions'|_ }} <span class="caret"></span>
                             </button>
                             <ul class="dropdown-menu">
                                 {# edit + delete #}
-                                <li><a href="{{ route('transactions.edit', [transactionGroup.id]) }}"><span class="fa fa-pencil"></span> {{ 'edit'|_ }}</a></li>
-                                <li><a href="{{ route('transactions.delete', [transactionGroup.id]) }}"><span class="fa fa-trash"></span> {{ 'delete'|_ }}</a></li>
+                                <li><a href="{{ route('transactions.edit', [transactionGroup.id]) }}"><span
+                                            class="fa fa-pencil"></span> {{ 'edit'|_ }}</a></li>
+                                <li><a href="{{ route('transactions.delete', [transactionGroup.id]) }}"><span
+                                            class="fa fa-trash"></span> {{ 'delete'|_ }}</a></li>
                                 <li role="separator" class="divider"></li>
 
                                 {# convert to different type #}
                                 {% if groupArray.transactions[0].type != 'withdrawal' %}
-                                    <li><a href="{{ route('transactions.convert.index', ['withdrawal', transactionGroup.id]) }}"><span class="fa fa-exchange"></span> {{ 'convert_to_withdrawal'|_ }}</a></li>
+                                    <li>
+                                        <a href="{{ route('transactions.convert.index', ['withdrawal', transactionGroup.id]) }}"><span
+                                                class="fa fa-exchange"></span> {{ 'convert_to_withdrawal'|_ }}</a>
+                                    </li>
                                 {% endif %}
 
                                 {% if groupArray.transactions[0].type != 'deposit' %}
-                                    <li><a href="{{ route('transactions.convert.index', ['deposit', transactionGroup.id]) }}"><span class="fa fa-exchange"></span> {{ 'convert_to_deposit'|_ }}</a></li>
+                                    <li>
+                                        <a href="{{ route('transactions.convert.index', ['deposit', transactionGroup.id]) }}"><span
+                                                class="fa fa-exchange"></span> {{ 'convert_to_deposit'|_ }}</a></li>
                                 {% endif %}
 
                                 {% if groupArray.transactions[0].type != 'transfer' %}
-                                    <li><a href="{{ route('transactions.convert.index', ['transfer', transactionGroup.id]) }}"><span class="fa fa-exchange"></span> {{ 'convert_to_transfer'|_ }}</a></li>
+                                    <li>
+                                        <a href="{{ route('transactions.convert.index', ['transfer', transactionGroup.id]) }}"><span
+                                                class="fa fa-exchange"></span> {{ 'convert_to_transfer'|_ }}</a>
+                                    </li>
                                 {% endif %}
 
                                 {#  clone #}
                                 {% if groupArray.transactions[0].type != 'opening balance' and groupArray.transactions[0].type != 'reconciliation' %}
                                     <li role="separator" class="divider"></li>
-                                    <li><a href="#" data-id="{{ transactionGroup.id }}" class="clone-transaction"><span class="fa fa-copy"></span> {{ 'clone'|_ }}</a></li>
+                                    <li><a href="#" data-id="{{ transactionGroup.id }}" class="clone-transaction"><span
+                                                class="fa fa-copy"></span> {{ 'clone'|_ }}</a></li>
                                 {% endif %}
 
-                                <li><a href="#" class="link-modal" data-journal="{{ journal.transaction_journal_id }}"><span class="fa fa-fw fa-link"></span>{{ 'link_transaction'|_ }}</a></li>
+                                <li><a href="#" class="link-modal"
+                                       data-journal="{{ journal.transaction_journal_id }}"><span
+                                            class="fa fa-fw fa-link"></span>{{ 'link_transaction'|_ }}</a></li>
                                 <li role="separator" class="divider"></li>
-                                <li><a href="{{ route('rules.create-from-journal', [journal.transaction_journal_id]) }}"><span class="fa fa-fw fa-random"></span>{{ 'create_rule_from_transaction'|_ }}</a></li>
-                                <li><a href="{{ route('recurring.create-from-journal', [journal.transaction_journal_id]) }}"><span class="fa fa-fw fa-paint-brush"></span>{{ 'create_recurring_from_transaction'|_ }}</a></li>
+                                <li>
+                                    <a href="{{ route('rules.create-from-journal', [journal.transaction_journal_id]) }}"><span
+                                            class="fa fa-fw fa-random"></span>{{ 'create_rule_from_transaction'|_ }}
+                                    </a></li>
+                                <li>
+                                    <a href="{{ route('recurring.create-from-journal', [journal.transaction_journal_id]) }}"><span
+                                            class="fa fa-fw fa-paint-brush"></span>{{ 'create_recurring_from_transaction'|_ }}
+                                    </a></li>
                             </ul>
                         </div>
                     </div>
@@ -222,6 +267,7 @@
                         <table class="table">
                             <tr>
                                 <td colspan="2">
+
                                     <!-- type is: "{{ first.transactiontype.type }}" -->
                                     {% if 'Cash account' == journal.source_type %}
                                         <span class="text-success">({{ 'cash'|_ }})</span>
@@ -230,14 +276,16 @@
                                            title="{{ journal.source_iban|default(journal.source_name) }}">{{ journal.source_name }}</a> &rarr;
                                     {% endif %}
 
-                                    {% if first.transactiontype.type == 'Withdrawal' or first.transactiontype.type == 'Deposit' %}
+                                    {% if first.transactiontype.type == 'Withdrawal' %}
                                         {{ formatAmountBySymbol(journal.amount*-1, journal.currency_symbol, journal.currency_decimal_places) }}
+                                    {% elseif first.transactiontype.type == 'Deposit' %}
+                                        {{ formatAmountBySymbol(journal.amount, journal.currency_symbol, journal.currency_decimal_places) }}
                                     {% elseif first.transactiontype.type == 'Transfer' or first.transactiontype.type == 'Opening balance' %}
-                                        <span class="text-info">
+                                        <span class="text-info money-transfer">
                                         {{ formatAmountBySymbol(journal.amount, journal.currency_symbol, journal.currency_decimal_places, false) }}
                                     </span>
                                     {% elseif first.transactiontype.type == 'Liability credit' %}
-                                        <span class="text-info">
+                                        <span class="text-info money-transfer">
                                         {{ formatAmountBySymbol(journal.amount*-1, journal.currency_symbol, journal.currency_decimal_places, false) }}
                                     </span>
                                     {% endif %}
@@ -247,7 +295,7 @@
                                         {% if first.transactiontype.type == 'Withdrawal' or first.transactiontype.type == 'Deposit' %}
                                             ({{ formatAmountBySymbol(journal.foreign_amount*-1, journal.foreign_currency_symbol, journal.foreign_currency_decimal_places) }})
                                         {% elseif first.transactiontype.type == 'Transfer' %}
-                                            <span class="text-info">
+                                            <span class="text-info money-transfer">
                                         ({{ formatAmountBySymbol(journal.foreign_amount, journal.foreign_currency_symbol, journal.foreign_currency_decimal_places, false) }})
                                     </span>
                                         {% endif %}
@@ -265,26 +313,32 @@
                             {% if null != journal.category_id %}
                                 <tr>
                                     <td style="width:30%;">{{ 'category'|_ }}</td>
-                                    <td><a href="{{ route('categories.show', [journal.category_id]) }}">{{ journal.category_name }}</a></td>
+                                    <td>
+                                        <a href="{{ route('categories.show', [journal.category_id]) }}">{{ journal.category_name }}</a>
+                                    </td>
                                 </tr>
                             {% endif %}
                             {% if null != journal.budget_id and first.transactiontype.type == 'Withdrawal' %}
                                 <tr>
-                                    <td>{{ 'budget'|_ }}</td>
-                                    <td><a href="{{ route('budgets.show', [journal.budget_id]) }}">{{ journal.budget_name }}</a></td>
+                                    <td style="width:40%;">{{ 'budget'|_ }}</td>
+                                    <td>
+                                        <a href="{{ route('budgets.show', [journal.budget_id]) }}">{{ journal.budget_name }}</a>
+                                    </td>
                                 </tr>
                             {% endif %}
                             {% if null != journal.bill_id and first.transactiontype.type == 'Withdrawal' %}
                                 <tr>
-                                    <td>{{ 'bill'|_ }}</td>
-                                    <td><a href="{{ route('bills.show', [journal.bill_id]) }}">{{ journal.bill_name }}</a></td>
+                                    <td style="width:40%;">{{ 'bill'|_ }}</td>
+                                    <td>
+                                        <a href="{{ route('bills.show', [journal.bill_id]) }}">{{ journal.bill_name }}</a>
+                                    </td>
                                 </tr>
                             {% endif %}
                             <!-- other fields -->
                             {% for dateField in ['interest_date','book_date','process_date','due_date','payment_date','invoice_date'] %}
                                 {% if journalHasMeta(journal.transaction_journal_id, dateField) %}
                                     <tr>
-                                        <td>{{ trans('list.'~dateField) }}</td>
+                                        <td style="width:40%;">{{ trans('list.'~dateField) }}</td>
                                         <td>{{ journalGetMetaDate(journal.transaction_journal_id, dateField).isoFormat(monthAndDayFormat) }}</td>
                                     </tr>
                                 {% endif %}
@@ -293,8 +347,8 @@
                                 {% if journalHasMeta(journal.transaction_journal_id, metaField) %}
                                     <tr>
                                         <td>{{ trans('list.'~metaField) }}</td>
-                                        <td>
-                                            {% if 'external_url' == metaField  %}
+                                        <td style="width:40%;">
+                                            {% if 'external_url' == metaField %}
                                                 {% set url = journalGetMetaField(journal.transaction_journal_id, metaField) %}
                                                 <a href="{{ url }}" rel="noopener noreferrer nofollow" target="_blank">
                                                     {% if url|length > 60 %}
@@ -304,7 +358,7 @@
                                                     {% endif %}
                                                 </a>
                                             {% endif %}
-                                            {% if 'external_url' != metaField  %}
+                                            {% if 'external_url' != metaField %}
                                                 {{ journalGetMetaField(journal.transaction_journal_id, metaField) }}
                                             {% endif %}
                                         </td>
@@ -313,26 +367,27 @@
                             {% endfor %}
                             {% if null != journal.notes and '' != journal.notes %}
                                 <tr>
-                                    <td>{{ trans('list.notes') }}</td>
+                                    <td style="width:40%;">{{ trans('list.notes') }}</td>
                                     <td class="markdown">{{ journal.notes|default('')|markdown }}</td>
                                 </tr>
                             {% endif %}
-                            {% if journalHasMeta(journal.transaction_journal_id, 'recurring_total') and journalHasMeta(journal.transaction_journal_id, 'recurring_count')  %}
+                            {% if journalHasMeta(journal.transaction_journal_id, 'recurring_total') and journalHasMeta(journal.transaction_journal_id, 'recurring_count') %}
                                 {% set recurringTotal = journalGetMetaField(journal.transaction_journal_id, 'recurring_total') %}
                                 {% if 0 == recurringTotal %}
                                     {% set recurringTotal = '∞' %}
                                 {% endif %}
                                 <tr>
-                                    <td>{{ trans('list.recurring_transaction') }}</td>
+                                    <td style="width:40%;">{{ trans('list.recurring_transaction') }}</td>
                                     <td>{{ trans('firefly.recurring_info', {total: recurringTotal, count: journalGetMetaField(journal.transaction_journal_id, 'recurring_count') }) }}</td>
                                 </tr>
                             {% endif %}
                             {% if journal.tags|length > 0 %}
                                 <tr>
-                                    <td>{{ 'tags'|_ }}</td>
+                                    <td style="width:40%;">{{ 'tags'|_ }}</td>
                                     <td>
                                         {% for tag in journal.tags %}
-                                            <h4 style="display: inline;"><a class="label label-success" href="{{ route('tags.show', tag.id) }}">
+                                            <h4 style="display: inline;"><a class="label label-success"
+                                                                            href="{{ route('tags.show', tag.id) }}">
                                                     <span class="fa fa-fw fa-tag"></span>{{ tag.tag }}</a>
                                             </h4>
                                         {% endfor %}
@@ -358,18 +413,19 @@
                                         <td style="width:120px;">
                                             <div class="btn-group btn-group-xs">
                                                 <a href="#" class="btn btn-default switch-link" data-id="{{ link.id }}"><span
-                                                            class="fa fa-fw fa-arrows-h"></span></a>
-                                                <a href="{{ route('transactions.link.delete', [link.id]) }}" class="btn btn-danger"><span class="fa fa-trash"></span></a>
+                                                        class="fa fa-fw fa-arrows-h"></span></a>
+                                                <a href="{{ route('transactions.link.delete', [link.id]) }}"
+                                                   class="btn btn-danger"><span class="fa fa-trash"></span></a>
                                             </div>
                                         </td>
                                         <td>
                                             {% if link.editable %}
-                                            {{ link.link }}
+                                                {{ link.link }}
                                             {% else %}
                                                 {{ trans('firefly.'~link.link) }}
-                                                {% endif %}
+                                            {% endif %}
                                             "<a href="{{ route('transactions.show', link.group) }}"
-                                                                title="{{ link.description }}">{{ link.description }}</a>"
+                                                title="{{ link.description }}">{{ link.description }}</a>"
 
                                             ({{ link.amount|raw }})
                                             {% if '' != link.foreign_amount %}
@@ -408,11 +464,24 @@
                                     <tr>
                                         <td style="width:30%;">{{ event.amount|raw }}</td>
                                         <td>
-                                            <a href="{{ route('piggy-banks.show', [event.piggy_id]) }}">{{ event.piggy }}</a></td>
+                                            <a href="{{ route('piggy-banks.show', [event.piggy_id]) }}">{{ event.piggy }}</a>
+                                        </td>
 
                                     </tr>
                                 {% endfor %}
                             </table>
+                        </div>
+                    </div>
+                {% endif %}
+                {% if logEntries[journal.transaction_journal_id]|length > 0 %}
+                    <div class="box">
+                        <div class="box-header with-border">
+                            <h3 class="box-title">
+                                {{ 'audit_log_entries'|_ }}
+                            </h3>
+                        </div>
+                        <div class="box-body no-padding">
+                            {% include 'list.ale' with {logEntries: logEntries[journal.transaction_journal_id]} %}
                         </div>
                     </div>
                 {% endif %}
@@ -432,6 +501,7 @@
 
         $('.switch-link').on('click', switchLink);
         var switchLinkUrl = '{{ route('transactions.link.switch') }}';
+
         function switchLink(e) {
             e.preventDefault();
             var obj = $(e.currentTarget);
@@ -449,7 +519,9 @@
             return false
         }
     </script>
-    <script type="text/javascript" src="v1/js/lib/typeahead/typeahead.bundle.min.js?v={{ FF_VERSION }}" nonce="{{ JS_NONCE }}"></script>
-    <script type="text/javascript" src="v1/js/ff/transactions/show.js?v={{ FF_VERSION }}" nonce="{{ JS_NONCE }}"></script>
+    <script type="text/javascript" src="v1/js/lib/typeahead/typeahead.bundle.min.js?v={{ FF_VERSION }}"
+            nonce="{{ JS_NONCE }}"></script>
+    <script type="text/javascript" src="v1/js/ff/transactions/show.js?v={{ FF_VERSION }}"
+            nonce="{{ JS_NONCE }}"></script>
 {% endblock %}
 

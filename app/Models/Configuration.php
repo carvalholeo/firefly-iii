@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Configuration.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -70,9 +71,8 @@ class Configuration extends Model
     protected $table = 'configuration';
 
     /**
-     * See reference nr. 17
+     * TODO can be replaced with native laravel code.
      *
-     * @codeCoverageIgnore
      *
      * @param mixed $value
      *
@@ -84,7 +84,6 @@ class Configuration extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      *
      * @param mixed $value
      */

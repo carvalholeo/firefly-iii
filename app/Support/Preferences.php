@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Preferences.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,7 +24,6 @@ declare(strict_types=1);
 namespace FireflyIII\Support;
 
 use Cache;
-use Exception;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Preference;
 use FireflyIII\User;
@@ -34,7 +34,7 @@ use Session;
 /**
  * Class Preferences.
  *
- * @codeCoverageIgnore
+
  */
 class Preferences
 {
@@ -45,10 +45,126 @@ class Preferences
     {
         $user = auth()->user();
         if (null === $user) {
-            return new Collection;
+            return new Collection();
         }
 
         return Preference::where('user_id', $user->id)->get();
+    }
+
+    /**
+     * @param string $name
+     * @param mixed  $default
+     *
+     * @return Preference|null
+     * @throws FireflyException
+     */
+    public function get(string $name, $default = null): ?Preference
+    {
+        /** @var User|null $user */
+        $user = auth()->user();
+        if (null === $user) {
+            $preference       = new Preference();
+            $preference->data = $default;
+
+            return $preference;
+        }
+
+        return $this->getForUser($user, $name, $default);
+    }
+
+    /**
+     * @param User            $user
+     * @param string          $name
+     * @param null|string|int $default
+     *
+     * @return Preference|null
+     * @throws FireflyException
+     */
+    public function getForUser(User $user, string $name, $default = null): ?Preference
+    {
+        $preference = Preference::where('user_id', $user->id)->where('name', $name)->first(['id', 'user_id', 'name', 'data', 'updated_at', 'created_at']);
+        if (null !== $preference && null === $preference->data) {
+            $preference->delete();
+            $preference = null;
+        }
+
+        if (null !== $preference) {
+            return $preference;
+        }
+        // no preference found and default is null:
+        if (null === $default) {
+            // return NULL
+            return null;
+        }
+
+        return $this->setForUser($user, $name, $default);
+    }
+
+    /**
+     * @param string $name
+     *
+     * @return bool
+     * @throws FireflyException
+     */
+    public function delete(string $name): bool
+    {
+        $fullName = sprintf('preference%s%s', auth()->user()->id, $name);
+        if (Cache::has($fullName)) {
+            Cache::forget($fullName);
+        }
+        Preference::where('user_id', auth()->user()->id)->where('name', $name)->delete();
+
+        return true;
+    }
+
+    /**
+     * @param User   $user
+     * @param string $name
+     */
+    public function forget(User $user, string $name): void
+    {
+        $key = sprintf('preference%s%s', $user->id, $name);
+        Cache::forget($key);
+        Cache::put($key, '', 5);
+    }
+
+    /**
+     * @param User   $user
+     * @param string $name
+     * @param mixed  $value
+     *
+     * @return Preference
+     * @throws FireflyException
+     */
+    public function setForUser(User $user, string $name, $value): Preference
+    {
+        $fullName = sprintf('preference%s%s', $user->id, $name);
+        Cache::forget($fullName);
+        /** @var Preference|null $pref */
+        $pref = Preference::where('user_id', $user->id)->where('name', $name)->first(['id', 'name', 'data', 'updated_at', 'created_at']);
+
+        if (null !== $pref && null === $value) {
+            $pref->delete();
+
+            return new Preference();
+        }
+        if (null === $value) {
+            return new Preference();
+        }
+        if (null === $pref) {
+            $pref          = new Preference();
+            $pref->user_id = $user->id;
+            $pref->name    = $name;
+        }
+        $pref->data = $value;
+        try {
+            $pref->save();
+        } catch (PDOException $e) {
+            throw new FireflyException(sprintf('Could not save preference: %s', $e->getMessage()), 0, $e);
+        }
+        Cache::forever($fullName, $pref);
+
+        return $pref;
     }
 
     /**
@@ -65,43 +181,11 @@ class Preferences
     /**
      * @param string $name
      *
-     * @return bool
-     * @throws FireflyException
-     */
-    public function delete(string $name): bool
-    {
-        $fullName = sprintf('preference%s%s', auth()->user()->id, $name);
-        if (Cache::has($fullName)) {
-            Cache::forget($fullName);
-        }
-        try {
-            Preference::where('user_id', auth()->user()->id)->where('name', $name)->delete();
-        } catch (Exception $e) {
-            throw new FireflyException(sprintf('Could not delete preference: %s', $e->getMessage()), 0, $e);
-        }
-
-        return true;
-    }
-
-    /**
-     * @param string $name
-     *
      * @return Collection
      */
     public function findByName(string $name): Collection
     {
         return Preference::where('name', $name)->get();
-    }
-
-    /**
-     * @param User   $user
-     * @param string $name
-     */
-    public function forget(User $user, string $name): void
-    {
-        $key = sprintf('preference%s%s', $user->id, $name);
-        Cache::forget($key);
-        Cache::put($key, '', 5);
     }
 
     /**
@@ -139,7 +223,7 @@ class Preferences
         /** @var User|null $user */
         $user = auth()->user();
         if (null === $user) {
-            $preference       = new Preference;
+            $preference       = new Preference();
             $preference->data = $default;
 
             return $preference;
@@ -154,88 +238,12 @@ class Preferences
      * @param null   $default
      *
      * @return Preference|null
-     * See reference nr. 44
+     * TODO remove me.
      * @throws FireflyException
      */
     public function getFreshForUser(User $user, string $name, $default = null): ?Preference
     {
         return $this->getForUser($user, $name, $default);
-    }
-
-    /**
-     * @param User            $user
-     * @param string          $name
-     * @param null|string|int $default
-     *
-     * @return Preference|null
-     * @throws FireflyException
-     */
-    public function getForUser(User $user, string $name, $default = null): ?Preference
-    {
-        $preference = Preference::where('user_id', $user->id)->where('name', $name)->first(['id', 'user_id', 'name', 'data', 'updated_at', 'created_at']);
-        if (null !== $preference && null === $preference->data) {
-            try {
-                $preference->delete();
-            } catch (Exception $e) {
-                throw new FireflyException(sprintf('Could not delete preference #%d: %s', $preference->id, $e->getMessage()), 0, $e);
-            }
-            $preference = null;
-        }
-
-        if (null !== $preference) {
-
-            return $preference;
-        }
-        // no preference found and default is null:
-        if (null === $default) {
-            // return NULL
-            return null;
-        }
-
-        return $this->setForUser($user, $name, $default);
-    }
-
-    /**
-     * @param User   $user
-     * @param string $name
-     * @param mixed  $value
-     *
-     * @return Preference
-     * @throws FireflyException
-     */
-    public function setForUser(User $user, string $name, $value): Preference
-    {
-        $fullName = sprintf('preference%s%s', $user->id, $name);
-        Cache::forget($fullName);
-        /** @var Preference|null $pref */
-        $pref = Preference::where('user_id', $user->id)->where('name', $name)->first(['id', 'name', 'data', 'updated_at', 'created_at']);
-
-        if (null !== $pref && null === $value) {
-            try {
-                $pref->delete();
-            } catch (Exception $e) {
-                throw new FireflyException(sprintf('Could not delete preference: %s', $e->getMessage()), 0, $e);
-            }
-
-            return new Preference;
-        }
-        if (null === $value) {
-            return new Preference;
-        }
-        if (null === $pref) {
-            $pref          = new Preference;
-            $pref->user_id = $user->id;
-            $pref->name    = $name;
-        }
-        $pref->data = $value;
-        try {
-            $pref->save();
-        } catch (PDOException $e) {
-            throw new FireflyException(sprintf('Could not save preference: %s', $e->getMessage()), 0, $e);
-        }
-        Cache::forever($fullName, $pref);
-
-        return $pref;
     }
 
     /**
@@ -255,27 +263,6 @@ class Preferences
         }
 
         return hash('sha256', $lastActivity);
-    }
-
-    /**
-     * @param string $name
-     * @param mixed  $default
-     *
-     * @return Preference|null
-     * @throws FireflyException
-     */
-    public function get(string $name, $default = null): ?Preference
-    {
-        /** @var User|null $user */
-        $user = auth()->user();
-        if (null === $user) {
-            $preference       = new Preference;
-            $preference->data = $default;
-
-            return $preference;
-        }
-
-        return $this->getForUser($user, $name, $default);
     }
 
     /**
@@ -299,7 +286,7 @@ class Preferences
         $user = auth()->user();
         if (null === $user) {
             // make new preference, return it:
-            $pref       = new Preference;
+            $pref       = new Preference();
             $pref->name = $name;
             $pref->data = $value;
 

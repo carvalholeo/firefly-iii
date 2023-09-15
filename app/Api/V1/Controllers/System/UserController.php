@@ -33,6 +33,7 @@ use FireflyIII\Transformers\UserTransformer;
 use FireflyIII\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Log;
 use League\Fractal\Pagination\IlluminatePaginatorAdapter;
 use League\Fractal\Resource\Collection as FractalCollection;
 use League\Fractal\Resource\Item;
@@ -47,7 +48,7 @@ class UserController extends Controller
     /**
      * UserController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -63,7 +64,7 @@ class UserController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/users/deleteUser
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/users/deleteUser
      *
      * Remove the specified resource from storage.
      *
@@ -71,7 +72,6 @@ class UserController extends Controller
      *
      * @return JsonResponse
      * @throws FireflyException
-     * @codeCoverageIgnore
      */
     public function destroy(User $user): JsonResponse
     {
@@ -91,18 +91,17 @@ class UserController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/users/listUser
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/users/listUser
      *
      * Display a listing of the resource.
      *
      * @return JsonResponse
      * @throws FireflyException
-     * @codeCoverageIgnore
      */
     public function index(): JsonResponse
     {
         // user preferences
-        $pageSize = (int) app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
         $manager  = $this->getManager();
 
         // build collection
@@ -127,14 +126,13 @@ class UserController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/users/getUser
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/users/getUser
      *
      * Show a single user.
      *
      * @param User $user
      *
      * @return JsonResponse
-     * @codeCoverageIgnore
      */
     public function show(User $user): JsonResponse
     {
@@ -152,7 +150,7 @@ class UserController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/users/storeUser
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/users/storeUser
      *
      * Store a new user.
      *
@@ -179,7 +177,7 @@ class UserController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/users/updateUser
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/users/updateUser
      *
      * Update a user.
      *
@@ -190,7 +188,14 @@ class UserController extends Controller
      */
     public function update(UserUpdateRequest $request, User $user): JsonResponse
     {
-        $data    = $request->getAll();
+        $data = $request->getAll();
+
+        // can only update 'blocked' when user is admin.
+        if (!$this->repository->hasRole(auth()->user(), 'owner')) {
+            Log::debug('Quietly drop fields "blocked" and "blocked_code" from request.');
+            unset($data['blocked'], $data['blocked_code']);
+        }
+
         $user    = $this->repository->update($user, $data);
         $manager = $this->getManager();
         // make resource
@@ -201,7 +206,5 @@ class UserController extends Controller
         $resource = new Item($user, $transformer, 'users');
 
         return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
-
     }
-
 }

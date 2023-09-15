@@ -33,18 +33,18 @@ return [
     | and used as needed; however, this mailer will be used by default.
     |
     */
-    'default' => env('MAIL_MAILER', 'smtp'),
+    'default' => envNonEmpty('MAIL_MAILER', 'log'),
 
     'mailers' => [
         'smtp' => [
-            'transport'  => 'smtp',
-            'host'       => env('MAIL_HOST', 'smtp.mailtrap.io'),
-            'port'       => (int) env('MAIL_PORT', 2525),
-            'encryption' => env('MAIL_ENCRYPTION', 'tls'),
-            'username'   => env('MAIL_USERNAME'),
-            'password'   => env('MAIL_PASSWORD'),
-            'timeout'    => null,
-            'verify_peer' => null !== env('MAIL_ENCRYPTION')
+            'transport'   => 'smtp',
+            'host'        => envNonEmpty('MAIL_HOST', 'smtp.mailtrap.io'),
+            'port'        => (int)env('MAIL_PORT', 2525),
+            'encryption'  => envNonEmpty('MAIL_ENCRYPTION', 'tls'),
+            'username'    => envNonEmpty('MAIL_USERNAME', 'user@example.com'),
+            'password'    => envNonEmpty('MAIL_PASSWORD', 'password'),
+            'timeout'     => null,
+            'verify_peer' => null !== env('MAIL_ENCRYPTION'),
         ],
 
         'ses' => [
@@ -55,15 +55,24 @@ return [
             'transport' => 'mailgun',
         ],
 
+        'mandrill' => [
+            'transport' => 'mandrill',
+        ],
+
         'postmark' => [
             'transport' => 'postmark',
         ],
 
         'sendmail' => [
             'transport' => 'sendmail',
-            'path'      => '/usr/sbin/sendmail -bs',
+            'path'      => envNonEmpty('MAIL_SENDMAIL_COMMAND', '/usr/sbin/sendmail -bs'),
         ],
         'log'      => [
+            'transport' => 'log',
+            'channel'   => env('MAIL_LOG_CHANNEL', 'stack'),
+            'level'     => 'notice',
+        ],
+        'null'     => [
             'transport' => 'log',
             'channel'   => env('MAIL_LOG_CHANNEL', 'stack'),
             'level'     => 'notice',

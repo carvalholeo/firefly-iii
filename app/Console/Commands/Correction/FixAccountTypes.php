@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Console\Commands\Correction;
 
+use FireflyIII\Console\Commands\ShowsFriendlyMessages;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Factory\AccountFactory;
 use FireflyIII\Models\AccountType;
@@ -30,25 +31,18 @@ use FireflyIII\Models\Transaction;
 use FireflyIII\Models\TransactionJournal;
 use FireflyIII\Models\TransactionType;
 use Illuminate\Console\Command;
-use Log;
+use Illuminate\Support\Facades\Log;
+use JsonException;
 
 /**
  * Class FixAccountTypes
  */
 class FixAccountTypes extends Command
 {
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
+    use ShowsFriendlyMessages;
+
     protected $description = 'Make sure all journals have the correct from/to account types.';
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected              $signature = 'firefly-iii:fix-account-types';
+    protected $signature   = 'firefly-iii:fix-account-types';
     private int            $count;
     private array          $expected;
     private AccountFactory $factory;
@@ -62,26 +56,19 @@ class FixAccountTypes extends Command
     public function handle(): int
     {
         $this->stupidLaravel();
-        Log::debug('Now in fix-account-types');
-        $start          = microtime(true);
         $this->factory  = app(AccountFactory::class);
         $this->expected = config('firefly.source_dests');
         $journals       = TransactionJournal::with(['TransactionType', 'transactions', 'transactions.account', 'transactions.account.accounttype'])->get();
-        Log::debug(sprintf('Found %d journals to inspect.', $journals->count()));
         foreach ($journals as $journal) {
             $this->inspectJournal($journal);
         }
         if (0 === $this->count) {
-            Log::debug('No journals had to be fixed.');
-            $this->info('All account types are OK!');
+            $this->friendlyPositive('All account types are OK');
         }
         if (0 !== $this->count) {
             Log::debug(sprintf('%d journals had to be fixed.', $this->count));
-            $this->info(sprintf('Acted on %d transaction(s)!', $this->count));
+            $this->friendlyInfo(sprintf('Acted on %d transaction(s)', $this->count));
         }
-
-        $end = round(microtime(true) - $start, 2);
-        $this->info(sprintf('Verifying account types took %s seconds', $end));
 
         return 0;
     }
@@ -91,7 +78,7 @@ class FixAccountTypes extends Command
      * executed. This leads to noticeable slow-downs and class calls. To prevent this, this method should
      * be called from the handle method instead of using the constructor to initialize the command.
      *
-     * @codeCoverageIgnore
+
      */
     private function stupidLaravel(): void
     {
@@ -102,13 +89,14 @@ class FixAccountTypes extends Command
      * @param TransactionJournal $journal
      *
      * @throws FireflyException
+     * @throws JsonException
      */
     private function inspectJournal(TransactionJournal $journal): void
     {
         $transactions = $journal->transactions()->count();
         if (2 !== $transactions) {
             Log::debug(sprintf('Journal has %d transactions, so can\'t fix.', $transactions));
-            $this->info(sprintf('Cannot inspect transaction journal #%d because it has %d transaction(s) instead of 2.', $journal->id, $transactions));
+            $this->friendlyError(sprintf('Cannot inspect transaction journal #%d because it has %d transaction(s) instead of 2.', $journal->id, $transactions));
 
             return;
         }
@@ -121,12 +109,10 @@ class FixAccountTypes extends Command
         $destAccountType   = $destAccount->accountType->type;
 
         if (!array_key_exists($type, $this->expected)) {
-
             Log::info(sprintf('No source/destination info for transaction type %s.', $type));
-            $this->info(sprintf('No source/destination info for transaction type %s.', $type));
+            $this->friendlyError(sprintf('No source/destination info for transaction type %s.', $type));
 
             return;
-
         }
         if (!array_key_exists($sourceAccountType, $this->expected[$type])) {
             Log::debug(sprintf('Going to fix journal #%d', $journal->id));
@@ -168,6 +154,7 @@ class FixAccountTypes extends Command
      * @param Transaction        $dest
      *
      * @throws FireflyException
+     * @throws JsonException
      */
     private function fixJournal(TransactionJournal $journal, string $type, Transaction $source, Transaction $dest): void
     {
@@ -184,7 +171,7 @@ class FixAccountTypes extends Command
                 $journal->transactionType()->associate($withdrawal);
                 $journal->save();
                 $message = sprintf('Converted transaction #%d from a transfer to a withdrawal.', $journal->id);
-                $this->info($message);
+                $this->friendlyInfo($message);
                 Log::debug($message);
                 // check it again:
                 $this->inspectJournal($journal);
@@ -197,7 +184,7 @@ class FixAccountTypes extends Command
                 $journal->transactionType()->associate($deposit);
                 $journal->save();
                 $message = sprintf('Converted transaction #%d from a transfer to a deposit.', $journal->id);
-                $this->info($message);
+                $this->friendlyInfo($message);
                 Log::debug($message);
                 // check it again:
                 $this->inspectJournal($journal);
@@ -211,10 +198,14 @@ class FixAccountTypes extends Command
                 $dest->account()->associate($result);
                 $dest->save();
                 $message = sprintf(
-                    'Transaction journal #%d, destination account changed from #%d ("%s") to #%d ("%s").', $journal->id, $oldDest->id, $oldDest->name,
-                    $result->id, $result->name
+                    'Transaction journal #%d, destination account changed from #%d ("%s") to #%d ("%s").',
+                    $journal->id,
+                    $oldDest->id,
+                    $oldDest->name,
+                    $result->id,
+                    $result->name
                 );
-                $this->info($message);
+                $this->friendlyWarning($message);
                 Log::debug($message);
                 $this->inspectJournal($journal);
                 break;
@@ -227,24 +218,27 @@ class FixAccountTypes extends Command
                 $source->account()->associate($result);
                 $source->save();
                 $message = sprintf(
-                    'Transaction journal #%d, source account changed from #%d ("%s") to #%d ("%s").', $journal->id, $oldSource->id, $oldSource->name,
-                    $result->id, $result->name
+                    'Transaction journal #%d, source account changed from #%d ("%s") to #%d ("%s").',
+                    $journal->id,
+                    $oldSource->id,
+                    $oldSource->name,
+                    $result->id,
+                    $result->name
                 );
-                $this->info($message);
+                $this->friendlyWarning($message);
                 Log::debug($message);
                 $this->inspectJournal($journal);
                 break;
             default:
                 $message = sprintf('The source account of %s #%d cannot be of type "%s".', $type, $journal->id, $source->account->accountType->type);
-                $this->info($message);
+                $this->friendlyError($message);
                 Log::debug($message);
 
                 $message = sprintf('The destination account of %s #%d cannot be of type "%s".', $type, $journal->id, $dest->account->accountType->type);
-                $this->info($message);
+                $this->friendlyError($message);
                 Log::debug($message);
 
                 break;
-
         }
     }
 }

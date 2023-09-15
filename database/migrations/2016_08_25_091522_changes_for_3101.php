@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 2016_08_25_091522_changes_for_3101.php
  * Copyright (c) 2019 james@firefly-iii.org.
@@ -21,7 +22,6 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 
 /**
  * Class ChangesFor3101.
@@ -35,30 +35,13 @@ class ChangesFor3101 extends Migration
      */
     public function down(): void
     {
-        Schema::table(
-            'import_jobs',
-            static function (Blueprint $table) {
-                if (Schema::hasColumn('import_jobs', 'extended_status')) {
-                    $table->dropColumn('extended_status');
-                }
-            }
-        );
     }
 
     /**
      * Run the migrations.
      *
-     * @SuppressWarnings(PHPMD.ShortMethodName)
      */
     public function up(): void
     {
-        Schema::table(
-            'import_jobs',
-            static function (Blueprint $table) {
-                if (!Schema::hasColumn('import_jobs', 'extended_status')) {
-                    $table->text('extended_status')->nullable();
-                }
-            }
-        );
     }
 }

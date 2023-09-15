@@ -46,20 +46,19 @@ class PreferencesController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/preferences/listPreference
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/preferences/listPreference
      *
      * List all of them.
      *
      * @return JsonResponse
      * @throws FireflyException
-     * @codeCoverageIgnore
      */
     public function index(): JsonResponse
     {
         $collection  = app('preferences')->all();
         $manager     = $this->getManager();
         $count       = $collection->count();
-        $pageSize    = (int) app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize    = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
         $preferences = $collection->slice(($this->parameters->get('page') - 1) * $pageSize, $pageSize);
 
         // make paginator:
@@ -74,19 +73,17 @@ class PreferencesController extends Controller
         $resource->setPaginator(new IlluminatePaginatorAdapter($paginator));
 
         return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
-
     }
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/preferences/getPreference
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/preferences/getPreference
      *
      * Return a single preference by name.
      *
      * @param Preference $preference
      *
      * @return JsonResponse
-     * @codeCoverageIgnore
      */
     public function show(Preference $preference): JsonResponse
     {
@@ -102,7 +99,7 @@ class PreferencesController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/preferences/storePreference
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/preferences/storePreference
      *
      * @param PreferenceStoreRequest $request
      *
@@ -126,7 +123,7 @@ class PreferencesController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/preferences/updatePreference
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/preferences/updatePreference
      *
      * @param PreferenceUpdateRequest $request
      * @param Preference              $preference
@@ -148,5 +145,4 @@ class PreferencesController extends Controller
 
         return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
     }
-
 }

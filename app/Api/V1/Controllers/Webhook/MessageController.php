@@ -35,13 +35,15 @@ use League\Fractal\Pagination\IlluminatePaginatorAdapter;
 use League\Fractal\Resource\Collection as FractalCollection;
 use League\Fractal\Resource\Item;
 
+/**
+ * Class MessageController
+ */
 class MessageController extends Controller
 {
     public const RESOURCE_KEY = 'webhook_messages';
     private WebhookRepositoryInterface $repository;
 
     /**
-     * @codeCoverageIgnore
      */
     public function __construct()
     {
@@ -58,7 +60,7 @@ class MessageController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/webhooks/getWebhookMessages
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/webhooks/getWebhookMessages
      *
      * @param Webhook $webhook
      *
@@ -68,7 +70,7 @@ class MessageController extends Controller
     public function index(Webhook $webhook): JsonResponse
     {
         $manager    = $this->getManager();
-        $pageSize   = (int) app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize   = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
         $collection = $this->repository->getMessages($webhook);
 
         $count    = $collection->count();
@@ -90,7 +92,7 @@ class MessageController extends Controller
 
     /**
      * This endpoint is documented:
-     * https://api-docs.firefly-iii.org/#/webhooks/getSingleWebhookMessage
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/webhooks/getSingleWebhookMessage
      *
      * Show single instance.
      *
@@ -103,7 +105,7 @@ class MessageController extends Controller
     public function show(Webhook $webhook, WebhookMessage $message): JsonResponse
     {
         if ($message->webhook_id !== $webhook->id) {
-            throw new FireflyException('Webhook and webhook message are no match');
+            throw new FireflyException('200040: Webhook and webhook message are no match');
         }
 
         $manager = $this->getManager();
@@ -115,5 +117,4 @@ class MessageController extends Controller
 
         return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
     }
-
 }

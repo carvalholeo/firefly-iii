@@ -31,13 +31,11 @@ use FireflyIII\Models\Account;
 use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\Models\TransactionType;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
-use FireflyIII\Repositories\Currency\CurrencyRepositoryInterface;
-use FireflyIII\Repositories\Journal\JournalRepositoryInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use JsonException;
-use Log;
 use Throwable;
 
 /**
@@ -46,14 +44,12 @@ use Throwable;
  */
 class ReconcileController extends Controller
 {
-    private AccountRepositoryInterface  $accountRepos;
-    private CurrencyRepositoryInterface $currencyRepos;
-    private JournalRepositoryInterface  $repository;
+    private AccountRepositoryInterface $accountRepos;
 
     /**
      * ReconcileController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -63,10 +59,8 @@ class ReconcileController extends Controller
         $this->middleware(
             function ($request, $next) {
                 app('view')->share('mainTitleIcon', 'fa-credit-card');
-                app('view')->share('title', (string) trans('firefly.accounts'));
-                $this->repository    = app(JournalRepositoryInterface::class);
-                $this->accountRepos  = app(AccountRepositoryInterface::class);
-                $this->currencyRepos = app(CurrencyRepositoryInterface::class);
+                app('view')->share('title', (string)trans('firefly.accounts'));
+                $this->accountRepos = app(AccountRepositoryInterface::class);
 
                 return $next($request);
             }
@@ -161,10 +155,11 @@ class ReconcileController extends Controller
                     'selectedIds'
                 )
             )->render();
-
-        } catch (Throwable $e) { // @phpstan-ignore-line
+        } catch (Throwable $e) {
             Log::debug(sprintf('View error: %s', $e->getMessage()));
+            Log::error($e->getTraceAsString());
             $view = sprintf('Could not render accounts.reconcile.overview: %s', $e->getMessage());
+            throw new FireflyException($view, 0, $e);
         }
 
         $return = [
@@ -238,8 +233,8 @@ class ReconcileController extends Controller
         $startDate->subDay();
 
         $currency     = $this->accountRepos->getAccountCurrency($account) ?? app('amount')->getDefaultCurrency();
-        $startBalance = round((float) app('steam')->balance($account, $startDate), $currency->decimal_places);
-        $endBalance   = round((float) app('steam')->balance($account, $end), $currency->decimal_places);
+        $startBalance = app('steam')->bcround(app('steam')->balance($account, $startDate), $currency->decimal_places);
+        $endBalance   = app('steam')->bcround(app('steam')->balance($account, $end), $currency->decimal_places);
 
         // get the transactions
         $selectionStart = clone $start;
@@ -262,10 +257,11 @@ class ReconcileController extends Controller
                 'accounts.reconcile.transactions',
                 compact('account', 'journals', 'currency', 'start', 'end', 'selectionStart', 'selectionEnd')
             )->render();
-
-        } catch (Throwable $e) { // @phpstan-ignore-line
+        } catch (Throwable $e) {
             Log::debug(sprintf('Could not render: %s', $e->getMessage()));
+            Log::error($e->getTraceAsString());
             $html = sprintf('Could not render accounts.reconcile.transactions: %s', $e->getMessage());
+            throw new FireflyException($html, 0, $e);
         }
 
         return response()->json(['html' => $html, 'startBalance' => $startBalance, 'endBalance' => $endBalance]);

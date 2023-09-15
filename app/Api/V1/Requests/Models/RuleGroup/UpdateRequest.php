@@ -23,18 +23,19 @@ declare(strict_types=1);
 
 namespace FireflyIII\Api\V1\Requests\Models\RuleGroup;
 
+use FireflyIII\Models\RuleGroup;
 use FireflyIII\Rules\IsBoolean;
 use FireflyIII\Support\Request\ChecksLogin;
 use FireflyIII\Support\Request\ConvertsDataTypes;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * @codeCoverageIgnore
  * Class UpdateRequest
  */
 class UpdateRequest extends FormRequest
 {
-    use ConvertsDataTypes, ChecksLogin;
+    use ConvertsDataTypes;
+    use ChecksLogin;
 
     /**
      * Get all data from the request.
@@ -48,7 +49,7 @@ class UpdateRequest extends FormRequest
             'title'       => ['title', 'convertString'],
             'description' => ['description', 'stringWithNewlines'],
             'active'      => ['active', 'boolean'],
-            'order'       => ['order', 'integer'],
+            'order'       => ['order', 'convertInteger'],
         ];
 
         return $this->getAllData($fields);
@@ -61,12 +62,13 @@ class UpdateRequest extends FormRequest
      */
     public function rules(): array
     {
+        /** @var RuleGroup $ruleGroup */
         $ruleGroup = $this->route()->parameter('ruleGroup');
 
         return [
             'title'       => 'between:1,100|uniqueObjectForUser:rule_groups,title,' . $ruleGroup->id,
             'description' => 'between:1,5000|nullable',
-            'active'      => [new IsBoolean],
+            'active'      => [new IsBoolean()],
         ];
     }
 }

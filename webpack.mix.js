@@ -21,15 +21,27 @@
 let mix = require('laravel-mix');
 
 mix.webpackConfig({
-                      resolve: {
-                          alias: {
-                              'vue$': 'vue/dist/vue.runtime.common.js'
-                          }
-                      }
-                  });
+    resolve: {
+        alias: {
+            'vue$': 'vue/dist/vue.runtime.common.js'
+        },
+        fallback: {
+            "stream": require.resolve("stream-browserify"),
+            "zlib": false,
+            "https": false,
+            "http": false
+        }
+    }
+});
 
 mix.js('resources/assets/js/app.js', 'public/v1/js');
 mix.js('resources/assets/js/app_vue.js', 'public/v1/js').vue({version: 2});
 mix.js('resources/assets/js/create_transaction.js', 'public/v1/js').vue({version: 2});
 mix.js('resources/assets/js/edit_transaction.js', 'public/v1/js').vue({version: 2});
 mix.js('resources/assets/js/profile.js', 'public/v1/js').vue({version: 2});
+
+// webhooks
+mix.js('resources/assets/js/webhooks/index.js', 'public/v1/js/webhooks').vue({version: 2});
+mix.js('resources/assets/js/webhooks/create.js', 'public/v1/js/webhooks').vue({version: 2});
+mix.js('resources/assets/js/webhooks/edit.js', 'public/v1/js/webhooks').vue({version: 2});
+mix.js('resources/assets/js/webhooks/show.js', 'public/v1/js/webhooks').vue({version: 2});

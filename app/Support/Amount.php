@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Amount.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -28,13 +29,14 @@ use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\User;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Collection;
-use JsonException;
 use NumberFormatter;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class Amount.
  *
- * @codeCoverageIgnore
+
  */
 class Amount
 {
@@ -47,11 +49,11 @@ class Amount
      * @param bool                $coloured
      *
      * @return string
-     *
+     * @throws FireflyException
      */
     public function formatAnything(TransactionCurrency $format, string $amount, bool $coloured = null): string
     {
-        return $this->formatFlat($format->symbol, (int) $format->decimal_places, $amount, $coloured);
+        return $this->formatFlat($format->symbol, (int)$format->decimal_places, $amount, $coloured);
     }
 
     /**
@@ -66,29 +68,28 @@ class Amount
      * @return string
      *
      * @throws FireflyException
-     * @noinspection MoreThanThreeArgumentsInspection
      */
     public function formatFlat(string $symbol, int $decimalPlaces, string $amount, bool $coloured = null): string
     {
-        $locale = app('steam')->getLocale();
-
+        $locale   = app('steam')->getLocale();
+        $rounded  = app('steam')->bcround($amount, $decimalPlaces);
         $coloured = $coloured ?? true;
 
         $fmt = new NumberFormatter($locale, NumberFormatter::CURRENCY);
         $fmt->setSymbol(NumberFormatter::CURRENCY_SYMBOL, $symbol);
         $fmt->setAttribute(NumberFormatter::MIN_FRACTION_DIGITS, $decimalPlaces);
         $fmt->setAttribute(NumberFormatter::MAX_FRACTION_DIGITS, $decimalPlaces);
-        $result = $fmt->format((float) $amount);
+        $result = $fmt->format((float)$rounded); // intentional float
 
         if (true === $coloured) {
-            if ($amount > 0) {
-                return sprintf('<span class="text-success">%s</span>', $result);
+            if (1 === bccomp($rounded, '0')) {
+                return sprintf('<span class="text-success money-positive">%s</span>', $result);
             }
-            if ($amount < 0) {
-                return sprintf('<span class="text-danger">%s</span>', $result);
+            if (-1 === bccomp($rounded, '0')) {
+                return sprintf('<span class="text-danger money-negative">%s</span>', $result);
             }
 
-            return sprintf('<span style="color:#999">%s</span>', $result);
+            return sprintf('<span class="money-neutral">%s</span>', $result);
         }
 
         return $result;
@@ -113,12 +114,12 @@ class Amount
     /**
      * @return string
      * @throws FireflyException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function getCurrencyCode(): string
     {
-        $cache = new CacheProperties;
+        $cache = new CacheProperties();
         $cache->addProperty('getCurrencyCode');
         if ($cache->has()) {
             return $cache->get();
@@ -133,13 +134,12 @@ class Amount
         }
         $cache->store(config('firefly.default_currency', 'EUR'));
 
-        return (string) config('firefly.default_currency', 'EUR');
+        return (string)config('firefly.default_currency', 'EUR');
     }
 
     /**
      * @return TransactionCurrency
      * @throws FireflyException
-     * @throws JsonException
      */
     public function getDefaultCurrency(): TransactionCurrency
     {
@@ -157,7 +157,7 @@ class Amount
      */
     public function getDefaultCurrencyByUser(User $user): TransactionCurrency
     {
-        $cache = new CacheProperties;
+        $cache = new CacheProperties();
         $cache->addProperty('getDefaultCurrency');
         $cache->addProperty($user->id);
         if ($cache->has()) {
@@ -167,7 +167,7 @@ class Amount
         $currencyPrefStr    = $currencyPreference ? $currencyPreference->data : 'EUR';
 
         // at this point the currency preference could be encrypted, if coming from an old version.
-        $currencyCode = $this->tryDecrypt((string) $currencyPrefStr);
+        $currencyCode = $this->tryDecrypt((string)$currencyPrefStr);
 
         // could still be json encoded:
         /** @var TransactionCurrency|null $currency */
@@ -204,6 +204,7 @@ class Amount
      * Used only in one place.
      *
      * @return array
+     * @throws FireflyException
      */
     public function getJsConfig(): array
     {

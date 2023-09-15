@@ -1,4 +1,5 @@
 <?php
+
 /**
  * MailError.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,21 +24,24 @@ declare(strict_types=1);
 namespace FireflyIII\Jobs;
 
 use Exception;
+use FireflyIII\Exceptions\FireflyException;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Message;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Log;
+use Illuminate\Support\Facades\Log;
 use Mail;
+use Symfony\Component\Mailer\Exception\TransportException;
 
 /**
  * Class MailError.
  *
- * @codeCoverageIgnore
+
  */
 class MailError extends Job implements ShouldQueue
 {
-    use InteractsWithQueue, SerializesModels;
+    use InteractsWithQueue;
+    use SerializesModels;
 
     protected string $destination;
     protected array  $exception;
@@ -66,10 +70,12 @@ class MailError extends Job implements ShouldQueue
 
     /**
      * Execute the job.
+     *
+     * @throws FireflyException
      */
     public function handle()
     {
-        $email            = (string) config('firefly.site_owner');
+        $email            = (string)config('firefly.site_owner');
         $args             = $this->exception;
         $args['loggedIn'] = $this->userData['id'] > 0;
         $args['user']     = $this->userData;
@@ -82,12 +88,22 @@ class MailError extends Job implements ShouldQueue
                     $args,
                     function (Message $message) use ($email) {
                         if ('mail@example.com' !== $email) {
-                            $message->to($email, $email)->subject((string) trans('email.error_subject'));
+                            $message->to($email, $email)->subject((string)trans('email.error_subject'));
                         }
                     }
                 );
-            } catch (Exception $e) { // @phpstan-ignore-line
-                Log::error('Exception when mailing: ' . $e->getMessage());
+            } catch (Exception | TransportException $e) { // intentional generic exception
+                $message = $e->getMessage();
+                if (str_contains($message, 'Bcc')) {
+                    Log::warning('[Bcc] Could not email or log the error. Please validate your email settings, use the .env.example file as a guide.');
+                    return;
+                }
+                if (str_contains($message, 'RFC 2822')) {
+                    Log::warning('[RFC] Could not email or log the error. Please validate your email settings, use the .env.example file as a guide.');
+                    return;
+                }
+                Log::error($e->getMessage());
+                Log::error($e->getTraceAsString());
             }
         }
     }

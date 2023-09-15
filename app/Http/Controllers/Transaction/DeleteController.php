@@ -23,14 +23,18 @@ declare(strict_types=1);
 
 namespace FireflyIII\Http\Controllers\Transaction;
 
+use FireflyIII\Events\UpdatedAccount;
 use FireflyIII\Http\Controllers\Controller;
+use FireflyIII\Models\Account;
+use FireflyIII\Models\Transaction;
 use FireflyIII\Models\TransactionGroup;
+use FireflyIII\Models\TransactionJournal;
 use FireflyIII\Repositories\TransactionGroup\TransactionGroupRepositoryInterface;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Redirector;
-use Log;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -43,7 +47,7 @@ class DeleteController extends Controller
     /**
      * IndexController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -52,7 +56,7 @@ class DeleteController extends Controller
         // translations:
         $this->middleware(
             function ($request, $next) {
-                app('view')->share('title', (string) trans('firefly.transactions'));
+                app('view')->share('title', (string)trans('firefly.transactions'));
                 app('view')->share('mainTitleIcon', 'fa-exchange');
 
                 $this->repository = app(TransactionGroupRepositoryInterface::class);
@@ -79,11 +83,11 @@ class DeleteController extends Controller
 
         $journal = $group->transactionJournals->first();
         if (null === $journal) {
-            throw new NotFoundHttpException;
+            throw new NotFoundHttpException();
         }
         $objectType = strtolower($journal->transaction_type_type ?? $journal->transactionType->type);
-        $subTitle   = (string) trans('firefly.delete_' . $objectType, ['description' => $group->title ?? $journal->description]);
-        $previous   = app('steam')->getSafePreviousUrl(route('index'));
+        $subTitle   = (string)trans('firefly.delete_' . $objectType, ['description' => $group->title ?? $journal->description]);
+        $previous   = app('steam')->getSafePreviousUrl();
         // put previous url in session
         Log::debug('Will try to remember previous URL');
         $this->rememberPreviousUrl('transactions.delete.url');
@@ -100,20 +104,41 @@ class DeleteController extends Controller
      */
     public function destroy(TransactionGroup $group): RedirectResponse
     {
+        Log::debug(sprintf('Now in %s(#%d).', __METHOD__, $group->id));
         if (!$this->isEditableGroup($group)) {
             return $this->redirectGroupToAccount($group);
         }
 
         $journal = $group->transactionJournals->first();
         if (null === $journal) {
-            throw new NotFoundHttpException;
+            throw new NotFoundHttpException();
         }
         $objectType = strtolower($journal->transaction_type_type ?? $journal->transactionType->type);
-        session()->flash('success', (string) trans('firefly.deleted_' . strtolower($objectType), ['description' => $group->title ?? $journal->description]));
+        session()->flash('success', (string)trans('firefly.deleted_' . strtolower($objectType), ['description' => $group->title ?? $journal->description]));
+
+        // grab asset account(s) from group:
+        $accounts = [];
+        /** @var TransactionJournal $journal */
+        foreach ($group->transactionJournals as $journal) {
+            /** @var Transaction $transaction */
+            foreach ($journal->transactions as $transaction) {
+                $type = $transaction->account->accountType->type;
+                // if is valid liability, trigger event!
+                if (in_array($type, config('firefly.valid_liabilities'), true)) {
+                    $accounts[] = $transaction->account;
+                }
+            }
+        }
 
         $this->repository->destroy($group);
 
+        /** @var Account $account */
+        foreach ($accounts as $account) {
+            Log::debug(sprintf('Now going to trigger updated account event for account #%d', $account->id));
+            event(new UpdatedAccount($account));
+        }
         app('preferences')->mark();
+
 
         return redirect($this->getPreviousUrl('transactions.delete.url'));
     }

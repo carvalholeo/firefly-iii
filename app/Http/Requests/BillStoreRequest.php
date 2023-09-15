@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BillStoreRequest.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -31,7 +32,8 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class BillStoreRequest extends FormRequest
 {
-    use ConvertsDataTypes, ChecksLogin;
+    use ConvertsDataTypes;
+    use ChecksLogin;
 
     /**
      * Returns the data required by the controller.
@@ -43,14 +45,14 @@ class BillStoreRequest extends FormRequest
         return [
             'name'               => $this->convertString('name'),
             'amount_min'         => $this->convertString('amount_min'),
-            'currency_id'        => $this->integer('transaction_currency_id'),
+            'currency_id'        => $this->convertInteger('transaction_currency_id'),
             'currency_code'      => '',
             'amount_max'         => $this->convertString('amount_max'),
             'date'               => $this->getCarbonDate('date'),
             'end_date'           => $this->getCarbonDate('bill_end_date'),
             'extension_date'     => $this->getCarbonDate('extension_date'),
             'repeat_freq'        => $this->convertString('repeat_freq'),
-            'skip'               => $this->integer('skip'),
+            'skip'               => $this->convertInteger('skip'),
             'notes'              => $this->stringWithNewlines('notes'),
             'active'             => $this->boolean('active'),
             'object_group_title' => $this->convertString('object_group'),

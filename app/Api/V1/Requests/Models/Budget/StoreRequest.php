@@ -33,11 +33,13 @@ use Illuminate\Validation\Validator;
 /**
  * Class StoreRequest
  *
- * @codeCoverageIgnore
+
  */
 class StoreRequest extends FormRequest
 {
-    use ConvertsDataTypes, ValidatesAutoBudgetRequest, ChecksLogin;
+    use ConvertsDataTypes;
+    use ValidatesAutoBudgetRequest;
+    use ChecksLogin;
 
     /**
      * Get all data from the request.
@@ -49,11 +51,11 @@ class StoreRequest extends FormRequest
         $fields = [
             'name'               => ['name', 'convertString'],
             'active'             => ['active', 'boolean'],
-            'order'              => ['active', 'integer'],
+            'order'              => ['active', 'convertInteger'],
             'notes'              => ['notes', 'convertString'],
 
             // auto budget currency:
-            'currency_id'        => ['auto_budget_currency_id', 'integer'],
+            'currency_id'        => ['auto_budget_currency_id', 'convertInteger'],
             'currency_code'      => ['auto_budget_currency_code', 'convertString'],
             'auto_budget_type'   => ['auto_budget_type', 'convertString'],
             'auto_budget_amount' => ['auto_budget_amount', 'convertString'],
@@ -72,14 +74,14 @@ class StoreRequest extends FormRequest
     {
         return [
             'name'               => 'required|between:1,100|uniqueObjectForUser:budgets,name',
-            'active'             => [new IsBoolean],
+            'active'             => [new IsBoolean()],
             'currency_id'        => 'exists:transaction_currencies,id',
             'currency_code'      => 'exists:transaction_currencies,code',
             'notes'              => 'nullable|between:1,65536',
             // auto budget info
-            'auto_budget_type'   => 'in:reset,rollover,none',
-            'auto_budget_amount' => 'numeric|min:0|max:1000000000|required_if:auto_budget_type,reset|required_if:auto_budget_type,rollover',
-            'auto_budget_period' => 'in:daily,weekly,monthly,quarterly,half_year,yearly|required_if:auto_budget_type,reset|required_if:auto_budget_type,rollover',
+            'auto_budget_type'   => 'in:reset,rollover,adjusted,none',
+            'auto_budget_amount' => 'numeric|min:0|max:1000000000|required_if:auto_budget_type,reset|required_if:auto_budget_type,rollover|required_if:auto_budget_type,adjusted',
+            'auto_budget_period' => 'in:daily,weekly,monthly,quarterly,half_year,yearly|required_if:auto_budget_type,reset|required_if:auto_budget_type,rollover|required_if:auto_budget_type,adjusted',
         ];
     }
 

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AccountController.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,12 +24,12 @@ declare(strict_types=1);
 namespace FireflyIII\Http\Controllers\Report;
 
 use Carbon\Carbon;
+use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Http\Controllers\Controller;
 use FireflyIII\Repositories\Account\AccountTaskerInterface;
 use FireflyIII\Support\CacheProperties;
 use Illuminate\Support\Collection;
-use JsonException;
-use Log;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
@@ -36,7 +37,6 @@ use Throwable;
  */
 class AccountController extends Controller
 {
-
     /**
      * Show partial overview for account balances.
      *
@@ -44,12 +44,13 @@ class AccountController extends Controller
      * @param Carbon     $start
      * @param Carbon     $end
      *
-     * @return mixed|string
+     * @return string
+     * @throws FireflyException
      */
-    public function general(Collection $accounts, Carbon $start, Carbon $end)
+    public function general(Collection $accounts, Carbon $start, Carbon $end): string
     {
         // chart properties for cache:
-        $cache = new CacheProperties;
+        $cache = new CacheProperties();
         $cache->addProperty($start);
         $cache->addProperty($end);
         $cache->addProperty('account-report');
@@ -63,10 +64,11 @@ class AccountController extends Controller
         $accountReport = $accountTasker->getAccountReport($accounts, $start, $end);
         try {
             $result = view('reports.partials.accounts', compact('accountReport'))->render();
-
-        } catch (Throwable $e) { // @phpstan-ignore-line
-            Log::debug(sprintf('Could not render reports.partials.accounts: %s', $e->getMessage()));
+        } catch (Throwable $e) {
+            Log::error(sprintf('Could not render reports.partials.accounts: %s', $e->getMessage()));
+            Log::error($e->getTraceAsString());
             $result = 'Could not render view.';
+            throw new FireflyException($result, 0, $e);
         }
 
         $cache->store($result);

@@ -19,53 +19,45 @@
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.2/phpunit.xsd"
          backupGlobals="false"
-         backupStaticAttributes="false"
+         backupStaticProperties="false"
+         beStrictAboutOutputDuringTests="true"
          bootstrap="vendor/autoload.php"
+         cacheDirectory=".phpunit.cache"
          colors="true"
-         convertErrorsToExceptions="true"
-         stopOnFailure="true"
-         convertNoticesToExceptions="true"
-         convertWarningsToExceptions="true"
+         executionOrder="depends,defects"
+         failOnRisky="true"
+         failOnWarning="true"
          processIsolation="false"
-         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd">
-    <coverage processUncoveredFiles="true">
-        <include>
-            <directory suffix=".php">./app</directory>
-        </include>
-    </coverage>
-    <testsuites>
-        <testsuite name="Api">
-            <directory suffix="Test.php">./tests/Api/Models/TransactionCurrency</directory>
-            <!--
-            <directory suffix="Test.php">./tests/Api</directory>
-
-            <directory suffix="Test.php">./tests/Api/Models/Account</directory>
-            <directory suffix="Test.php">./tests/Api/Models/Attachment</directory>
-            <directory suffix="Test.php">./tests/Api/Models/AvailableBudget</directory>
-            <directory suffix="Test.php">./tests/Api/Models/Bill</directory>
-            <directory suffix="Test.php">./tests/Api/Models/Budget</directory>
-            <directory suffix="Test.php">./tests/Api/Models/BudgetLimit</directory>
-            <directory suffix="Test.php">./tests/Api/Models/Category</directory>
-            <directory suffix="Test.php">./tests/Api/Models/ObjectGroup</directory>
-            <directory suffix="Test.php">./tests/Api/Models/PiggyBank</directory>
-            <directory suffix="Test.php">./tests/Api/Models/Recurrence</directory>
-            <directory suffix="Test.php">./tests/Api/Models/Rule</directory>
-            <directory suffix="Test.php">./tests/Api/Models/RuleGroup</directory>
-            <directory suffix="Test.php">./tests/Api/Models/Tag</directory>
-            <directory suffix="Test.php">./tests/Api/Models/Transaction</directory>
-            <directory suffix="Test.php">./tests/Api/Models/TransactionLink</directory>
-            <directory suffix="Test.php">./tests/Api/Models/TransactionLinkType</directory>
-            <directory suffix="Test.php">./tests/Api/Webhook</directory>
-            <directory suffix="Test.php">./tests/Api/Models/TransactionCurrency</directory>
-                    -->
-
-        </testsuite>
-    </testsuites>
+         stopOnFailure="true">
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="CACHE_DRIVER" value="array"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="QUEUE_DRIVER" value="sync"/>
+        <ini name="xdebug.mode" value="coverage"/>
     </php>
+    <testsuites>
+        <testsuite name="all">
+            <directory suffix="Test.php">./tests</directory>
+        </testsuite>
+        <testsuite name="unit">
+            <directory suffix="Test.php">./tests/unit</directory>
+        </testsuite>
+        <testsuite name="integration">
+            <directory suffix="Test.php">./tests/integration</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory suffix=".php">app</directory>
+        </include>
+    </source>
+    <coverage ignoreDeprecatedCodeUnits="true"
+              pathCoverage="true">
+        <report>
+            <clover outputFile="coverage.xml"/>
+        </report>
+    </coverage>
 </phpunit>

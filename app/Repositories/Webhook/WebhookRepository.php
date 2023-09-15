@@ -27,6 +27,7 @@ use FireflyIII\Models\Webhook;
 use FireflyIII\Models\WebhookAttempt;
 use FireflyIII\Models\WebhookMessage;
 use FireflyIII\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
 use Str;
 
@@ -104,11 +105,13 @@ class WebhookRepository implements WebhookRepositoryInterface
     }
 
     /**
-     * @inheritDoc
+     * @param User|Authenticatable|null $user
      */
-    public function setUser(User $user): void
+    public function setUser(User | Authenticatable | null $user): void
     {
-        $this->user = $user;
+        if (null !== $user) {
+            $this->user = $user;
+        }
     }
 
     /**
@@ -118,14 +121,15 @@ class WebhookRepository implements WebhookRepositoryInterface
     {
         $secret   = Str::random(24);
         $fullData = [
-            'user_id'  => $this->user->id,
-            'active'   => $data['active'] ?? false,
-            'title'    => $data['title'] ?? null,
-            'trigger'  => $data['trigger'],
-            'response' => $data['response'],
-            'delivery' => $data['delivery'],
-            'secret'   => $secret,
-            'url'      => $data['url'],
+            'user_id'       => $this->user->id,
+            'user_group_id' => $this->user->user_group_id,
+            'active'        => $data['active'] ?? false,
+            'title'         => $data['title'] ?? null,
+            'trigger'       => $data['trigger'],
+            'response'      => $data['response'],
+            'delivery'      => $data['delivery'],
+            'secret'        => $secret,
+            'url'           => $data['url'],
         ];
 
         return Webhook::create($fullData);

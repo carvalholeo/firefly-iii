@@ -1,4 +1,5 @@
 <?php
+
 /**
  * TransactionJournalLink.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -87,7 +88,7 @@ class TransactionJournalLink extends Model
     public static function routeBinder(string $value): TransactionJournalLink
     {
         if (auth()->check()) {
-            $linkId = (int) $value;
+            $linkId = (int)$value;
             $link   = self::where('journal_links.id', $linkId)
                           ->leftJoin('transaction_journals as t_a', 't_a.id', '=', 'source_id')
                           ->leftJoin('transaction_journals as t_b', 't_b.id', '=', 'destination_id')
@@ -98,11 +99,10 @@ class TransactionJournalLink extends Model
                 return $link;
             }
         }
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function destination(): BelongsTo
@@ -111,7 +111,6 @@ class TransactionJournalLink extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function linkType(): BelongsTo
@@ -120,7 +119,6 @@ class TransactionJournalLink extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * Get all of the notes.
      */
     public function notes(): MorphMany
@@ -129,7 +127,6 @@ class TransactionJournalLink extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function source(): BelongsTo

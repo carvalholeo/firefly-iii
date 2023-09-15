@@ -39,7 +39,7 @@ class EditController extends Controller
     /**
      * EditController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -48,8 +48,7 @@ class EditController extends Controller
         // some useful repositories:
         $this->middleware(
             static function ($request, $next) {
-
-                app('view')->share('title', (string) trans('firefly.transactions'));
+                app('view')->share('title', (string)trans('firefly.transactions'));
                 app('view')->share('mainTitleIcon', 'fa-exchange');
 
                 return $next($request);
@@ -88,10 +87,15 @@ class EditController extends Controller
         return view(
             'transactions.edit',
             compact(
-                'cash', 'allowedSourceDests', 'expectedSourceTypes', 'transactionGroup', 'allowedOpposingTypes', 'accountToTypes', 'defaultCurrency',
+                'cash',
+                'allowedSourceDests',
+                'expectedSourceTypes',
+                'transactionGroup',
+                'allowedOpposingTypes',
+                'accountToTypes',
+                'defaultCurrency',
                 'previousUrl'
             )
         );
     }
-
 }

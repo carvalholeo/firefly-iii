@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ReportHelper.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -33,7 +34,7 @@ use Illuminate\Support\Collection;
 /**
  * Class ReportHelper.
  *
- * @codeCoverageIgnore
+
  */
 class ReportHelper implements ReportHelperInterface
 {
@@ -122,7 +123,7 @@ class ReportHelper implements ReportHelperInterface
         $fiscalHelper = app(FiscalHelperInterface::class);
         $start        = clone $date;
         $start->startOfMonth();
-        $end = Carbon::now();
+        $end = today(config('app.timezone'));
         $end->endOfMonth();
         $months = [];
 
@@ -141,7 +142,7 @@ class ReportHelper implements ReportHelperInterface
             $currentEnd = clone $start;
             $currentEnd->endOfMonth();
             $months[$year]['months'][] = [
-                'formatted' => $start->isoFormat((string) trans('config.month_js')),
+                'formatted' => $start->isoFormat((string)trans('config.month_js')),
                 'start'     => $start->format('Y-m-d'),
                 'end'       => $currentEnd->format('Y-m-d'),
                 'month'     => $start->month,

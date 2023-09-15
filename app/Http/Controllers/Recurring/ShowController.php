@@ -26,9 +26,12 @@ namespace FireflyIII\Http\Controllers\Recurring;
 use Carbon\Carbon;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Http\Controllers\Controller;
+use FireflyIII\Models\Attachment;
 use FireflyIII\Models\Recurrence;
+use FireflyIII\Repositories\Attachment\AttachmentRepositoryInterface;
 use FireflyIII\Repositories\Recurring\RecurringRepositoryInterface;
 use FireflyIII\Support\Http\Controllers\GetConfigurationData;
+use FireflyIII\Transformers\AttachmentTransformer;
 use FireflyIII\Transformers\RecurrenceTransformer;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\View\View;
@@ -48,7 +51,7 @@ class ShowController extends Controller
     /**
      * IndexController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -59,7 +62,7 @@ class ShowController extends Controller
         $this->middleware(
             function ($request, $next) {
                 app('view')->share('mainTitleIcon', 'fa-paint-brush');
-                app('view')->share('title', (string) trans('firefly.recurrences'));
+                app('view')->share('title', (string)trans('firefly.recurrences'));
 
                 $this->recurring = app(RecurringRepositoryInterface::class);
 
@@ -78,23 +81,42 @@ class ShowController extends Controller
      */
     public function show(Recurrence $recurrence)
     {
+        $repos = app(AttachmentRepositoryInterface::class);
         /** @var RecurrenceTransformer $transformer */
         $transformer = app(RecurrenceTransformer::class);
-        $transformer->setParameters(new ParameterBag);
+        $transformer->setParameters(new ParameterBag());
 
         $array                 = $transformer->transform($recurrence);
         $groups                = $this->recurring->getTransactions($recurrence);
         $today                 = today(config('app.timezone'));
         $array['repeat_until'] = null !== $array['repeat_until'] ? new Carbon($array['repeat_until']) : null;
 
-        // transform dates back to Carbon objects:
+        // transform dates back to Carbon objects and expand information
         foreach ($array['repetitions'] as $index => $repetition) {
             foreach ($repetition['occurrences'] as $item => $occurrence) {
-                $array['repetitions'][$index]['occurrences'][$item] = new Carbon($occurrence);
+                $date                                               = (new Carbon($occurrence))->startOfDay();
+                $set                                                = [
+                    'date'  => $date,
+                    'fired' => $this->recurring->createdPreviously($recurrence, $date)
+                               || $this->recurring->getJournalCount($recurrence, $date) > 0,
+                ];
+                $array['repetitions'][$index]['occurrences'][$item] = $set;
             }
         }
 
-        $subTitle = (string) trans('firefly.overview_for_recurrence', ['title' => $recurrence->title]);
+        // add attachments to the recurrence object.
+        $attachments           = $recurrence->attachments()->get();
+        $array['attachments']  = [];
+        $attachmentTransformer = app(AttachmentTransformer::class);
+        /** @var Attachment $attachment */
+        foreach ($attachments as $attachment) {
+            $item                   = $attachmentTransformer->transform($attachment);
+            $item['file_exists']    = $repos->exists($attachment); // TODO this should be part of the transformer
+            $array['attachments'][] = $item;
+
+        }
+
+        $subTitle = (string)trans('firefly.overview_for_recurrence', ['title' => $recurrence->title]);
 
         return view('recurring.show', compact('recurrence', 'subTitle', 'array', 'groups', 'today'));
     }

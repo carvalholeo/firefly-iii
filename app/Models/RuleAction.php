@@ -1,4 +1,5 @@
 <?php
+
 /**
  * RuleAction.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -75,7 +76,6 @@ class RuleAction extends Model
     protected $fillable = ['rule_id', 'action_type', 'action_value', 'order', 'active', 'stop_processing'];
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function rule(): BelongsTo

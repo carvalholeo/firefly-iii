@@ -1,4 +1,5 @@
 <?php
+
 /**
  * CurrencyExchangeRate.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -25,12 +26,13 @@ namespace FireflyIII\Models;
 use Eloquent;
 use FireflyIII\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * FireflyIII\Models\CurrencyExchangeRate
+ * Class CurrencyExchangeRate
  *
  * @property int                      $id
  * @property Carbon|null              $created_at
@@ -58,13 +60,15 @@ use Illuminate\Support\Carbon;
  * @method static Builder|CurrencyExchangeRate whereUpdatedAt($value)
  * @method static Builder|CurrencyExchangeRate whereUserId($value)
  * @method static Builder|CurrencyExchangeRate whereUserRate($value)
+ * @property int|null                 $user_group_id
+ * @method static Builder|CurrencyExchangeRate whereUserGroupId($value)
  * @mixin Eloquent
  */
 class CurrencyExchangeRate extends Model
 {
     /** @var array Convert these fields to other data types */
     protected $casts
-        = [
+                        = [
             'created_at'       => 'datetime',
             'updated_at'       => 'datetime',
             'user_id'          => 'int',
@@ -72,9 +76,9 @@ class CurrencyExchangeRate extends Model
             'to_currency_id'   => 'int',
             'date'             => 'datetime',
         ];
+    protected $fillable = ['user_id', 'from_currency_id', 'to_currency_id', 'date', 'rate'];
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function fromCurrency(): BelongsTo
@@ -83,7 +87,6 @@ class CurrencyExchangeRate extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function toCurrency(): BelongsTo
@@ -92,11 +95,30 @@ class CurrencyExchangeRate extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return Attribute
+     */
+    protected function rate(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => (string)$value,
+        );
+    }
+
+    /**
+     * @return Attribute
+     */
+    protected function userRate(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => (string)$value,
+        );
     }
 }

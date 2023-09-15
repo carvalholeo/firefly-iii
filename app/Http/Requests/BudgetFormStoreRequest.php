@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BudgetFormStoreRequest.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -29,12 +30,13 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
 /**
- * @codeCoverageIgnore
  * Class BudgetFormStoreRequest
  */
 class BudgetFormStoreRequest extends FormRequest
 {
-    use ConvertsDataTypes, ValidatesAutoBudgetRequest, ChecksLogin;
+    use ConvertsDataTypes;
+    use ValidatesAutoBudgetRequest;
+    use ChecksLogin;
 
     /**
      * Returns the data required by the controller.
@@ -46,8 +48,8 @@ class BudgetFormStoreRequest extends FormRequest
         return [
             'name'               => $this->convertString('name'),
             'active'             => $this->boolean('active'),
-            'auto_budget_type'   => $this->integer('auto_budget_type'),
-            'currency_id'        => $this->integer('auto_budget_currency_id'),
+            'auto_budget_type'   => $this->convertInteger('auto_budget_type'),
+            'currency_id'        => $this->convertInteger('auto_budget_currency_id'),
             'auto_budget_amount' => $this->convertString('auto_budget_amount'),
             'auto_budget_period' => $this->convertString('auto_budget_period'),
         ];
@@ -63,7 +65,7 @@ class BudgetFormStoreRequest extends FormRequest
         return [
             'name'                    => 'required|between:1,100|uniqueObjectForUser:budgets,name',
             'active'                  => 'numeric|between:0,1',
-            'auto_budget_type'        => 'numeric|integer|gte:0|lte:2',
+            'auto_budget_type'        => 'numeric|integer|gte:0|lte:3',
             'auto_budget_currency_id' => 'exists:transaction_currencies,id',
             'auto_budget_amount'      => 'min:0|max:1000000000|required_if:auto_budget_type,1|required_if:auto_budget_type,2',
             'auto_budget_period'      => 'in:daily,weekly,monthly,quarterly,half_year,yearly',
@@ -86,5 +88,4 @@ class BudgetFormStoreRequest extends FormRequest
             }
         );
     }
-
 }

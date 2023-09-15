@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AttachmentRepositoryInterface.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -25,6 +26,7 @@ namespace FireflyIII\Repositories\Attachment;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Attachment;
 use FireflyIII\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
 
 /**
@@ -32,7 +34,6 @@ use Illuminate\Support\Collection;
  */
 interface AttachmentRepositoryInterface
 {
-
     /**
      * @param Attachment $attachment
      *
@@ -69,9 +70,9 @@ interface AttachmentRepositoryInterface
     public function getNoteText(Attachment $attachment): ?string;
 
     /**
-     * @param User $user
+     * @param User|Authenticatable|null $user
      */
-    public function setUser(User $user);
+    public function setUser(User | Authenticatable | null $user): void;
 
     /**
      * @param array $data

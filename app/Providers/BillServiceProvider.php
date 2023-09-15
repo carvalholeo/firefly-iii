@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BillServiceProvider.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -24,11 +25,12 @@ namespace FireflyIII\Providers;
 
 use FireflyIII\Repositories\Bill\BillRepository;
 use FireflyIII\Repositories\Bill\BillRepositoryInterface;
+use FireflyIII\Repositories\Administration\Bill\BillRepository as AdminBillRepository;
+use FireflyIII\Repositories\Administration\Bill\BillRepositoryInterface as AdminBillRepositoryInterface;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 
 /**
- * @codeCoverageIgnore
  * Class BillServiceProvider.
  */
 class BillServiceProvider extends ServiceProvider
@@ -51,6 +53,23 @@ class BillServiceProvider extends ServiceProvider
                 /** @var BillRepositoryInterface $repository */
                 $repository = app(BillRepository::class);
 
+                // reference to auth is not understood by phpstan.
+                if ($app->auth->check()) { // @phpstan-ignore-line
+                    $repository->setUser(auth()->user());
+                }
+
+                return $repository;
+            }
+        );
+
+        // administration variant
+        $this->app->bind(
+            AdminBillRepositoryInterface::class,
+            function (Application $app) {
+                /** @var AdminBillRepositoryInterface $repository */
+                $repository = app(AdminBillRepository::class);
+
+                // reference to auth is not understood by phpstan.
                 if ($app->auth->check()) { // @phpstan-ignore-line
                     $repository->setUser(auth()->user());
                 }

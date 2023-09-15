@@ -1,4 +1,5 @@
 <?php
+
 /**
  * FireflyConfig.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -26,7 +27,6 @@ use FireflyIII\Models\Configuration;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @codeCoverageIgnore
  * Class FireflyConfig.
  * @method null|Configuration get($name, $default = null)
  * @method Configuration set(string $name, $value)

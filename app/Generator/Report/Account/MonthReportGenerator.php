@@ -1,4 +1,5 @@
 <?php
+
 /**
  * MonthReportGenerator.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,15 +24,16 @@ declare(strict_types=1);
 namespace FireflyIII\Generator\Report\Account;
 
 use Carbon\Carbon;
+use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Generator\Report\ReportGeneratorInterface;
 use Illuminate\Support\Collection;
-use Log;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
  * Class MonthReportGenerator.
  *
- * @codeCoverageIgnore
+
  */
 class MonthReportGenerator implements ReportGeneratorInterface
 {
@@ -44,6 +46,7 @@ class MonthReportGenerator implements ReportGeneratorInterface
      * Generate the report.
      *
      * @return string
+     * @throws FireflyException
      */
     public function generate(): string
     {
@@ -56,9 +59,11 @@ class MonthReportGenerator implements ReportGeneratorInterface
                 ->with('start', $this->start)->with('end', $this->end)
                 ->with('doubles', $this->expense)
                 ->render();
-        } catch (Throwable $e) { // @phpstan-ignore-line
+        } catch (Throwable $e) {
             Log::error(sprintf('Cannot render reports.double.report: %s', $e->getMessage()));
+            Log::error($e->getTraceAsString());
             $result = sprintf('Could not render report view: %s', $e->getMessage());
+            throw new FireflyException($result, 0, $e);
         }
 
         return $result;

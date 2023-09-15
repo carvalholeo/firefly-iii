@@ -1,4 +1,5 @@
 <?php
+
 /**
  * General.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -48,7 +49,6 @@ class General extends AbstractExtension
             $this->formatFilesize(),
             $this->mimeIcon(),
             $this->markdown(),
-            $this->floatval(),
             $this->phpHostName(),
         ];
     }
@@ -67,7 +67,7 @@ class General extends AbstractExtension
                     return '0';
                 }
                 /** @var Carbon $date */
-                $date = session('end', Carbon::now()->endOfMonth());
+                $date = session('end', today(config('app.timezone'))->endOfMonth());
 
                 return app('steam')->balance($account, $date);
             }
@@ -114,7 +114,7 @@ class General extends AbstractExtension
                         return 'fa-file-o';
                     case 'application/pdf':
                         return 'fa-file-pdf-o';
-                    /* image */
+                        /* image */
                     case 'image/png':
                     case 'image/jpeg':
                     case 'image/svg+xml':
@@ -122,7 +122,7 @@ class General extends AbstractExtension
                     case 'image/heic-sequence':
                     case 'application/vnd.oasis.opendocument.image':
                         return 'fa-file-image-o';
-                    /* MS word */
+                        /* MS word */
                     case 'application/msword':
                     case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
                     case 'application/vnd.openxmlformats-officedocument.wordprocessingml.template':
@@ -137,7 +137,7 @@ class General extends AbstractExtension
                     case 'application/vnd.oasis.opendocument.text-web':
                     case 'application/vnd.oasis.opendocument.text-master':
                         return 'fa-file-word-o';
-                    /* MS excel */
+                        /* MS excel */
                     case 'application/vnd.ms-excel':
                     case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
                     case 'application/vnd.openxmlformats-officedocument.spreadsheetml.template':
@@ -147,7 +147,7 @@ class General extends AbstractExtension
                     case 'application/vnd.oasis.opendocument.spreadsheet':
                     case 'application/vnd.oasis.opendocument.spreadsheet-template':
                         return 'fa-file-excel-o';
-                    /* MS powerpoint */
+                        /* MS powerpoint */
                     case 'application/vnd.ms-powerpoint':
                     case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
                     case 'application/vnd.openxmlformats-officedocument.presentationml.template':
@@ -158,7 +158,7 @@ class General extends AbstractExtension
                     case 'application/vnd.oasis.opendocument.presentation':
                     case 'application/vnd.oasis.opendocument.presentation-template':
                         return 'fa-file-powerpoint-o';
-                    /* calc */
+                        /* calc */
                     case 'application/vnd.sun.xml.draw':
                     case 'application/vnd.sun.xml.draw.template':
                     case 'application/vnd.stardivision.draw':
@@ -171,7 +171,6 @@ class General extends AbstractExtension
                     case 'application/vnd.oasis.opendocument.formula':
                     case 'application/vnd.oasis.opendocument.database':
                         return 'fa-calculator';
-
                 }
             },
             ['is_safe' => ['html']]
@@ -184,9 +183,8 @@ class General extends AbstractExtension
     protected function markdown(): TwigFilter
     {
         return new TwigFilter(
-               'markdown',
+            'markdown',
             static function (string $text): string {
-
                 $converter = new GithubFlavoredMarkdownConverter(
                     [
                         'allow_unsafe_links' => false,
@@ -195,21 +193,9 @@ class General extends AbstractExtension
                     ]
                 );
 
-                return (string) $converter->convert($text);
-            }, ['is_safe' => ['html']]
-        );
-    }
-
-    /**
-     * @return TwigFilter
-     */
-    protected function floatval(): TwigFilter
-    {
-        return new TwigFilter(
-            'floatval',
-            static function ($value): float {
-                return (float) $value;
-            }
+                return (string)$converter->convert($text);
+            },
+            ['is_safe' => ['html']]
         );
     }
 
@@ -223,8 +209,8 @@ class General extends AbstractExtension
         return new TwigFilter(
             'phphost',
             static function (string $string): string {
-                $proto = (string) parse_url($string, PHP_URL_SCHEME);
-                $host  = (string) parse_url($string, PHP_URL_HOST);
+                $proto = (string)parse_url($string, PHP_URL_SCHEME);
+                $host  = (string)parse_url($string, PHP_URL_HOST);
 
                 return e(sprintf('%s://%s', $proto, $host));
             }
@@ -325,7 +311,11 @@ class General extends AbstractExtension
                 [, $route, $objectType] = func_get_args();
                 $activeObjectType = $context['objectType'] ?? false;
 
-                if ($objectType === $activeObjectType && false !== stripos(Route::getCurrentRoute()->getName(), $route)) {
+                if ($objectType === $activeObjectType
+                    && false !== stripos(
+                        Route::getCurrentRoute()->getName(),
+                        $route
+                    )) {
                     return 'active';
                 }
 
@@ -377,7 +367,7 @@ class General extends AbstractExtension
 
     /**
      * @return TwigFunction
-     * See reference nr. 43
+     * TODO remove me when layout v1 is deprecated.
      */
     protected function getMetaField(): TwigFunction
     {
@@ -416,12 +406,17 @@ class General extends AbstractExtension
         );
     }
 
+    /**
+     * @return TwigFunction
+     */
     protected function getRootSearchOperator(): TwigFunction
     {
         return new TwigFunction(
             'getRootSearchOperator',
             static function (string $operator): string {
-                return OperatorQuerySearch::getRootOperator($operator);
+                $result = OperatorQuerySearch::getRootOperator($operator);
+
+                return str_replace('-', 'not_', $result);
             }
         );
     }
@@ -434,7 +429,7 @@ class General extends AbstractExtension
         return new TwigFunction(
             'carbonize',
             static function (string $date): Carbon {
-                return new Carbon($date);
+                return new Carbon($date, config('app.timezone'));
             }
         );
     }

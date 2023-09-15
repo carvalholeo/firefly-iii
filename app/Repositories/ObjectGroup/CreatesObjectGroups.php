@@ -48,13 +48,15 @@ trait CreatesObjectGroups
      */
     protected function findOrCreateObjectGroup(string $title): ?ObjectGroup
     {
+        $title    = substr($title, 0, 255);
         $maxOrder = $this->getObjectGroupMaxOrder();
         if (!$this->hasObjectGroup($title)) {
             return ObjectGroup::create(
                 [
-                    'user_id' => $this->user->id,
-                    'title'   => $title,
-                    'order'   => $maxOrder + 1,
+                    'user_id'       => $this->user->id,
+                    'user_group_id' => $this->user->user_group_id,
+                    'title'         => $title,
+                    'order'         => $maxOrder + 1,
                 ]
             );
         }
@@ -67,7 +69,7 @@ trait CreatesObjectGroups
      */
     protected function getObjectGroupMaxOrder(): int
     {
-        return (int) $this->user->objectGroups()->max('order');
+        return (int)$this->user->objectGroups()->max('order');
     }
 
     /**

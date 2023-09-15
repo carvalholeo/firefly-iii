@@ -1,4 +1,5 @@
 <?php
+
 /**
  * TransactionJournalMeta.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -78,7 +79,6 @@ class TransactionJournalMeta extends Model
     protected $table = 'journal_meta';
 
     /**
-     * @codeCoverageIgnore
      *
      * @param mixed $value
      *
@@ -90,7 +90,6 @@ class TransactionJournalMeta extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      *
      * @param mixed $value
      */
@@ -102,7 +101,6 @@ class TransactionJournalMeta extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function transactionJournal(): BelongsTo

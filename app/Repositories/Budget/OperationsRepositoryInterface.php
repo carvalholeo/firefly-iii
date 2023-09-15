@@ -27,6 +27,7 @@ use Carbon\Carbon;
 use FireflyIII\Models\Budget;
 use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
 
 /**
@@ -70,11 +71,10 @@ interface OperationsRepositoryInterface
     public function listExpenses(Carbon $start, Carbon $end, ?Collection $accounts = null, ?Collection $budgets = null): array;
 
     /**
-     * @param User $user
+     * @param User|Authenticatable|null $user
      */
-    public function setUser(User $user): void;
+    public function setUser(User | Authenticatable | null $user): void;
 
-    /** @noinspection MoreThanThreeArgumentsInspection */
 
     /**
      * Return multi-currency spent information.
@@ -90,6 +90,8 @@ interface OperationsRepositoryInterface
     public function spentInPeriodMc(Collection $budgets, Collection $accounts, Carbon $start, Carbon $end): array;
 
     /**
+     * TODO this method was marked as deprecated but I'm not sure why.
+     *
      * @param Carbon                   $start
      * @param Carbon                   $end
      * @param Collection|null          $accounts
@@ -97,8 +99,13 @@ interface OperationsRepositoryInterface
      * @param TransactionCurrency|null $currency
      *
      * @return array
+     *
      */
-    public function sumExpenses(Carbon $start, Carbon $end, ?Collection $accounts = null, ?Collection $budgets = null, ?TransactionCurrency $currency = null
+    public function sumExpenses(
+        Carbon               $start,
+        Carbon               $end,
+        ?Collection          $accounts = null,
+        ?Collection          $budgets = null,
+        ?TransactionCurrency $currency = null
     ): array;
-
 }

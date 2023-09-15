@@ -35,14 +35,20 @@ use FireflyIII\Validation\Account\OBValidation;
 use FireflyIII\Validation\Account\ReconciliationValidation;
 use FireflyIII\Validation\Account\TransferValidation;
 use FireflyIII\Validation\Account\WithdrawalValidation;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class AccountValidator
  */
 class AccountValidator
 {
-    use AccountValidatorProperties, WithdrawalValidation, DepositValidation, TransferValidation, ReconciliationValidation, OBValidation, LiabilityValidation;
+    use AccountValidatorProperties;
+    use WithdrawalValidation;
+    use DepositValidation;
+    use TransferValidation;
+    use ReconciliationValidation;
+    use OBValidation;
+    use LiabilityValidation;
 
     public bool                        $createMode;
     public string                      $destError;
@@ -74,6 +80,34 @@ class AccountValidator
     public function getSource(): ?Account
     {
         return $this->source;
+    }
+
+    /**
+     * @param Account|null $account
+     */
+    public function setSource(?Account $account): void
+    {
+        if (null === $account) {
+            Log::debug('AccountValidator source is set to NULL');
+        }
+        if (null !== $account) {
+            Log::debug(sprintf('AccountValidator source is set to #%d: "%s" (%s)', $account->id, $account->name, $account->accountType->type));
+        }
+        $this->source = $account;
+    }
+
+    /**
+     * @param Account|null $account
+     */
+    public function setDestination(?Account $account): void
+    {
+        if (null === $account) {
+            Log::debug('AccountValidator destination is set to NULL');
+        }
+        if (null !== $account) {
+            Log::debug(sprintf('AccountValidator destination is set to #%d: "%s" (%s)', $account->id, $account->name, $account->accountType->type));
+        }
+        $this->destination = $account;
     }
 
     /**
@@ -231,32 +265,39 @@ class AccountValidator
         if (null !== $accountId && $accountId > 0) {
             $first = $this->accountRepository->find($accountId);
             if ((null !== $first) && in_array($first->accountType->type, $validTypes, true)) {
+                app('log')->debug(sprintf('ID: Found %s account #%d ("%s", IBAN "%s")', $first->accountType->type, $first->id, $first->name, $first->iban ?? 'no iban'));
                 return $first;
             }
         }
 
         // find by iban
-        if (null !== $accountIban && '' !== (string) $accountIban) {
+        if (null !== $accountIban && '' !== (string)$accountIban) {
             $first = $this->accountRepository->findByIbanNull($accountIban, $validTypes);
             if ((null !== $first) && in_array($first->accountType->type, $validTypes, true)) {
+                app('log')->debug(sprintf('Iban: Found %s account #%d ("%s", IBAN "%s")', $first->accountType->type, $first->id, $first->name, $first->iban ?? 'no iban'));
                 return $first;
             }
         }
 
         // find by number
-        if (null !== $accountNumber && '' !== (string) $accountNumber) {
+        if (null !== $accountNumber && '' !== (string)$accountNumber) {
             $first = $this->accountRepository->findByAccountNumber($accountNumber, $validTypes);
             if ((null !== $first) && in_array($first->accountType->type, $validTypes, true)) {
+                app('log')->debug(sprintf('Number: Found %s account #%d ("%s", IBAN "%s")', $first->accountType->type, $first->id, $first->name, $first->iban ?? 'no iban'));
                 return $first;
             }
         }
 
         // find by name:
-        if ('' !== (string) $accountName) {
-            return $this->accountRepository->findByName($accountName, $validTypes);
+        if ('' !== (string)$accountName) {
+            $first = $this->accountRepository->findByName($accountName, $validTypes);
+            if (null !== $first) {
+                app('log')->debug(sprintf('Name: Found %s account #%d ("%s", IBAN "%s")', $first->accountType->type, $first->id, $first->name, $first->iban ?? 'no iban'));
+                return $first;
+            }
         }
+        app('log')->debug('Found nothing!');
 
         return null;
     }
-
 }

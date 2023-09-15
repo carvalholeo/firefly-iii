@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ReportController.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -22,6 +23,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Http\Controllers\Popup;
 
+use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Http\Controllers\Controller;
 use FireflyIII\Support\Http\Controllers\RenderPartialViews;
 use Illuminate\Http\JsonResponse;
@@ -41,7 +43,7 @@ class ReportController extends Controller
      * @param Request $request
      *
      * @return JsonResponse
-     *
+     * @throws FireflyException
      */
     public function general(Request $request): JsonResponse
     {
@@ -52,12 +54,12 @@ class ReportController extends Controller
         app('view')->share('end', $attributes['endDate']);
 
         $html = match ($attributes['location']) {
-            default => sprintf('Firefly III cannot handle "%s"-popups.', $attributes['location']),
+            default               => sprintf('Firefly III cannot handle "%s"-popups.', $attributes['location']),
             'budget-spent-amount' => $this->budgetSpentAmount($attributes),
-            'expense-entry' => $this->expenseEntry($attributes),
-            'income-entry' => $this->incomeEntry($attributes),
-            'category-entry' => $this->categoryEntry($attributes),
-            'budget-entry' => $this->budgetEntry($attributes),
+            'expense-entry'       => $this->expenseEntry($attributes),
+            'income-entry'        => $this->incomeEntry($attributes),
+            'category-entry'      => $this->categoryEntry($attributes),
+            'budget-entry'        => $this->budgetEntry($attributes),
         };
         return response()->json(['html' => $html]);
     }

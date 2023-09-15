@@ -63,7 +63,6 @@ use Illuminate\Support\Carbon;
  */
 class Location extends Model
 {
-
     /**
      * The attributes that should be casted to native types.
      *
@@ -98,7 +97,6 @@ class Location extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * Get all of the accounts.
      */
     public function accounts(): MorphMany
@@ -109,7 +107,6 @@ class Location extends Model
     /**
      * Get all of the owning attachable models.
      *
-     * @codeCoverageIgnore
      *
      * @return MorphTo
      */
@@ -117,5 +114,4 @@ class Location extends Model
     {
         return $this->morphTo();
     }
-
 }

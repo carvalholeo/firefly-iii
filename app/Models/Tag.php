@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Tag.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -74,9 +75,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * @method static \Illuminate\Database\Eloquent\Builder|Tag whereZoomLevel($value)
  * @method static Builder|Tag withTrashed()
  * @method static Builder|Tag withoutTrashed()
- * @mixin Eloquent
  * @property int|null                             $user_group_id
  * @method static \Illuminate\Database\Eloquent\Builder|Tag whereUserGroupId($value)
+ * @mixin Eloquent
  */
 class Tag extends Model
 {
@@ -98,7 +99,7 @@ class Tag extends Model
             'longitude'  => 'float',
         ];
     /** @var array Fields that can be filled */
-    protected $fillable = ['user_id', 'tag', 'date', 'description', 'tagMode'];
+    protected $fillable = ['user_id', 'user_group_id', 'tag', 'date', 'description', 'tagMode'];
 
     protected $hidden = ['zoomLevel', 'latitude', 'longitude'];
 
@@ -113,7 +114,7 @@ class Tag extends Model
     public static function routeBinder(string $value): Tag
     {
         if (auth()->check()) {
-            $tagId = (int) $value;
+            $tagId = (int)$value;
             /** @var User $user */
             $user = auth()->user();
             /** @var Tag $tag */
@@ -122,11 +123,18 @@ class Tag extends Model
                 return $tag;
             }
         }
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
     }
 
     /**
-     * @codeCoverageIgnore
+     * @return BelongsTo
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
      * @return MorphMany
      */
     public function attachments(): MorphMany
@@ -135,7 +143,6 @@ class Tag extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return MorphMany
      */
     public function locations(): MorphMany
@@ -144,20 +151,10 @@ class Tag extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsToMany
      */
     public function transactionJournals(): BelongsToMany
     {
         return $this->belongsToMany(TransactionJournal::class);
-    }
-
-    /**
-     * @codeCoverageIgnore
-     * @return BelongsTo
-     */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
     }
 }

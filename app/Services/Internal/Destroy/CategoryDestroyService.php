@@ -24,13 +24,12 @@ declare(strict_types=1);
 namespace FireflyIII\Services\Internal\Destroy;
 
 use DB;
-use Exception;
 use FireflyIII\Models\Category;
 
 /**
  * Class CategoryDestroyService
  *
- * @codeCoverageIgnore
+
  */
 class CategoryDestroyService
 {
@@ -39,16 +38,15 @@ class CategoryDestroyService
      */
     public function destroy(Category $category): void
     {
-        try {
-            $category->delete();
-        } catch (Exception $e) { // @phpstan-ignore-line
-            // @ignoreException
-        }
+        $category->delete();
 
         // also delete all relations between categories and transaction journals:
-        DB::table('category_transaction_journal')->where('category_id', (int) $category->id)->delete();
+        DB::table('category_transaction_journal')->where('category_id', (int)$category->id)->delete();
 
         // also delete all relations between categories and transactions:
-        DB::table('category_transaction')->where('category_id', (int) $category->id)->delete();
+        DB::table('category_transaction')->where('category_id', (int)$category->id)->delete();
+
+        // delete references to category from recurring transactions.
+        DB::table('rt_meta')->where('name', 'category_id')->where('value', $category->id)->delete();
     }
 }

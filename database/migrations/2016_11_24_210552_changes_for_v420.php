@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 2016_11_24_210552_changes_for_v420.php
  * Copyright (c) 2019 james@firefly-iii.org.
@@ -21,6 +22,7 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
 
 /**
@@ -35,26 +37,39 @@ class ChangesForV420 extends Migration
      */
     public function down(): void
     {
-        Schema::table(
-            'journal_meta',
-            static function (Blueprint $table) {
-                $table->dropSoftDeletes();
+        if (Schema::hasColumn('journal_meta', 'deleted_at')) {
+            try {
+                Schema::table(
+                    'journal_meta',
+                    static function (Blueprint $table) {
+                        $table->dropSoftDeletes();
+                    }
+                );
+            } catch (QueryException $e) {
+                app('log')->error(sprintf('Could not execute query: %s', $e->getMessage()));
+                app('log')->error('If the column or index already exists (see error), this is not an problem. Otherwise, please open a GitHub discussion.');
             }
-        );
+        }
     }
 
     /**
      * Run the migrations.
      *
-     * @SuppressWarnings(PHPMD.ShortMethodName)
      */
     public function up(): void
     {
-        Schema::table(
-            'journal_meta',
-            static function (Blueprint $table) {
-                $table->softDeletes();
+        if (!Schema::hasColumn('journal_meta', 'deleted_at')) {
+            try {
+                Schema::table(
+                    'journal_meta',
+                    static function (Blueprint $table) {
+                        $table->softDeletes();
+                    }
+                );
+            } catch (QueryException $e) {
+                app('log')->error(sprintf('Could not execute query: %s', $e->getMessage()));
+                app('log')->error('If the column or index already exists (see error), this is not an problem. Otherwise, please open a GitHub discussion.');
             }
-        );
+        }
     }
 }

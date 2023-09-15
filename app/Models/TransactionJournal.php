@@ -1,4 +1,5 @@
 <?php
+
 /**
  * TransactionJournal.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -111,16 +112,17 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * @method static EloquentBuilder|TransactionJournal whereUserId($value)
  * @method static \Illuminate\Database\Query\Builder|TransactionJournal withTrashed()
  * @method static \Illuminate\Database\Query\Builder|TransactionJournal withoutTrashed()
- * @mixin Eloquent
  * @property-read Collection|Location[]               $locations
  * @property-read int|null                            $locations_count
  * @property int                                      $the_count
  * @property int|null                                 $user_group_id
  * @method static EloquentBuilder|TransactionJournal whereUserGroupId($value)
+ * @mixin Eloquent
  */
 class TransactionJournal extends Model
 {
-    use SoftDeletes, HasFactory;
+    use SoftDeletes;
+    use HasFactory;
 
     /**
      * The attributes that should be casted to native types.
@@ -144,8 +146,18 @@ class TransactionJournal extends Model
 
     /** @var array Fields that can be filled */
     protected $fillable
-        = ['user_id', 'transaction_type_id', 'bill_id', 'tag_count', 'transaction_currency_id', 'description', 'completed', 'order',
-           'date'];
+        = [
+            'user_id',
+            'user_group_id',
+            'transaction_type_id',
+            'bill_id',
+            'tag_count',
+            'transaction_currency_id',
+            'description',
+            'completed',
+            'order',
+            'date',
+        ];
     /** @var array Hidden from view */
     protected $hidden = ['encrypted'];
 
@@ -160,7 +172,7 @@ class TransactionJournal extends Model
     public static function routeBinder(string $value): TransactionJournal
     {
         if (auth()->check()) {
-            $journalId = (int) $value;
+            $journalId = (int)$value;
             /** @var User $user */
             $user = auth()->user();
             /** @var TransactionJournal $journal */
@@ -170,11 +182,18 @@ class TransactionJournal extends Model
             }
         }
 
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
     }
 
     /**
-     * @codeCoverageIgnore
+     * @return BelongsTo
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
      * @return MorphMany
      */
     public function attachments(): MorphMany
@@ -183,7 +202,6 @@ class TransactionJournal extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function bill(): BelongsTo
@@ -192,7 +210,6 @@ class TransactionJournal extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsToMany
      */
     public function budgets(): BelongsToMany
@@ -201,7 +218,6 @@ class TransactionJournal extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsToMany
      */
     public function categories(): BelongsToMany
@@ -210,7 +226,6 @@ class TransactionJournal extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return HasMany
      */
     public function destJournalLinks(): HasMany
@@ -219,7 +234,6 @@ class TransactionJournal extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return bool
      */
     public function isTransfer(): bool
@@ -232,7 +246,6 @@ class TransactionJournal extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return MorphMany
      */
     public function locations(): MorphMany
@@ -241,7 +254,6 @@ class TransactionJournal extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * Get all of the notes.
      */
     public function notes(): MorphMany
@@ -250,7 +262,6 @@ class TransactionJournal extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return HasMany
      */
     public function piggyBankEvents(): HasMany
@@ -259,7 +270,6 @@ class TransactionJournal extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      *
      * @param EloquentBuilder $query
      * @param Carbon          $date
@@ -272,7 +282,6 @@ class TransactionJournal extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      *
      * @param EloquentBuilder $query
      * @param Carbon          $date
@@ -285,7 +294,6 @@ class TransactionJournal extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      *
      * @param EloquentBuilder $query
      * @param array           $types
@@ -295,7 +303,7 @@ class TransactionJournal extends Model
         if (!self::isJoined($query, 'transaction_types')) {
             $query->leftJoin('transaction_types', 'transaction_types.id', '=', 'transaction_journals.transaction_type_id');
         }
-        if (!empty($types)) {
+        if (0 !== count($types)) {
             $query->whereIn('transaction_types.type', $types);
         }
     }
@@ -303,7 +311,6 @@ class TransactionJournal extends Model
     /**
      * Checks if tables are joined.
      *
-     * @codeCoverageIgnore
      *
      * @param Builder $query
      * @param string  $table
@@ -326,7 +333,6 @@ class TransactionJournal extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return HasMany
      */
     public function sourceJournalLinks(): HasMany
@@ -335,7 +341,6 @@ class TransactionJournal extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsToMany
      */
     public function tags(): BelongsToMany
@@ -344,7 +349,6 @@ class TransactionJournal extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function transactionCurrency(): BelongsTo
@@ -353,7 +357,6 @@ class TransactionJournal extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function transactionGroup(): BelongsTo
@@ -362,7 +365,6 @@ class TransactionJournal extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return HasMany
      */
     public function transactionJournalMeta(): HasMany
@@ -371,7 +373,6 @@ class TransactionJournal extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function transactionType(): BelongsTo
@@ -380,20 +381,10 @@ class TransactionJournal extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return HasMany
      */
     public function transactions(): HasMany
     {
         return $this->hasMany(Transaction::class);
-    }
-
-    /**
-     * @codeCoverageIgnore
-     * @return BelongsTo
-     */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
     }
 }

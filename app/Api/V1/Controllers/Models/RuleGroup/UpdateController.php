@@ -37,13 +37,12 @@ use League\Fractal\Resource\Item;
  */
 class UpdateController extends Controller
 {
-
     private RuleGroupRepositoryInterface $ruleGroupRepository;
 
     /**
      * RuleGroupController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -63,7 +62,7 @@ class UpdateController extends Controller
 
     /**
      * This is endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/rule_groups/updateRuleGroup
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/rule_groups/updateRuleGroup
      *
      * Update a rule group.
      *

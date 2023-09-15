@@ -24,13 +24,55 @@ declare(strict_types=1);
 namespace FireflyIII\Validation\Account;
 
 use FireflyIII\Models\Account;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Trait TransferValidation
  */
 trait TransferValidation
 {
+    /**
+     * @param array $array
+     *
+     * @return bool
+     */
+    protected function validateTransferDestination(array $array): bool
+    {
+        $accountId   = array_key_exists('id', $array) ? $array['id'] : null;
+        $accountName = array_key_exists('name', $array) ? $array['name'] : null;
+        $accountIban = array_key_exists('iban', $array) ? $array['iban'] : null;
+        Log::debug('Now in validateTransferDestination', $array);
+        // source can be any of the following types.
+        $validTypes = $this->combinations[$this->transactionType][$this->source->accountType->type] ?? [];
+        if (null === $accountId && null === $accountName && null === $accountIban && false === $this->canCreateTypes($validTypes)) {
+            // if both values are NULL we return false,
+            // because the destination of a transfer can't be created.
+            $this->destError = (string)trans('validation.transfer_dest_need_data');
+            Log::error('Both values are NULL, cant create transfer destination.');
+
+            return false;
+        }
+
+        // or try to find the account:
+        $search = $this->findExistingAccount($validTypes, $array);
+        if (null === $search) {
+            $this->destError = (string)trans('validation.transfer_dest_bad_data', ['id' => $accountId, 'name' => $accountName]);
+
+            return false;
+        }
+        $this->setDestination($search);
+
+        // must not be the same as the source account
+        if (null !== $this->source && $this->source->id === $this->destination->id) {
+            $this->sourceError = 'Source and destination are the same.';
+            $this->destError   = 'Source and destination are the same.';
+
+            return false;
+        }
+
+        return true;
+    }
+
     /**
      * @param array $accountTypes
      *
@@ -51,59 +93,22 @@ trait TransferValidation
      *
      * @return bool
      */
-    protected function validateTransferDestination(array $array): bool
-    {
-        $accountId   = array_key_exists('id', $array) ? $array['id'] : null;
-        $accountName = array_key_exists('name', $array) ? $array['name'] : null;
-        Log::debug('Now in validateTransferDestination', $array);
-        // source can be any of the following types.
-        $validTypes = $this->combinations[$this->transactionType][$this->source->accountType->type] ?? [];
-        if (null === $accountId && null === $accountName && false === $this->canCreateTypes($validTypes)) {
-            // if both values are NULL we return false,
-            // because the destination of a transfer can't be created.
-            $this->destError = (string) trans('validation.transfer_dest_need_data');
-            Log::error('Both values are NULL, cant create transfer destination.');
-
-            return false;
-        }
-
-        // or try to find the account:
-        $search = $this->findExistingAccount($validTypes, $array);
-        if (null === $search) {
-            $this->destError = (string) trans('validation.transfer_dest_bad_data', ['id' => $accountId, 'name' => $accountName]);
-
-            return false;
-        }
-        $this->destination = $search;
-
-        // must not be the same as the source account
-        if (null !== $this->source && $this->source->id === $this->destination->id) {
-            $this->sourceError = 'Source and destination are the same.';
-            $this->destError   = 'Source and destination are the same.';
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * @param array $array
-     *
-     * @return bool
-     */
     protected function validateTransferSource(array $array): bool
     {
-        $accountId   = array_key_exists('id', $array) ? $array['id'] : null;
-        $accountName = array_key_exists('name', $array) ? $array['name'] : null;
+        $accountId     = array_key_exists('id', $array) ? $array['id'] : null;
+        $accountName   = array_key_exists('name', $array) ? $array['name'] : null;
+        $accountIban   = array_key_exists('iban', $array) ? $array['iban'] : null;
+        $accountNumber = array_key_exists('number', $array) ? $array['number'] : null;
         Log::debug('Now in validateTransferSource', $array);
         // source can be any of the following types.
         $validTypes = array_keys($this->combinations[$this->transactionType]);
-        if (null === $accountId && null === $accountName && false === $this->canCreateTypes($validTypes)) {
+        if (null === $accountId && null === $accountName
+            && null === $accountIban && null === $accountNumber
+            && false === $this->canCreateTypes($validTypes)) {
             // if both values are NULL we return false,
             // because the source of a withdrawal can't be created.
-            $this->sourceError = (string) trans('validation.transfer_source_need_data');
-            Log::warning('Not a valid source, need more data.');
+            $this->sourceError = (string)trans('validation.transfer_source_need_data');
+            app('log')->warning('Not a valid source, need more data.');
 
             return false;
         }
@@ -111,12 +116,12 @@ trait TransferValidation
         // otherwise try to find the account:
         $search = $this->findExistingAccount($validTypes, $array);
         if (null === $search) {
-            $this->sourceError = (string) trans('validation.transfer_source_bad_data', ['id' => $accountId, 'name' => $accountName]);
-            Log::warning('Not a valid source, cant find it.', $validTypes);
+            $this->sourceError = (string)trans('validation.transfer_source_bad_data', ['id' => $accountId, 'name' => $accountName]);
+            app('log')->warning('Not a valid source, cant find it.', $validTypes);
 
             return false;
         }
-        $this->source = $search;
+        $this->setSource($search);
         Log::debug('Valid source!');
 
         return true;

@@ -32,19 +32,20 @@ use FireflyIII\Support\Export\ExportDataGenerator;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\Response as LaravelResponse;
 use Illuminate\View\View;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class IndexController
  */
 class IndexController extends Controller
 {
-
     private JournalRepositoryInterface $journalRepository;
 
     /**
      * IndexController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -54,7 +55,7 @@ class IndexController extends Controller
         $this->middleware(
             function ($request, $next) {
                 app('view')->share('mainTitleIcon', 'fa-life-bouy');
-                app('view')->share('title', (string) trans('firefly.export_data_title'));
+                app('view')->share('title', (string)trans('firefly.export_data_title'));
                 $this->journalRepository = app(JournalRepositoryInterface::class);
                 $this->middleware(IsDemoUser::class)->except(['index']);
 
@@ -66,6 +67,8 @@ class IndexController extends Controller
     /**
      * @return LaravelResponse
      * @throws FireflyException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function export(): LaravelResponse
     {
@@ -112,5 +115,4 @@ class IndexController extends Controller
     {
         return view('export.index');
     }
-
 }

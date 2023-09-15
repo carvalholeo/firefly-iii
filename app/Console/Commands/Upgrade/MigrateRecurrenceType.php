@@ -24,17 +24,21 @@ declare(strict_types=1);
 
 namespace FireflyIII\Console\Commands\Upgrade;
 
-use FireflyIII\Exceptions\FireflyException;
+use FireflyIII\Console\Commands\ShowsFriendlyMessages;
 use FireflyIII\Models\Recurrence;
 use FireflyIII\Models\RecurrenceTransaction;
 use FireflyIII\Models\TransactionType;
 use Illuminate\Console\Command;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class MigrateRecurrenceType
  */
 class MigrateRecurrenceType extends Command
 {
+    use ShowsFriendlyMessages;
+
     public const CONFIG_NAME = '550_migrate_recurrence_type';
     /**
      * The console command description.
@@ -53,41 +57,33 @@ class MigrateRecurrenceType extends Command
      * Execute the console command.
      *
      * @return int
-     * @throws FireflyException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function handle(): int
     {
-        $start = microtime(true);
         if ($this->isExecuted() && true !== $this->option('force')) {
-            $this->warn('This command has already been executed.');
+            $this->friendlyInfo('This command has already been executed.');
 
             return 0;
         }
 
         $this->migrateTypes();
-
         $this->markAsExecuted();
 
-        $end = round(microtime(true) - $start, 2);
-        $this->info(sprintf('Update recurring transaction types in %s seconds.', $end));
 
         return 0;
     }
 
     /**
      * @return bool
-     * @throws FireflyException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     private function isExecuted(): bool
     {
         $configVar = app('fireflyconfig')->get(self::CONFIG_NAME, false);
-        if (null !== $configVar) {
-            return (bool) $configVar->data;
-        }
-
-        return false;
+        return (bool)$configVar?->data;
     }
 
     /**
@@ -104,9 +100,14 @@ class MigrateRecurrenceType extends Command
         }
     }
 
+    /**
+     * @param Recurrence $recurrence
+     *
+     * @return void
+     */
     private function migrateRecurrence(Recurrence $recurrence): void
     {
-        $originalType                    = (int) $recurrence->transaction_type_id;
+        $originalType                    = (int)$recurrence->transaction_type_id;
         $newType                         = $this->getInvalidType();
         $recurrence->transaction_type_id = $newType->id;
         $recurrence->save();
@@ -115,7 +116,7 @@ class MigrateRecurrenceType extends Command
             $transaction->transaction_type_id = $originalType;
             $transaction->save();
         }
-        $this->line(sprintf('Updated recurrence #%d to new transaction type model.', $recurrence->id));
+        $this->friendlyInfo(sprintf('Updated recurrence #%d to new transaction type model.', $recurrence->id));
     }
 
     /**

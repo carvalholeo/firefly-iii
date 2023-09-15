@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Range.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -28,7 +29,7 @@ use Closure;
 use FireflyIII\Repositories\Journal\JournalRepositoryInterface;
 use FireflyIII\Support\Http\Controllers\RequestInformation;
 use Illuminate\Http\Request;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class SessionFilter.
@@ -56,7 +57,6 @@ class Range
 
             // set more view variables:
             $this->configureList();
-
         }
 
         return $next($request);
@@ -106,19 +106,19 @@ class Range
         setlocale(LC_TIME, $localeArray);
         $moneyResult = setlocale(LC_MONETARY, $localeArray);
 
-        // send error to view if could not set money format
+        // send error to view, if could not set money format
         if (false === $moneyResult) {
             Log::error('Could not set locale. The following array doesnt work: ', $localeArray);
             app('view')->share('invalidMonetaryLocale', true);
         }
 
         // save some formats:
-        $monthAndDayFormat = (string) trans('config.month_and_day_js', [], $locale);
-        $dateTimeFormat    = (string) trans('config.date_time_js', [], $locale);
+        $monthAndDayFormat = (string)trans('config.month_and_day_js', [], $locale);
+        $dateTimeFormat    = (string)trans('config.date_time_js', [], $locale);
         $defaultCurrency   = app('amount')->getDefaultCurrency();
 
         // also format for moment JS:
-        $madMomentJS = (string) trans('config.month_and_day_moment_js', [], $locale);
+        $madMomentJS = (string)trans('config.month_and_day_moment_js', [], $locale);
 
         app('view')->share('madMomentJS', $madMomentJS);
         app('view')->share('monthAndDayFormat', $monthAndDayFormat);

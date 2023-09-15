@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace FireflyIII\Models;
 
 use Eloquent;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -72,10 +73,10 @@ use Illuminate\Support\Carbon;
  * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransaction whereUpdatedAt($value)
  * @method static Builder|RecurrenceTransaction withTrashed()
  * @method static Builder|RecurrenceTransaction withoutTrashed()
- * @mixin Eloquent
  * @property int|null                                    $transaction_type_id
  * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransaction whereTransactionTypeId($value)
  * @property-read TransactionType|null                   $transactionType
+ * @mixin Eloquent
  */
 class RecurrenceTransaction extends Model
 {
@@ -97,13 +98,20 @@ class RecurrenceTransaction extends Model
         ];
     /** @var array Fields that can be filled */
     protected $fillable
-        = ['recurrence_id', 'transaction_currency_id', 'foreign_currency_id', 'source_id', 'destination_id', 'amount', 'foreign_amount',
-           'description'];
+        = [
+            'recurrence_id',
+            'transaction_currency_id',
+            'foreign_currency_id',
+            'source_id',
+            'destination_id',
+            'amount',
+            'foreign_amount',
+            'description',
+        ];
     /** @var string The table to store the data in */
     protected $table = 'recurrences_transactions';
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function destinationAccount(): BelongsTo
@@ -112,7 +120,6 @@ class RecurrenceTransaction extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function foreignCurrency(): BelongsTo
@@ -122,7 +129,6 @@ class RecurrenceTransaction extends Model
 
     /**
      * @return BelongsTo
-     * @codeCoverageIgnore
      */
     public function recurrence(): BelongsTo
     {
@@ -131,7 +137,6 @@ class RecurrenceTransaction extends Model
 
     /**
      * @return HasMany
-     * @codeCoverageIgnore
      */
     public function recurrenceTransactionMeta(): HasMany
     {
@@ -139,7 +144,6 @@ class RecurrenceTransaction extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function sourceAccount(): BelongsTo
@@ -148,7 +152,6 @@ class RecurrenceTransaction extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function transactionCurrency(): BelongsTo
@@ -157,11 +160,30 @@ class RecurrenceTransaction extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function transactionType(): BelongsTo
     {
         return $this->belongsTo(TransactionType::class);
+    }
+
+    /**
+     * @return Attribute
+     */
+    protected function amount(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => (string)$value,
+        );
+    }
+
+    /**
+     * @return Attribute
+     */
+    protected function foreignAmount(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => (string)$value,
+        );
     }
 }

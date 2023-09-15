@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BudgetIncomeRequest.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -28,7 +29,7 @@ use Illuminate\Foundation\Http\FormRequest;
 /**
  * Class BudgetIncomeRequest.
  *
- * @codeCoverageIgnore
+
  */
 class BudgetIncomeRequest extends FormRequest
 {

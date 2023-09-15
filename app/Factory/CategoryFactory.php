@@ -1,4 +1,5 @@
 <?php
+
 /**
  * CategoryFactory.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -18,7 +19,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-/** @noinspection MultipleReturnStatementsInspection */
 declare(strict_types=1);
 
 namespace FireflyIII\Factory;
@@ -27,7 +27,7 @@ use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Category;
 use FireflyIII\User;
 use Illuminate\Database\QueryException;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class CategoryFactory
@@ -45,8 +45,8 @@ class CategoryFactory
      */
     public function findOrCreate(?int $categoryId, ?string $categoryName): ?Category
     {
-        $categoryId   = (int) $categoryId;
-        $categoryName = (string) $categoryName;
+        $categoryId   = (int)$categoryId;
+        $categoryName = (string)$categoryName;
 
         Log::debug(sprintf('Going to find category with ID %d and name "%s"', $categoryId, $categoryName));
 
@@ -70,12 +70,14 @@ class CategoryFactory
             try {
                 return Category::create(
                     [
-                        'user_id' => $this->user->id,
-                        'name'    => $categoryName,
+                        'user_id'       => $this->user->id,
+                        'user_group_id' => $this->user->user_group_id,
+                        'name'          => $categoryName,
                     ]
                 );
             } catch (QueryException $e) {
                 Log::error($e->getMessage());
+                Log::error($e->getTraceAsString());
                 throw new FireflyException('400003: Could not store new category.', 0, $e);
             }
         }
@@ -100,5 +102,4 @@ class CategoryFactory
     {
         $this->user = $user;
     }
-
 }

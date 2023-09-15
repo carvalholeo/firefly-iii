@@ -1,4 +1,5 @@
 <?php
+
 /**
  * EventServiceProvider.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -22,11 +23,18 @@ declare(strict_types=1);
 
 namespace FireflyIII\Providers;
 
-use Exception;
 use FireflyIII\Events\ActuallyLoggedIn;
+use FireflyIII\Events\Admin\InvitationCreated;
 use FireflyIII\Events\AdminRequestedTestMessage;
+use FireflyIII\Events\ChangedPiggyBankAmount;
 use FireflyIII\Events\DestroyedTransactionGroup;
 use FireflyIII\Events\DetectedNewIPAddress;
+use FireflyIII\Events\Model\BudgetLimit\Created;
+use FireflyIII\Events\Model\BudgetLimit\Deleted;
+use FireflyIII\Events\Model\BudgetLimit\Updated;
+use FireflyIII\Events\Model\Rule\RuleActionFailedOnArray;
+use FireflyIII\Events\Model\Rule\RuleActionFailedOnObject;
+use FireflyIII\Events\NewVersionAvailable;
 use FireflyIII\Events\RegisteredUser;
 use FireflyIII\Events\RequestedNewPassword;
 use FireflyIII\Events\RequestedReportOnJournals;
@@ -34,26 +42,21 @@ use FireflyIII\Events\RequestedSendWebhookMessages;
 use FireflyIII\Events\RequestedVersionCheckStatus;
 use FireflyIII\Events\StoredAccount;
 use FireflyIII\Events\StoredTransactionGroup;
+use FireflyIII\Events\TriggeredAuditLog;
 use FireflyIII\Events\UpdatedAccount;
 use FireflyIII\Events\UpdatedTransactionGroup;
 use FireflyIII\Events\UserChangedEmail;
 use FireflyIII\Events\WarnUserAboutBill;
-use FireflyIII\Mail\OAuthTokenCreatedMail;
 use FireflyIII\Models\PiggyBank;
 use FireflyIII\Models\PiggyBankRepetition;
-use FireflyIII\Repositories\User\UserRepositoryInterface;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
-use Laravel\Passport\Client;
 use Laravel\Passport\Events\AccessTokenCreated;
-use Log;
-use Mail;
-use Session;
 
 /**
  * Class EventServiceProvider.
  *
- * @codeCoverageIgnore
+
  */
 class EventServiceProvider extends ServiceProvider
 {
@@ -67,8 +70,10 @@ class EventServiceProvider extends ServiceProvider
             // is a User related event.
             RegisteredUser::class               => [
                 'FireflyIII\Handlers\Events\UserEventHandler@sendRegistrationMail',
+                'FireflyIII\Handlers\Events\UserEventHandler@sendAdminRegistrationNotification',
                 'FireflyIII\Handlers\Events\UserEventHandler@attachUserRole',
                 'FireflyIII\Handlers\Events\UserEventHandler@createGroupMembership',
+                'FireflyIII\Handlers\Events\UserEventHandler@createExchangeRates',
             ],
             // is a User related event.
             Login::class                        => [
@@ -101,6 +106,14 @@ class EventServiceProvider extends ServiceProvider
             AdminRequestedTestMessage::class    => [
                 'FireflyIII\Handlers\Events\AdminEventHandler@sendTestMessage',
             ],
+            NewVersionAvailable::class          => [
+                'FireflyIII\Handlers\Events\AdminEventHandler@sendNewVersion',
+            ],
+            InvitationCreated::class            => [
+                'FireflyIII\Handlers\Events\AdminEventHandler@sendInvitationNotification',
+                'FireflyIII\Handlers\Events\UserEventHandler@sendRegistrationInvite',
+            ],
+
             // is a Transaction Journal related event.
             StoredTransactionGroup::class       => [
                 'FireflyIII\Handlers\Events\StoredGroupEventHandler@processRules',
@@ -139,6 +152,34 @@ class EventServiceProvider extends ServiceProvider
             WarnUserAboutBill::class            => [
                 'FireflyIII\Handlers\Events\BillEventHandler@warnAboutBill',
             ],
+
+            // audit log events:
+            TriggeredAuditLog::class            => [
+                'FireflyIII\Handlers\Events\AuditEventHandler@storeAuditEvent',
+            ],
+            // piggy bank related events:
+            ChangedPiggyBankAmount::class       => [
+                'FireflyIII\Handlers\Events\PiggyBankEventHandler@changePiggyAmount',
+            ],
+            // budget related events: CRUD budget limit
+            Created::class                      => [
+                'FireflyIII\Handlers\Events\Model\BudgetLimitHandler@created',
+            ],
+            Updated::class                      => [
+                'FireflyIII\Handlers\Events\Model\BudgetLimitHandler@updated',
+            ],
+            Deleted::class                      => [
+                'FireflyIII\Handlers\Events\Model\BudgetLimitHandler@deleted',
+            ],
+
+            // rule actions
+            RuleActionFailedOnArray::class      => [
+                'FireflyIII\Handlers\Events\Model\RuleHandler@ruleActionFailedOnArray',
+            ],
+            RuleActionFailedOnObject::class     => [
+                'FireflyIII\Handlers\Events\Model\RuleHandler@ruleActionFailedOnObject',
+            ],
+
         ];
 
     /**
@@ -151,14 +192,13 @@ class EventServiceProvider extends ServiceProvider
     }
 
     /**
-     *
+     * TODO needs a dedicated (static) method.
      */
     protected function registerCreateEvents(): void
     {
-        // in case of repeated piggy banks and/or other problems.
         PiggyBank::created(
             static function (PiggyBank $piggyBank) {
-                $repetition = new PiggyBankRepetition;
+                $repetition = new PiggyBankRepetition();
                 $repetition->piggyBank()->associate($piggyBank);
                 $repetition->startdate     = $piggyBank->startdate;
                 $repetition->targetdate    = $piggyBank->targetdate;
@@ -166,38 +206,5 @@ class EventServiceProvider extends ServiceProvider
                 $repetition->save();
             }
         );
-        Client::created(
-            static function (Client $oauthClient) {
-                /** @var UserRepositoryInterface $repository */
-                $repository = app(UserRepositoryInterface::class);
-                $user       = $repository->find((int) $oauthClient->user_id);
-                if (null === $user) {
-                    Log::info('OAuth client generated but no user associated.');
-
-                    return;
-                }
-
-                $email = $user->email;
-
-                // see if user has alternative email address:
-                $pref = app('preferences')->getForUser($user, 'remote_guard_alt_email');
-                if (null !== $pref) {
-                    $email = $pref->data;
-                }
-
-                Log::debug(sprintf('Now in EventServiceProvider::registerCreateEvents. Email is %s', $email));
-                try {
-                    Log::debug('Trying to send message...');
-                    Mail::to($email)->send(new OAuthTokenCreatedMail($oauthClient));
-                } catch (Exception $e) { // @phpstan-ignore-line
-                    Log::debug('Send message failed! :(');
-                    Log::error($e->getMessage());
-                    Log::error($e->getTraceAsString());
-                    Session::flash('error', 'Possible email error: ' . $e->getMessage());
-                }
-                Log::debug('If no error above this line, message was sent.');
-            }
-        );
     }
-
 }

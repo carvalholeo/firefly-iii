@@ -28,17 +28,18 @@ use FireflyIII\Rules\IsBoolean;
 use FireflyIII\Support\Request\ChecksLogin;
 use FireflyIII\Support\Request\ConvertsDataTypes;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Validator;
-use Log;
 
 /**
  * Class StoreRequest
  *
- * @codeCoverageIgnore
+
  */
 class StoreRequest extends FormRequest
 {
-    use ConvertsDataTypes, ChecksLogin;
+    use ConvertsDataTypes;
+    use ChecksLogin;
 
     /**
      * Get all data from the request.
@@ -52,17 +53,17 @@ class StoreRequest extends FormRequest
             'name'               => ['name', 'convertString'],
             'amount_min'         => ['amount_min', 'convertString'],
             'amount_max'         => ['amount_max', 'convertString'],
-            'currency_id'        => ['currency_id', 'integer'],
+            'currency_id'        => ['currency_id', 'convertInteger'],
             'currency_code'      => ['currency_code', 'convertString'],
             'date'               => ['date', 'date'],
             'end_date'           => ['end_date', 'date'],
             'extension_date'     => ['extension_date', 'date'],
             'repeat_freq'        => ['repeat_freq', 'convertString'],
-            'skip'               => ['skip', 'integer'],
+            'skip'               => ['skip', 'convertInteger'],
             'active'             => ['active', 'boolean'],
-            'order'              => ['order', 'integer'],
+            'order'              => ['order', 'convertInteger'],
             'notes'              => ['notes', 'stringWithNewlines'],
-            'object_group_id'    => ['object_group_id', 'integer'],
+            'object_group_id'    => ['object_group_id', 'convertInteger'],
             'object_group_title' => ['object_group_title', 'convertString'],
         ];
 
@@ -81,13 +82,13 @@ class StoreRequest extends FormRequest
             'amount_min'     => 'numeric|gt:0|required',
             'amount_max'     => 'numeric|gt:0|required',
             'currency_id'    => 'numeric|exists:transaction_currencies,id',
-            'currency_code'  => 'min:3|max:3|exists:transaction_currencies,code',
+            'currency_code'  => 'min:3|max:51|exists:transaction_currencies,code',
             'date'           => 'date|required',
             'end_date'       => 'date|after:date',
             'extension_date' => 'date|after:date',
             'repeat_freq'    => 'in:weekly,monthly,quarterly,half-year,yearly|required',
             'skip'           => 'between:0,31',
-            'active'         => [new IsBoolean],
+            'active'         => [new IsBoolean()],
             'notes'          => 'between:1,65536',
         ];
     }
@@ -104,10 +105,11 @@ class StoreRequest extends FormRequest
         $validator->after(
             static function (Validator $validator) {
                 $data = $validator->getData();
-                $min  = (float) ($data['amount_min'] ?? 0);
-                $max  = (float) ($data['amount_max'] ?? 0);
-                if ($min > $max) {
-                    $validator->errors()->add('amount_min', (string) trans('validation.amount_min_over_max'));
+                $min  = (string)($data['amount_min'] ?? '0');
+                $max  = (string)($data['amount_max'] ?? '0');
+
+                if (1 === bccomp($min, $max)) {
+                    $validator->errors()->add('amount_min', (string)trans('validation.amount_min_over_max'));
                 }
             }
         );

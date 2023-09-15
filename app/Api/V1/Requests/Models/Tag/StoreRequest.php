@@ -32,11 +32,13 @@ use Illuminate\Foundation\Http\FormRequest;
 /**
  * Class StoreRequest
  *
- * @codeCoverageIgnore
+
  */
 class StoreRequest extends FormRequest
 {
-    use ConvertsDataTypes, ChecksLogin, AppendsLocationData;
+    use ConvertsDataTypes;
+    use ChecksLogin;
+    use AppendsLocationData;
 
     /**
      * Get all data from the request.
@@ -63,8 +65,8 @@ class StoreRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'tag'         => 'required|min:1|uniqueObjectForUser:tags,tag',
-            'description' => 'min:1|nullable',
+            'tag'         => 'required|min:1|uniqueObjectForUser:tags,tag|max:1024',
+            'description' => 'min:1|nullable|max:65536',
             'date'        => 'date|nullable',
         ];
 

@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Console\Commands\Upgrade;
 
-use FireflyIII\Exceptions\FireflyException;
+use FireflyIII\Console\Commands\ShowsFriendlyMessages;
 use FireflyIII\Models\Account;
 use FireflyIII\Models\AccountType;
 use FireflyIII\Models\Transaction;
@@ -35,51 +35,39 @@ use FireflyIII\Repositories\Currency\CurrencyRepositoryInterface;
 use FireflyIII\Repositories\Journal\JournalCLIRepositoryInterface;
 use FireflyIII\Repositories\Journal\JournalRepositoryInterface;
 use Illuminate\Console\Command;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class OtherCurrenciesCorrections
  */
 class OtherCurrenciesCorrections extends Command
 {
+    use ShowsFriendlyMessages;
+
     public const CONFIG_NAME = '480_other_currencies';
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
     protected $description = 'Update all journal currency information.';
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'firefly-iii:other-currencies {--F|force : Force the execution of this command.}';
-    /** @var array */
-    private $accountCurrencies;
-    /** @var AccountRepositoryInterface */
-    private $accountRepos;
-    /** @var JournalCLIRepositoryInterface */
-    private $cliRepos;
-    /** @var int */
-    private $count;
-    /** @var CurrencyRepositoryInterface */
-    private $currencyRepos;
-    /** @var JournalRepositoryInterface */
-    private $journalRepos;
+    protected $signature   = 'firefly-iii:other-currencies {--F|force : Force the execution of this command.}';
+    private array                         $accountCurrencies;
+    private AccountRepositoryInterface    $accountRepos;
+    private JournalCLIRepositoryInterface $cliRepos;
+    private int                           $count;
+    private CurrencyRepositoryInterface   $currencyRepos;
+    private JournalRepositoryInterface    $journalRepos;
 
     /**
      * Execute the console command.
      *
      * @return int
-     * @throws FireflyException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function handle(): int
     {
         $this->stupidLaravel();
-        $start = microtime(true);
 
         if ($this->isExecuted() && true !== $this->option('force')) {
-            $this->warn('This command has already been executed.');
+            $this->friendlyInfo('This command has already been executed.');
 
             return 0;
         }
@@ -88,9 +76,7 @@ class OtherCurrenciesCorrections extends Command
         $this->updateOtherJournalsCurrencies();
         $this->markAsExecuted();
 
-        $this->line(sprintf('Verified %d transaction(s) and journal(s).', $this->count));
-        $end = round(microtime(true) - $start, 2);
-        $this->info(sprintf('Verified and fixed transaction currencies in %s seconds.', $end));
+        $this->friendlyPositive('Verified and fixed transaction currencies.');
 
         return 0;
     }
@@ -100,7 +86,7 @@ class OtherCurrenciesCorrections extends Command
      * executed. This leads to noticeable slow-downs and class calls. To prevent this, this method should
      * be called from the handle method instead of using the constructor to initialize the command.
      *
-     * @codeCoverageIgnore
+
      */
     private function stupidLaravel(): void
     {
@@ -114,15 +100,14 @@ class OtherCurrenciesCorrections extends Command
 
     /**
      * @return bool
-     * @throws FireflyException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     private function isExecuted(): bool
     {
         $configVar = app('fireflyconfig')->get(self::CONFIG_NAME, false);
         if (null !== $configVar) {
-            return (bool) $configVar->data;
+            return (bool)$configVar->data;
         }
 
         return false;
@@ -159,26 +144,25 @@ class OtherCurrenciesCorrections extends Command
         $leadTransaction = $this->getLeadTransaction($journal);
 
         if (null === $leadTransaction) {
-
-            $this->error(sprintf('Could not reliably determine which transaction is in the lead for transaction journal #%d.', $journal->id));
+            $this->friendlyError(sprintf('Could not reliably determine which transaction is in the lead for transaction journal #%d.', $journal->id));
 
             return;
-
         }
 
         $account  = $leadTransaction->account;
         $currency = $this->getCurrency($account);
         if (null === $currency) {
-
-            $this->error(
+            $this->friendlyError(
                 sprintf(
-                    'Account #%d ("%s") has no currency preference, so transaction journal #%d can\'t be corrected', $account->id, $account->name, $journal->id
+                    'Account #%d ("%s") has no currency preference, so transaction journal #%d can\'t be corrected',
+                    $account->id,
+                    $account->name,
+                    $journal->id
                 )
             );
             $this->count++;
 
             return;
-
         }
         // fix each transaction:
         $journal->transactions->each(
@@ -189,8 +173,8 @@ class OtherCurrenciesCorrections extends Command
                 }
 
                 // when mismatch in transaction:
-                if ((int) $transaction->transaction_currency_id !== (int) $currency->id) {
-                    $transaction->foreign_currency_id     = (int) $transaction->transaction_currency_id;
+                if ((int)$transaction->transaction_currency_id !== (int)$currency->id) {
+                    $transaction->foreign_currency_id     = (int)$transaction->transaction_currency_id;
                     $transaction->foreign_amount          = $transaction->amount;
                     $transaction->transaction_currency_id = $currency->id;
                     $transaction->save();
@@ -227,13 +211,19 @@ class OtherCurrenciesCorrections extends Command
             case TransactionType::OPENING_BALANCE:
                 // whichever isn't an initial balance account:
                 $lead = $journal->transactions()->leftJoin('accounts', 'transactions.account_id', '=', 'accounts.id')->leftJoin(
-                    'account_types', 'accounts.account_type_id', '=', 'account_types.id'
+                    'account_types',
+                    'accounts.account_type_id',
+                    '=',
+                    'account_types.id'
                 )->where('account_types.type', '!=', AccountType::INITIAL_BALANCE)->first(['transactions.*']);
                 break;
             case TransactionType::RECONCILIATION:
                 // whichever isn't the reconciliation account:
                 $lead = $journal->transactions()->leftJoin('accounts', 'transactions.account_id', '=', 'accounts.id')->leftJoin(
-                    'account_types', 'accounts.account_type_id', '=', 'account_types.id'
+                    'account_types',
+                    'accounts.account_type_id',
+                    '=',
+                    'account_types.id'
                 )->where('account_types.type', '!=', AccountType::RECONCILIATION)->first(['transactions.*']);
                 break;
         }
@@ -257,11 +247,9 @@ class OtherCurrenciesCorrections extends Command
         }
         $currency = $this->accountRepos->getAccountCurrency($account);
         if (null === $currency) {
-
             $this->accountCurrencies[$accountId] = 0;
 
             return null;
-
         }
         $this->accountCurrencies[$accountId] = $currency;
 

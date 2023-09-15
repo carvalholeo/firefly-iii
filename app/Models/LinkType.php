@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LinkType.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -93,17 +94,16 @@ class LinkType extends Model
     public static function routeBinder(string $value): LinkType
     {
         if (auth()->check()) {
-            $linkTypeId = (int) $value;
+            $linkTypeId = (int)$value;
             $linkType   = self::find($linkTypeId);
             if (null !== $linkType) {
                 return $linkType;
             }
         }
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
     }
 
     /**
-     * @codeCoverageIgnore
      * @return HasMany
      */
     public function transactionJournalLinks(): HasMany

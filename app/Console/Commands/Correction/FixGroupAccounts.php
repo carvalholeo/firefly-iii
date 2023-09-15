@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace FireflyIII\Console\Commands\Correction;
 
 use DB;
+use FireflyIII\Console\Commands\ShowsFriendlyMessages;
 use FireflyIII\Events\UpdatedTransactionGroup;
 use FireflyIII\Handlers\Events\UpdatedGroupEventHandler;
 use FireflyIII\Models\TransactionGroup;
@@ -36,18 +37,10 @@ use Illuminate\Console\Command;
  */
 class FixGroupAccounts extends Command
 {
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
+    use ShowsFriendlyMessages;
+
     protected $description = 'Unify the source / destination accounts of split groups.';
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'firefly-iii:unify-group-accounts';
+    protected $signature   = 'firefly-iii:unify-group-accounts';
 
     /**
      * Execute the console command.
@@ -57,23 +50,22 @@ class FixGroupAccounts extends Command
     public function handle(): int
     {
         $groups = [];
-        $res    = TransactionJournal
-            ::groupBy('transaction_group_id')
-            ->get(['transaction_group_id', DB::raw('COUNT(transaction_group_id) as the_count')]);
+        $res    = TransactionJournal::groupBy('transaction_group_id')
+                                    ->get(['transaction_group_id', DB::raw('COUNT(transaction_group_id) as the_count')]);
         /** @var TransactionJournal $journal */
         foreach ($res as $journal) {
-            if ((int) $journal->the_count > 1) {
-                $groups[] = (int) $journal->transaction_group_id;
+            if ((int)$journal->the_count > 1) {
+                $groups[] = (int)$journal->transaction_group_id;
             }
         }
-        $handler = new UpdatedGroupEventHandler;
+        $handler = new UpdatedGroupEventHandler();
         foreach ($groups as $groupId) {
             $group = TransactionGroup::find($groupId);
-            $event = new UpdatedTransactionGroup($group);
+            $event = new UpdatedTransactionGroup($group, true, true);
             $handler->unifyAccounts($event);
         }
 
-        $this->line('Updated inconsistent transaction groups.');
+        $this->friendlyPositive('Updated possible inconsistent transaction groups.');
 
         return 0;
     }

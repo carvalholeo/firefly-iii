@@ -1,4 +1,5 @@
 <?php
+
 /**
  * FireflyConfig.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -27,15 +28,15 @@ use Exception;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Configuration;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class FireflyConfig.
  *
- * @codeCoverageIgnore
+
  */
 class FireflyConfig
 {
-
     /**
      * @param string $name
      */
@@ -45,11 +46,17 @@ class FireflyConfig
         if (Cache::has($fullName)) {
             Cache::forget($fullName);
         }
-        try {
-            Configuration::where('name', $name)->forceDelete();
-        } catch (Exception $e) { // @phpstan-ignore-line
-            // @ignoreException
-        }
+        Configuration::where('name', $name)->forceDelete();
+    }
+
+    /**
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function has(string $name): bool
+    {
+        return Configuration::where('name', $name)->count() === 1;
     }
 
     /**
@@ -69,8 +76,8 @@ class FireflyConfig
         try {
             /** @var Configuration|null $config */
             $config = Configuration::where('name', $name)->first(['id', 'name', 'data']);
-        } catch (QueryException|Exception $e) { // @phpstan-ignore-line
-            throw new FireflyException(sprintf('Could not poll the database: %s', $e->getMessage()));
+        } catch (QueryException | Exception $e) {
+            throw new FireflyException(sprintf('Could not poll the database: %s', $e->getMessage()), 0, $e);
         }
 
         if (null !== $config) {
@@ -96,8 +103,9 @@ class FireflyConfig
     {
         try {
             $config = Configuration::whereName($name)->whereNull('deleted_at')->first();
-        } catch (QueryException|Exception $e) { // @phpstan-ignore-line
-            $item       = new Configuration;
+        } catch (QueryException $e) {
+            Log::error($e->getMessage());
+            $item       = new Configuration();
             $item->name = $name;
             $item->data = $value;
 
@@ -105,7 +113,7 @@ class FireflyConfig
         }
 
         if (null === $config) {
-            $item       = new Configuration;
+            $item       = new Configuration();
             $item->name = $name;
             $item->data = $value;
             $item->save();
@@ -128,10 +136,8 @@ class FireflyConfig
      */
     public function getFresh(string $name, $default = null): ?Configuration
     {
-
         $config = Configuration::where('name', $name)->first(['id', 'name', 'data']);
         if ($config) {
-
             return $config;
         }
         // no preference found and default is null:
@@ -140,16 +146,6 @@ class FireflyConfig
         }
 
         return $this->set($name, $default);
-    }
-
-    /**
-     * @param string $name
-     *
-     * @return bool
-     */
-    public function has(string $name): bool
-    {
-        return Configuration::where('name', $name)->count() === 1;
     }
 
     /**

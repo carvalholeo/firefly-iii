@@ -62,15 +62,12 @@ use Illuminate\Support\Carbon;
  */
 class RecurrenceRepetition extends Model
 {
-    /** @var int */
-    public const WEEKEND_DO_NOTHING = 1;
-    /** @var int */
-    public const WEEKEND_SKIP_CREATION = 2;
-    /** @var int */
-    public const WEEKEND_TO_FRIDAY = 3;
-    /** @var int */
-    public const WEEKEND_TO_MONDAY = 4;
     use SoftDeletes;
+
+    public const WEEKEND_DO_NOTHING    = 1;
+    public const WEEKEND_SKIP_CREATION = 2;
+    public const WEEKEND_TO_FRIDAY     = 3;
+    public const WEEKEND_TO_MONDAY     = 4;
 
     /**
      * The attributes that should be casted to native types.
@@ -94,7 +91,6 @@ class RecurrenceRepetition extends Model
 
     /**
      * @return BelongsTo
-     * @codeCoverageIgnore
      */
     public function recurrence(): BelongsTo
     {

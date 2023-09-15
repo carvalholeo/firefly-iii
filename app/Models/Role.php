@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Role.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -69,7 +70,6 @@ class Role extends Model
     protected $fillable = ['name', 'display_name', 'description'];
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsToMany
      */
     public function users(): BelongsToMany

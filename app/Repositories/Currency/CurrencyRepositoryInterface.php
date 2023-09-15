@@ -1,4 +1,5 @@
 <?php
+
 /**
  * CurrencyRepositoryInterface.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -28,6 +29,7 @@ use FireflyIII\Models\CurrencyExchangeRate;
 use FireflyIII\Models\Preference;
 use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
 
 /**
@@ -218,9 +220,21 @@ interface CurrencyRepositoryInterface
     public function searchCurrency(string $search, int $limit): Collection;
 
     /**
-     * @param User $user
+     * TODO must be a factory
+     *
+     * @param TransactionCurrency $fromCurrency
+     * @param TransactionCurrency $toCurrency
+     * @param Carbon              $date
+     * @param float               $rate
+     *
+     * @return CurrencyExchangeRate
      */
-    public function setUser(User $user);
+    public function setExchangeRate(TransactionCurrency $fromCurrency, TransactionCurrency $toCurrency, Carbon $date, float $rate): CurrencyExchangeRate;
+
+    /**
+     * @param User|Authenticatable|null $user
+     */
+    public function setUser(User | Authenticatable | null $user): void;
 
     /**
      * @param array $data

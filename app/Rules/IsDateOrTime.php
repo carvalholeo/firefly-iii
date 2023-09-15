@@ -28,23 +28,21 @@ use Carbon\Carbon;
 use Carbon\Exceptions\InvalidDateException;
 use Carbon\Exceptions\InvalidFormatException;
 use Illuminate\Contracts\Validation\Rule;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class IsDateOrTime
  */
 class IsDateOrTime implements Rule
 {
-
     /**
      * Get the validation error message.
      *
      * @return string
-     * @codeCoverageIgnore
      */
     public function message()
     {
-        return (string) trans('validation.date_or_time');
+        return (string)trans('validation.date_or_time');
     }
 
     /**
@@ -57,7 +55,7 @@ class IsDateOrTime implements Rule
      */
     public function passes($attribute, $value): bool
     {
-        $value = (string) $value;
+        $value = (string)$value;
         if ('' === $value) {
             return false;
         }

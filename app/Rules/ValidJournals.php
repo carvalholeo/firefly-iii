@@ -26,12 +26,12 @@ namespace FireflyIII\Rules;
 
 use FireflyIII\Models\TransactionJournal;
 use Illuminate\Contracts\Validation\Rule;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class ValidJournals
  *
- * @codeCoverageIgnore
+
  */
 class ValidJournals implements Rule
 {
@@ -42,7 +42,7 @@ class ValidJournals implements Rule
      */
     public function message(): string
     {
-        return (string) trans('validation.invalid_selection');
+        return (string)trans('validation.invalid_selection');
     }
 
     /**

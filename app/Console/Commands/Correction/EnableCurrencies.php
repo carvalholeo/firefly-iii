@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Console\Commands\Correction;
 
+use FireflyIII\Console\Commands\ShowsFriendlyMessages;
 use FireflyIII\Models\AccountMeta;
 use FireflyIII\Models\BudgetLimit;
 use FireflyIII\Models\Transaction;
@@ -30,25 +31,16 @@ use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\Models\TransactionJournal;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
-use Log;
 
 /**
  * Class EnableCurrencies
  */
 class EnableCurrencies extends Command
 {
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
+    use ShowsFriendlyMessages;
+
     protected $description = 'Enables all currencies in use.';
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'firefly-iii:enable-currencies';
+    protected $signature   = 'firefly-iii:enable-currencies';
 
     /**
      * Execute the console command.
@@ -57,57 +49,50 @@ class EnableCurrencies extends Command
      */
     public function handle(): int
     {
-        $start = microtime(true);
         $found = [];
         // get all meta entries
         /** @var Collection $meta */
         $meta = AccountMeta::where('name', 'currency_id')->groupBy('data')->get(['data']);
         foreach ($meta as $entry) {
-            $found[] = (int) $entry->data;
+            $found[] = (int)$entry->data;
         }
 
         // get all from journals:
         $journals = TransactionJournal::groupBy('transaction_currency_id')->get(['transaction_currency_id']);
         foreach ($journals as $entry) {
-            $found[] = (int) $entry->transaction_currency_id;
+            $found[] = (int)$entry->transaction_currency_id;
         }
 
         // get all from transactions
         $transactions = Transaction::groupBy('transaction_currency_id', 'foreign_currency_id')->get(['transaction_currency_id', 'foreign_currency_id']);
         foreach ($transactions as $entry) {
-            $found[] = (int) $entry->transaction_currency_id;
-            $found[] = (int) $entry->foreign_currency_id;
+            $found[] = (int)$entry->transaction_currency_id;
+            $found[] = (int)$entry->foreign_currency_id;
         }
 
         // get all from budget limits
         $limits = BudgetLimit::groupBy('transaction_currency_id')->get(['transaction_currency_id']);
         foreach ($limits as $entry) {
-            $found[] = (int) $entry->transaction_currency_id;
+            $found[] = (int)$entry->transaction_currency_id;
         }
 
-        $found   = array_values(array_unique($found));
-        $found   = array_values(
+        $found    = array_values(array_unique($found));
+        $found    = array_values(
             array_filter(
-                $found, function (int $currencyId) {
-                return $currencyId !== 0;
-            }
+                $found,
+                function (int $currencyId) {
+                    return $currencyId !== 0;
+                }
             )
         );
-        $message = sprintf('%d different currencies are currently in use.', count($found));
-        $this->info($message);
-        Log::debug($message, $found);
-
         $disabled = TransactionCurrency::whereIn('id', $found)->where('enabled', false)->count();
         if ($disabled > 0) {
-            $this->info(sprintf('%d were (was) still disabled. This has been corrected.', $disabled));
+            $this->friendlyInfo(sprintf('%d currencies were (was) disabled while in use by transactions. This has been corrected.', $disabled));
         }
         if (0 === $disabled) {
-            $this->info('All currencies are correctly enabled or disabled.');
+            $this->friendlyPositive('All currencies are correctly enabled or disabled.');
         }
         TransactionCurrency::whereIn('id', $found)->update(['enabled' => true]);
-
-        $end = round(microtime(true) - $start, 2);
-        $this->info(sprintf('Verified currencies in %s seconds.', $end));
 
         return 0;
     }

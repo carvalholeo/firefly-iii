@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ActionFactory.php
  * Copyright (c) 2019 Robert Horlings
@@ -26,17 +27,17 @@ use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\RuleAction;
 use FireflyIII\Support\Domain;
 use FireflyIII\TransactionRules\Actions\ActionInterface;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class ActionFactory can create actions.
  *
- * @codeCoverageIgnore
+
  */
 class ActionFactory
 {
     /** @var array array of action types */
-    protected static $actionTypes = [];
+    protected static array $actionTypes = [];
 
     /**
      * This method returns the actual implementation (TransactionRules/Actions/[object]) for a given
@@ -92,7 +93,7 @@ class ActionFactory
      */
     protected static function getActionTypes(): array
     {
-        if (empty(self::$actionTypes)) {
+        if (0 === count(self::$actionTypes)) {
             self::$actionTypes = Domain::getRuleActions();
         }
 

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AuthServiceProvider.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -29,7 +30,6 @@ use Illuminate\Support\Facades\Auth;
 use Laravel\Passport\Passport;
 
 /**
- * @codeCoverageIgnore
  * Class AuthServiceProvider
  */
 class AuthServiceProvider extends ServiceProvider
@@ -52,19 +52,19 @@ class AuthServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Auth::provider(
-            'remote_user_provider', function ($app, array $config) {
-            return new RemoteUserProvider;
-        }
+            'remote_user_provider',
+            function ($app, array $config) {
+                return new RemoteUserProvider();
+            }
         );
 
         Auth::extend(
-            'remote_user_guard', static function ($app, string $name, array $config) {
-            return new RemoteUserGuard(Auth::createUserProvider($config['provider']), $app);
-        }
+            'remote_user_guard',
+            static function ($app, string $name, array $config) {
+                return new RemoteUserGuard(Auth::createUserProvider($config['provider']), $app);
+            }
         );
 
-        $this->registerPolicies();
-        Passport::routes();
         Passport::tokensExpireIn(now()->addDays(14));
     }
 }

@@ -26,14 +26,14 @@ namespace FireflyIII\Console\Commands;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Repositories\User\UserRepositoryInterface;
 use FireflyIII\User;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Trait VerifiesAccessToken.
  *
  * Verifies user access token for sensitive commands.
  *
- * @codeCoverageIgnore
+
  */
 trait VerifiesAccessToken
 {
@@ -43,12 +43,12 @@ trait VerifiesAccessToken
      */
     public function getUser(): User
     {
-        $userId = (int) $this->option('user');
+        $userId = (int)$this->option('user');
         /** @var UserRepositoryInterface $repository */
         $repository = app(UserRepositoryInterface::class);
         $user       = $repository->find($userId);
         if (null === $user) {
-            throw new FireflyException('User is unexpectedly NULL');
+            throw new FireflyException('300000: User is unexpectedly NULL');
         }
 
         return $user;
@@ -71,8 +71,8 @@ trait VerifiesAccessToken
      */
     protected function verifyAccessToken(): bool
     {
-        $userId = (int) $this->option('user');
-        $token  = (string) $this->option('token');
+        $userId = (int)$this->option('user');
+        $token  = (string)$this->option('token');
         /** @var UserRepositoryInterface $repository */
         $repository = app(UserRepositoryInterface::class);
         $user       = $repository->find($userId);

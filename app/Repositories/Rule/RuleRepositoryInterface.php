@@ -1,4 +1,5 @@
 <?php
+
 /**
  * RuleRepositoryInterface.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -27,6 +28,7 @@ use FireflyIII\Models\RuleAction;
 use FireflyIII\Models\RuleGroup;
 use FireflyIII\Models\RuleTrigger;
 use FireflyIII\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
 
 /**
@@ -161,9 +163,9 @@ interface RuleRepositoryInterface
     public function setOrder(Rule $rule, int $newOrder): void;
 
     /**
-     * @param User $user
+     * @param User|Authenticatable|null $user
      */
-    public function setUser(User $user);
+    public function setUser(User | Authenticatable | null $user): void;
 
     /**
      * @param array $data

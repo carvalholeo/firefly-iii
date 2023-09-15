@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AccountMeta.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -27,7 +28,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
-use JsonException;
 
 /**
  * Class AccountMeta
@@ -69,7 +69,6 @@ class AccountMeta extends Model
 
     /**
      * @return BelongsTo
-     * @codeCoverageIgnore
      */
     public function account(): BelongsTo
     {
@@ -80,18 +79,16 @@ class AccountMeta extends Model
      * @param mixed $value
      *
      * @return mixed
-     * @throws JsonException
-     * @codeCoverageIgnore
      */
-    public function getDataAttribute($value)
+    public function getDataAttribute($value): string
     {
-        return json_decode($value, true, 512, JSON_THROW_ON_ERROR);
+        return (string)json_decode($value, true);
     }
 
     /**
      * @param mixed $value
      *
-     * @codeCoverageIgnore
+
      */
     public function setDataAttribute($value): void
     {

@@ -32,11 +32,12 @@ use Illuminate\Queue\SerializesModels;
  *
  * Class RegisteredUser
  *
- * @codeCoverageIgnore
+
  */
 class RegisteredUser extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable;
+    use SerializesModels;
 
     public string $address;
 
@@ -59,6 +60,6 @@ class RegisteredUser extends Mailable
     {
         return $this
             ->markdown('emails.registered')
-            ->subject((string) trans('email.registered_subject'));
+            ->subject((string)trans('email.registered_subject'));
     }
 }

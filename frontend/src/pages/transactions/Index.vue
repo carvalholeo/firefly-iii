@@ -18,40 +18,142 @@
   - along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
+<!--
+TODO remember state of boxes
+
+-->
+
 <template>
   <q-page>
+    <div class="row q-mx-md q-mb-sm">
+      <!-- search box -->
+      <div class="col q-mr-sm">
+        <q-card bordered>
+          <q-card-section>
+            <div class="row items-center no-wrap">
+              <div class="col">
+                Search and filter
+              </div>
 
-    <!-- insert LargeTable -->
-    <LargeTable ref="table"
-                :title="$t('firefly.title_' + this.type)"
-                :rows="rows"
-                :loading="loading"
-                v-on:on-request="onRequest"
-                :rows-number="rowsNumber"
-                :rows-per-page="rowsPerPage"
-                :page="page"
-    >
+              <div class="col-auto">
+                <q-btn color="grey" round flat dense
+                       :icon="searchExpanded ? 'fas fa-chevron-up' : 'fas fa-chevron-down'" @click="searchExpanded = !searchExpanded">
+                </q-btn>
+              </div>
+            </div>
+          </q-card-section>
+          <q-slide-transition>
+            <div v-show="searchExpanded">
+              <q-separator />
+              <q-card-section>
+                Here be stuff
+              </q-card-section>
+            </div>
+          </q-slide-transition>
+        </q-card>
+      </div>
+      <!-- date and range box -->
+      <div class="col q-ml-sm">
+        <q-card bordered>
 
-    </LargeTable>
-    <p>&nbsp;</p>
-    <p>&nbsp;</p>
-    <p>&nbsp;</p>
-    <p>&nbsp;</p>
-    <q-page-sticky position="bottom-right" :offset="[18, 18]">
+          <q-card-section>
+            <div class="row items-center no-wrap">
+              <div class="col">
+                Dates and ranges
+              </div>
+
+              <div class="col-auto">
+                <q-btn color="grey" round flat dense
+                       :icon="dateExpanded ? 'fas fa-chevron-up' : 'fas fa-chevron-down'" @click="dateExpanded = !dateExpanded">
+                </q-btn>
+              </div>
+            </div>
+          </q-card-section>
+          <q-slide-transition>
+            <div v-show="dateExpanded">
+              <q-separator />
+              <q-card-section>
+                Here be stuff
+              </q-card-section>
+            </div>
+          </q-slide-transition>
+        </q-card>
+      </div>
+    </div>
+    <div class="row q-mx-md">
+      <div class="col">
+        <q-card bordered>
+
+          <q-card-section>
+            <div class="row items-center no-wrap">
+              <div class="col">
+                Stats
+              </div>
+
+              <div class="col-auto">
+                <q-btn color="grey" round flat dense
+                       :icon="statsExpanded ? 'fas fa-chevron-up' : 'fas fa-chevron-down'" @click="statsExpanded = !statsExpanded">
+                </q-btn>
+              </div>
+            </div>
+          </q-card-section>
+          <q-slide-transition>
+            <div v-show="statsExpanded">
+              <q-separator />
+              <q-card-section>
+                Here be stuff
+              </q-card-section>
+            </div>
+          </q-slide-transition>
+        </q-card>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+
+
+        <!-- insert LargeTable -->
+        <LargeTable ref="table"
+                    :loading="loading"
+                    :page="page"
+                    :rows="rows"
+                    class="mb-5"
+                    :rows-number="rowsNumber"
+                    :rows-per-page="rowsPerPage"
+                    :title="$t('firefly.title_' + this.type)"
+                    v-on:on-request="onRequest"
+        >
+
+        </LargeTable>
+      </div>
+    </div>
+    <div class="box">
+      <div class="row">
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+      </div>
+    </div>
+    <q-page-sticky :offset="[18, 18]" position="bottom-right">
       <q-fab
+        color="green"
+        direction="up"
+        icon="fas fa-chevron-up"
         label="Actions"
+        label-position="left"
         square
         vertical-actions-align="right"
-        label-position="left"
-        color="green"
-        icon="fas fa-chevron-up"
-        direction="up"
       >
-        <q-fab-action color="primary" square :to="{ name: 'transactions.create', params: {type: 'transfer'} }" icon="fas fa-exchange-alt" label="New transfer"/>
-        <q-fab-action color="primary" square :to="{ name: 'transactions.create', params: {type: 'deposit'} }" icon="fas fa-long-arrow-alt-right"
-                      label="New deposit"/>
-        <q-fab-action color="primary" square :to="{ name: 'transactions.create', params: {type: 'withdrawal'} }" icon="fas fa-long-arrow-alt-left"
-                      label="New withdrawal"/>
+        <q-fab-action :to="{ name: 'transactions.create', params: {type: 'transfer'} }" color="primary"
+                      icon="fas fa-exchange-alt"
+                      label="New transfer" square/>
+        <q-fab-action :to="{ name: 'transactions.create', params: {type: 'deposit'} }" color="primary"
+                      icon="fas fa-long-arrow-alt-right"
+                      label="New deposit"
+                      square/>
+        <q-fab-action :to="{ name: 'transactions.create', params: {type: 'withdrawal'} }" color="primary"
+                      icon="fas fa-long-arrow-alt-left"
+                      label="New withdrawal"
+                      square/>
 
       </q-fab>
     </q-page-sticky>
@@ -59,10 +161,11 @@
 </template>
 
 <script>
-import {mapGetters, useStore} from "vuex";
+// import {mapGetters, useStore} from "vuex";
 import List from "../../api/transactions/list";
 import LargeTable from "../../components/transactions/LargeTable";
 import Parser from "../../api/transactions/parser";
+import {useFireflyIIIStore} from "stores/fireflyiii";
 
 export default {
   name: 'Index',
@@ -89,49 +192,56 @@ export default {
       columns: [
         {name: 'type', label: ' ', field: 'type', style: 'width: 30px'},
         {name: 'description', label: 'Description', field: 'description', align: 'left'},
-        {
-          name: 'amount', label: 'Amount', field: 'amount'
-        },
-        {
-          name: 'date', label: 'Date', field: 'date',
-          align: 'left',
-        },
-        {name: 'source', label: 'Source', field: 'source', align: 'left'},
-        {name: 'destination', label: 'Destination', field: 'destination', align: 'left'},
-        {name: 'category', label: 'Category', field: 'category', align: 'left'},
-        {name: 'budget', label: 'Budget', field: 'budget', align: 'left'},
+        {name: 'amount', label: 'Amount', field: 'amount'},
+        {name: 'date', label: 'Date', field: 'date', align: 'left',},
+        //{name: 'source', label: 'Source', field: 'source', align: 'left'},
+        //{name: 'destination', label: 'Destination', field: 'destination', align: 'left'},
+        //{name: 'category', label: 'Category', field: 'category', align: 'left'},
+        //{name: 'budget', label: 'Budget', field: 'budget', align: 'left'},
         {name: 'menu', label: ' ', field: 'menu', align: 'left'},
       ],
       type: 'withdrawal',
       page: 1,
       rowsPerPage: 50,
       rowsNumber: 100,
+      store: null,
       range: {
         start: null,
         end: null
-      }
+      },
+      searchExpanded: false, // TODO store in cookie.
+      dateExpanded : false,
+      statsExpanded: false,
     }
   },
   computed: {
-    ...mapGetters('fireflyiii', ['getRange', 'getCacheKey', 'getListPageSize']),
+    // ...mapGetters('fireflyiii', ['getRange', 'getCacheKey', 'getListPageSize']),
   },
   created() {
     this.rowsPerPage = this.getListPageSize;
+    this.store = useFireflyIIIStore();
+
   },
   mounted() {
     this.type = this.$route.params.type;
-    if (null === this.getRange.start || null === this.getRange.end) {
+    if (null === this.store.getRange.start || null === this.store.getRange.end) {
+
       // subscribe, then update:
-      const $store = useStore();
-      $store.subscribe((mutation, state) => {
-        if ('fireflyiii/setRange' === mutation.type) {
-          this.range = {start: mutation.payload.start, end: mutation.payload.end};
-          this.triggerUpdate();
+      this.store.$onAction(
+        ({name, $store, args, after, onError,}) => {
+          after((result) => {
+            if (name === 'setRange') {
+              this.range = result;
+              this.triggerUpdate();
+            }
+          })
         }
-      });
+      )
+
+
     }
-    if (null !== this.getRange.start && null !== this.getRange.end) {
-      this.range = {start: this.getRange.start, end: this.getRange.end};
+    if (null !== this.store.getRange.start && null !== this.store.getRange.end) {
+      this.range = {start: this.store.getRange.start, end: this.store.getRange.end};
       this.triggerUpdate();
     }
   },

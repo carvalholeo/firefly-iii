@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ForgotPasswordController.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -30,13 +31,15 @@ use Illuminate\Contracts\View\Factory;
 use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
-use Log;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class ForgotPasswordController
  *
- * @codeCoverageIgnore
+
  */
 class ForgotPasswordController extends Controller
 {
@@ -50,10 +53,7 @@ class ForgotPasswordController extends Controller
         parent::__construct();
         $this->middleware('guest');
 
-        $loginProvider = config('firefly.login_provider');
-        $authGuard     = config('firefly.authentication_guard');
-
-        if ('eloquent' !== $loginProvider || 'web' !== $authGuard) {
+        if ('web' !== config('firefly.authentication_guard')) {
             throw new FireflyException('Using external identity provider. Cannot continue.');
         }
     }
@@ -69,10 +69,8 @@ class ForgotPasswordController extends Controller
     public function sendResetLinkEmail(Request $request, UserRepositoryInterface $repository)
     {
         Log::info('Start of sendResetLinkEmail()');
-        $loginProvider = config('firefly.login_provider');
-
-        if ('eloquent' !== $loginProvider) {
-            $message = sprintf('Cannot reset password when authenticating over "%s".', $loginProvider);
+        if ('web' !== config('firefly.authentication_guard')) {
+            $message = sprintf('Cannot reset password when authenticating over "%s".', config('firefly.authentication_guard'));
             Log::error($message);
 
             return view('error', compact('message'));
@@ -86,7 +84,7 @@ class ForgotPasswordController extends Controller
         $user = User::where('email', $request->get('email'))->first();
 
         if (null !== $user && $repository->hasRole($user, 'demo')) {
-            return back()->withErrors(['email' => (string) trans('firefly.cannot_reset_demo_user')]);
+            return back()->withErrors(['email' => (string)trans('firefly.cannot_reset_demo_user')]);
         }
 
         // We will send the password reset link to this user. Once we have attempted
@@ -106,18 +104,16 @@ class ForgotPasswordController extends Controller
     /**
      * Show form for email recovery.
      *
-     * @codeCoverageIgnore
      *
      * @return Factory|View
      * @throws FireflyException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function showLinkRequestForm()
     {
-        $loginProvider = config('firefly.login_provider');
-        if ('eloquent' !== $loginProvider) {
-            $message = sprintf('Cannot reset password when authenticating over "%s".', $loginProvider);
+        if ('web' !== config('firefly.authentication_guard')) {
+            $message = sprintf('Cannot reset password when authenticating over "%s".', config('firefly.authentication_guard'));
 
             return view('error', compact('message'));
         }
@@ -126,7 +122,7 @@ class ForgotPasswordController extends Controller
         $singleUserMode    = app('fireflyconfig')->get('single_user_mode', config('firefly.configuration.single_user_mode'))->data;
         $userCount         = User::count();
         $allowRegistration = true;
-        $pageTitle         = (string) trans('firefly.forgot_pw_page_title');
+        $pageTitle         = (string)trans('firefly.forgot_pw_page_title');
         if (true === $singleUserMode && $userCount > 0) {
             $allowRegistration = false;
         }

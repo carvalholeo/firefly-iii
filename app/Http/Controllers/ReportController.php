@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ReportController.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -18,7 +19,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-/** @noinspection CallableParameterUseCaseInTypeContextInspection */
 declare(strict_types=1);
 
 namespace FireflyIII\Http\Controllers;
@@ -38,8 +38,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Redirector;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
-use Log;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class ReportController.
@@ -64,7 +66,7 @@ class ReportController extends Controller
 
         $this->middleware(
             function ($request, $next) {
-                app('view')->share('title', (string) trans('firefly.reports'));
+                app('view')->share('title', (string)trans('firefly.reports'));
                 app('view')->share('mainTitleIcon', 'fa-bar-chart');
                 app('view')->share('subTitleIcon', 'fa-calendar');
                 $this->helper     = app(ReportHelperInterface::class);
@@ -89,7 +91,7 @@ class ReportController extends Controller
     public function auditReport(Collection $accounts, Carbon $start, Carbon $end)
     {
         if ($end < $start) {
-            return view('error')->with('message', (string) trans('firefly.end_after_start_date'));
+            return view('error')->with('message', (string)trans('firefly.end_after_start_date'));
         }
         $this->repository->cleanupBudgets();
 
@@ -125,7 +127,7 @@ class ReportController extends Controller
     public function budgetReport(Collection $accounts, Collection $budgets, Carbon $start, Carbon $end)
     {
         if ($end < $start) {
-            return view('error')->with('message', (string) trans('firefly.end_after_start_date'));
+            return view('error')->with('message', (string)trans('firefly.end_after_start_date'));
         }
         $this->repository->cleanupBudgets();
 
@@ -162,7 +164,7 @@ class ReportController extends Controller
     public function categoryReport(Collection $accounts, Collection $categories, Carbon $start, Carbon $end)
     {
         if ($end < $start) {
-            return view('error')->with('message', (string) trans('firefly.end_after_start_date'));
+            return view('error')->with('message', (string)trans('firefly.end_after_start_date'));
         }
         $this->repository->cleanupBudgets();
 
@@ -198,7 +200,7 @@ class ReportController extends Controller
     public function defaultReport(Collection $accounts, Carbon $start, Carbon $end)
     {
         if ($end < $start) {
-            return view('error')->with('message', (string) trans('firefly.end_after_start_date'));
+            return view('error')->with('message', (string)trans('firefly.end_after_start_date'));
         }
 
         $this->repository->cleanupBudgets();
@@ -243,8 +245,10 @@ class ReportController extends Controller
             'subTitle',
             trans(
                 'firefly.report_double',
-                ['start' => $start->isoFormat($this->monthAndDayFormat),
-                 'end'   => $end->isoFormat($this->monthAndDayFormat)]
+                [
+                    'start' => $start->isoFormat($this->monthAndDayFormat),
+                    'end'   => $end->isoFormat($this->monthAndDayFormat),
+                ]
             )
         );
 
@@ -261,9 +265,8 @@ class ReportController extends Controller
      * @param AccountRepositoryInterface $repository
      *
      * @return Factory|View
-     * @throws FireflyException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function index(AccountRepositoryInterface $repository)
     {
@@ -286,7 +289,7 @@ class ReportController extends Controller
                 $role = sprintf('opt_group_l_%s', $type);
             }
 
-            if ('' === $role || 'opt_group_' === $role) {
+            if ('opt_group_' === $role) {
                 $role = 'opt_group_defaultAsset';
             }
             $groupedAccounts[trans(sprintf('firefly.%s', $role))][$account->id] = $account;
@@ -305,16 +308,16 @@ class ReportController extends Controller
      * @param string $reportType
      *
      * @return JsonResponse
-     *
+     * @throws FireflyException
      */
     public function options(string $reportType)
     {
         $result = match ($reportType) {
-            default => $this->noReportOptions(),
+            default    => $this->noReportOptions(),
             'category' => $this->categoryReportOptions(),
-            'budget' => $this->budgetReportOptions(),
-            'tag' => $this->tagReportOptions(),
-            'double' => $this->doubleReportOptions(),
+            'budget'   => $this->budgetReportOptions(),
+            'tag'      => $this->tagReportOptions(),
+            'double'   => $this->doubleReportOptions(),
         };
 
         return response()->json(['html' => $result]);
@@ -344,46 +347,46 @@ class ReportController extends Controller
 
         if (0 === $request->getAccountList()->count()) {
             Log::debug('Account count is zero');
-            session()->flash('error', (string) trans('firefly.select_at_least_one_account'));
+            session()->flash('error', (string)trans('firefly.select_at_least_one_account'));
 
             return redirect(route('reports.index'));
         }
 
         if ('category' === $reportType && 0 === $request->getCategoryList()->count()) {
-            session()->flash('error', (string) trans('firefly.select_at_least_one_category'));
+            session()->flash('error', (string)trans('firefly.select_at_least_one_category'));
 
             return redirect(route('reports.index'));
         }
 
         if ('budget' === $reportType && 0 === $request->getBudgetList()->count()) {
-            session()->flash('error', (string) trans('firefly.select_at_least_one_budget'));
+            session()->flash('error', (string)trans('firefly.select_at_least_one_budget'));
 
             return redirect(route('reports.index'));
         }
 
         if ('tag' === $reportType && 0 === $request->getTagList()->count()) {
-            session()->flash('error', (string) trans('firefly.select_at_least_one_tag'));
+            session()->flash('error', (string)trans('firefly.select_at_least_one_tag'));
 
             return redirect(route('reports.index'));
         }
 
         if ('double' === $reportType && 0 === $request->getDoubleList()->count()) {
-            session()->flash('error', (string) trans('firefly.select_at_least_one_expense'));
+            session()->flash('error', (string)trans('firefly.select_at_least_one_expense'));
 
             return redirect(route('reports.index'));
         }
 
         if ($request->getEndDate() < $request->getStartDate()) {
-            return view('error')->with('message', (string) trans('firefly.end_after_start_date'));
+            return view('error')->with('message', (string)trans('firefly.end_after_start_date'));
         }
 
         $url = match ($reportType) {
-            default => route('reports.report.default', [$accounts, $start, $end]),
+            default    => route('reports.report.default', [$accounts, $start, $end]),
             'category' => route('reports.report.category', [$accounts, $categories, $start, $end]),
-            'audit' => route('reports.report.audit', [$accounts, $start, $end]),
-            'budget' => route('reports.report.budget', [$accounts, $budgets, $start, $end]),
-            'tag' => route('reports.report.tag', [$accounts, $tags, $start, $end]),
-            'double' => route('reports.report.double', [$accounts, $double, $start, $end]),
+            'audit'    => route('reports.report.audit', [$accounts, $start, $end]),
+            'budget'   => route('reports.report.budget', [$accounts, $budgets, $start, $end]),
+            'tag'      => route('reports.report.tag', [$accounts, $tags, $start, $end]),
+            'double'   => route('reports.report.double', [$accounts, $double, $start, $end]),
         };
 
         return redirect($url);
@@ -403,7 +406,7 @@ class ReportController extends Controller
     public function tagReport(Collection $accounts, Collection $tags, Carbon $start, Carbon $end)
     {
         if ($end < $start) {
-            return view('error')->with('message', (string) trans('firefly.end_after_start_date'));
+            return view('error')->with('message', (string)trans('firefly.end_after_start_date'));
         }
         $this->repository->cleanupBudgets();
 

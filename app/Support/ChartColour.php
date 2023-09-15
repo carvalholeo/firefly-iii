@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ChartColour.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -25,7 +26,7 @@ namespace FireflyIII\Support;
 /**
  * Class ChartColour.
  *
- * @codeCoverageIgnore
+
  */
 class ChartColour
 {

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * TestRuleFormRequest.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -29,15 +30,16 @@ use Illuminate\Foundation\Http\FormRequest;
 /**
  * Class TestRuleFormRequest.
  *
- * @codeCoverageIgnore
+
  */
 class TestRuleFormRequest extends FormRequest
 {
-    use GetRuleConfiguration, ChecksLogin;
+    use GetRuleConfiguration;
+    use ChecksLogin;
 
     /**
      * Rules for this request.
-     * See reference nr. 46
+     * TODO these rules are not valid anymore.
      *
      * @return array
      */
@@ -47,8 +49,8 @@ class TestRuleFormRequest extends FormRequest
         $validTriggers = $this->getTriggers();
 
         return [
-            'rule-trigger.*'       => 'required|min:1|in:' . implode(',', $validTriggers),
-            'rule-trigger-value.*' => 'required|min:1|ruleTriggerValue',
+            'rule-trigger.*'       => 'required|max:1024|min:1|in:' . implode(',', $validTriggers),
+            'rule-trigger-value.*' => 'required|max:1024|min:1|ruleTriggerValue',
         ];
     }
 }

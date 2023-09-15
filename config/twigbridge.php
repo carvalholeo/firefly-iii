@@ -171,22 +171,45 @@ return [
             'Steam',
             'Config',
             'Request',
-            'Form'          => ['is_safe' => ['input', 'select', 'checkbox', 'model', 'open', 'radio', 'textarea', 'file']],
+            'Html',
             'ExpandedForm'  => [
                 'is_safe' => [
-                    'date', 'text', 'select', 'balance', 'optionsList', 'checkbox', 'amount', 'tags', 'integer', 'textarea', 'location', 'file', 'staticText',
-                    'password', 'nonSelectableAmount', 'number', 'amountNoCurrency', 'percentage', 'objectGroup',
+                    'date',
+                    'text',
+                    'select',
+                    'balance',
+                    'optionsList',
+                    'checkbox',
+                    'amount',
+                    'tags',
+                    'integer',
+                    'textarea',
+                    'location',
+                    'file',
+                    'staticText',
+                    'password',
+                    'nonSelectableAmount',
+                    'number',
+                    'amountNoCurrency',
+                    'percentage',
+                    'objectGroup',
 
                 ],
             ],
             'AccountForm'   => [
                 'is_safe' => [
-                    'activeWithdrawalDestinations', 'activeDepositDestinations', 'assetAccountCheckList', 'assetAccountList', 'longAccountList',
+                    'activeWithdrawalDestinations',
+                    'activeDepositDestinations',
+                    'assetAccountCheckList',
+                    'assetAccountList',
+                    'longAccountList',
                 ],
             ],
             'CurrencyForm'  => [
                 'is_safe' => [
-                    'currencyList', 'currencyListEmpty', 'balanceAll',
+                    'currencyList',
+                    'currencyListEmpty',
+                    'balanceAll',
                 ],
             ],
             'PiggyBankForm' => [
@@ -196,7 +219,8 @@ return [
             ],
             'RuleForm'      => [
                 'is_safe' => [
-                    'ruleGroupList', 'ruleGroupListWithEmpty',
+                    'ruleGroupList',
+                    'ruleGroupListWithEmpty',
                 ],
             ],
         ],

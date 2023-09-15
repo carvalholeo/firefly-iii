@@ -61,6 +61,8 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * @method static Builder|ObjectGroup whereTitle($value)
  * @method static Builder|ObjectGroup whereUpdatedAt($value)
  * @method static Builder|ObjectGroup whereUserId($value)
+ * @property int|null $user_group_id
+ * @method static Builder|ObjectGroup whereUserGroupId($value)
  * @mixin Eloquent
  */
 class ObjectGroup extends Model
@@ -77,7 +79,7 @@ class ObjectGroup extends Model
             'user_id'    => 'integer',
             'deleted_at' => 'datetime',
         ];
-    protected $fillable = ['title', 'order', 'user_id'];
+    protected $fillable = ['title', 'order', 'user_id', 'user_group_id'];
 
     /**
      * Route binder. Converts the key in the URL to the specified object (or throw 404).
@@ -90,7 +92,7 @@ class ObjectGroup extends Model
     public static function routeBinder(string $value): ObjectGroup
     {
         if (auth()->check()) {
-            $objectGroupId = (int) $value;
+            $objectGroupId = (int)$value;
             /** @var ObjectGroup $objectGroup */
             $objectGroup = self::where('object_groups.id', $objectGroupId)
                                ->where('object_groups.user_id', auth()->user()->id)->first();
@@ -98,7 +100,15 @@ class ObjectGroup extends Model
                 return $objectGroup;
             }
         }
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
+    }
+
+    /**
+     * @return BelongsTo
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     /**
@@ -123,14 +133,5 @@ class ObjectGroup extends Model
     public function piggyBanks()
     {
         return $this->morphedByMany(PiggyBank::class, 'object_groupable');
-    }
-
-    /**
-     * @return BelongsTo
-     * @codeCoverageIgnore
-     */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
     }
 }

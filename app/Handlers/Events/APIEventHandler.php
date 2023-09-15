@@ -24,13 +24,11 @@ declare(strict_types=1);
 namespace FireflyIII\Handlers\Events;
 
 use Exception;
-use FireflyIII\Exceptions\FireflyException;
-use FireflyIII\Mail\AccessTokenCreatedMail;
+use FireflyIII\Notifications\User\NewAccessToken;
 use FireflyIII\Repositories\User\UserRepositoryInterface;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Laravel\Passport\Events\AccessTokenCreated;
-use Log;
-use Mail;
-use Session;
 
 /**
  * Class APIEventHandler
@@ -42,44 +40,30 @@ class APIEventHandler
      *
      * @param AccessTokenCreated $event
      *
-     * @return bool
-     * @throws FireflyException
      */
-    public function accessTokenCreated(AccessTokenCreated $event): bool
+    public function accessTokenCreated(AccessTokenCreated $event): void
     {
+        Log::debug(__METHOD__);
         /** @var UserRepositoryInterface $repository */
         $repository = app(UserRepositoryInterface::class);
-        $user       = $repository->find((int) $event->userId);
+        $user       = $repository->find((int)$event->userId);
+
         if (null !== $user) {
-            $email = $user->email;
-
-            // if user is demo user, send to owner:
-            if ($user->hasRole('demo')) {
-                $email = config('firefly.site_owner');
-            }
-
-            // see if user has alternative email address:
-            $pref = app('preferences')->getForUser($user, 'remote_guard_alt_email');
-            if (null !== $pref) {
-                $email = (string) (is_array($pref->data) ? $email : $pref->data);
-            }
-
-            Log::debug(sprintf('Now in APIEventHandler::accessTokenCreated. Email is %s', $email));
             try {
-                Log::debug('Trying to send message...');
-                Mail::to($email)->send(new AccessTokenCreatedMail);
-
-            } catch (Exception $e) { // @phpstan-ignore-line
-                Log::debug('Send message failed! :(');
+                Notification::send($user, new NewAccessToken());
+            } catch (Exception $e) {
+                $message = $e->getMessage();
+                if (str_contains($message, 'Bcc')) {
+                    Log::warning('[Bcc] Could not send notification. Please validate your email settings, use the .env.example file as a guide.');
+                    return;
+                }
+                if (str_contains($message, 'RFC 2822')) {
+                    Log::warning('[RFC] Could not send notification. Please validate your email settings, use the .env.example file as a guide.');
+                    return;
+                }
                 Log::error($e->getMessage());
                 Log::error($e->getTraceAsString());
-                Session::flash('error', 'Possible email error: ' . $e->getMessage());
             }
-
-            Log::debug('If no error above this line, message was sent.');
         }
-
-        return true;
     }
-
 }

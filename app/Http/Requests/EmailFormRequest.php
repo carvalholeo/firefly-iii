@@ -1,4 +1,5 @@
 <?php
+
 /**
  * EmailFormRequest.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -29,11 +30,12 @@ use Illuminate\Foundation\Http\FormRequest;
 /**
  * Class EmailFormRequest.
  *
- * @codeCoverageIgnore
+
  */
 class EmailFormRequest extends FormRequest
 {
-    use ChecksLogin, ConvertsDataTypes;
+    use ChecksLogin;
+    use ConvertsDataTypes;
 
     /**
      * Rules for this request.

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * TagFormRequest.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -34,7 +35,9 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class TagFormRequest extends FormRequest
 {
-    use ConvertsDataTypes, AppendsLocationData, ChecksLogin;
+    use ConvertsDataTypes;
+    use AppendsLocationData;
+    use ChecksLogin;
 
     /**
      * Get all data for controller.
@@ -50,7 +53,6 @@ class TagFormRequest extends FormRequest
         ];
 
         return $this->appendLocationData($data, 'location');
-
     }
 
     /**
@@ -64,17 +66,18 @@ class TagFormRequest extends FormRequest
 
         /** @var Tag $tag */
         $tag     = $this->route()->parameter('tag');
-        $tagRule = 'required|min:1|uniqueObjectForUser:tags,tag';
+        $tagRule = 'required|max:1024|min:1|uniqueObjectForUser:tags,tag';
         if (null !== $tag) {
             $idRule  = 'belongsToUser:tags';
-            $tagRule = 'required|min:1|uniqueObjectForUser:tags,tag,' . $tag->id;
+            $tagRule = 'required|max:1024|min:1|uniqueObjectForUser:tags,tag,' . $tag->id;
         }
 
         $rules = [
             'tag'         => $tagRule,
             'id'          => $idRule,
-            'description' => 'min:1|nullable',
+            'description' => 'max:65536|min:1|nullable',
             'date'        => 'date|nullable',
+
         ];
 
         return Location::requestRules($rules);

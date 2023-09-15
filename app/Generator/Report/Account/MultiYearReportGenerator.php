@@ -1,4 +1,5 @@
 <?php
+
 /**
  * MultiYearReportGenerator.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -25,7 +26,7 @@ namespace FireflyIII\Generator\Report\Account;
 /**
  * Class MultiYearReportGenerator.
  *
- * @codeCoverageIgnore
+
  */
 class MultiYearReportGenerator extends MonthReportGenerator
 {

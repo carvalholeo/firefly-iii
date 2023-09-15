@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Api\V1\Requests\Models\Budget;
 
+use FireflyIII\Models\Budget;
 use FireflyIII\Rules\IsBoolean;
 use FireflyIII\Support\Request\ChecksLogin;
 use FireflyIII\Support\Request\ConvertsDataTypes;
@@ -33,11 +34,13 @@ use Illuminate\Validation\Validator;
 /**
  * Class UpdateRequest
  *
- * @codeCoverageIgnore
+
  */
 class UpdateRequest extends FormRequest
 {
-    use ConvertsDataTypes, ValidatesAutoBudgetRequest, ChecksLogin;
+    use ConvertsDataTypes;
+    use ValidatesAutoBudgetRequest;
+    use ChecksLogin;
 
     /**
      * Get all data from the request.
@@ -50,9 +53,9 @@ class UpdateRequest extends FormRequest
         $fields  = [
             'name'               => ['name', 'convertString'],
             'active'             => ['active', 'boolean'],
-            'order'              => ['order', 'integer'],
+            'order'              => ['order', 'convertInteger'],
             'notes'              => ['notes', 'convertString'],
-            'currency_id'        => ['auto_budget_currency_id', 'integer'],
+            'currency_id'        => ['auto_budget_currency_id', 'convertInteger'],
             'currency_code'      => ['auto_budget_currency_code', 'convertString'],
             'auto_budget_type'   => ['auto_budget_type', 'convertString'],
             'auto_budget_amount' => ['auto_budget_amount', 'convertString'],
@@ -64,6 +67,7 @@ class UpdateRequest extends FormRequest
                 'none'     => 0,
                 'reset'    => 1,
                 'rollover' => 2,
+                'adjusted' => 3,
             ];
             $allData['auto_budget_type'] = $types[$allData['auto_budget_type']] ?? 0;
         }
@@ -78,13 +82,14 @@ class UpdateRequest extends FormRequest
      */
     public function rules(): array
     {
+        /** @var Budget $budget */
         $budget = $this->route()->parameter('budget');
 
         return [
             'name'                      => sprintf('between:1,100|uniqueObjectForUser:budgets,name,%d', $budget->id),
-            'active'                    => [new IsBoolean],
+            'active'                    => [new IsBoolean()],
             'notes'                     => 'nullable|between:1,65536',
-            'auto_budget_type'          => 'in:reset,rollover,none',
+            'auto_budget_type'          => 'in:reset,rollover,adjusted,none',
             'auto_budget_currency_id'   => 'exists:transaction_currencies,id',
             'auto_budget_currency_code' => 'exists:transaction_currencies,code',
             'auto_budget_amount'        => 'min:0|max:1000000000',

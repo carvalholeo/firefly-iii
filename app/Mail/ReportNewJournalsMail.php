@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ReportNewJournalsMail.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -22,6 +23,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Mail;
 
+use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\TransactionGroup;
 use FireflyIII\Transformers\TransactionGroupTransformer;
 use Illuminate\Bus\Queueable;
@@ -34,11 +36,12 @@ use Illuminate\Support\Collection;
  *
  * Sends a list of newly created journals to the user.
  *
- * @codeCoverageIgnore
+
  */
 class ReportNewJournalsMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable;
+    use SerializesModels;
 
     public Collection $groups;
     public array      $transformed;
@@ -64,9 +67,13 @@ class ReportNewJournalsMail extends Mailable
 
         return $this
             ->markdown('emails.report-new-journals')
-            ->subject((string) trans_choice('email.new_journals_subject', $this->groups->count()));
+            ->subject((string)trans_choice('email.new_journals_subject', $this->groups->count()));
     }
 
+    /**
+     * @return void
+     * @throws FireflyException
+     */
     private function transform(): void
     {
         /** @var TransactionGroupTransformer $transformer */

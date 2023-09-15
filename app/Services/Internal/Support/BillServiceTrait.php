@@ -23,20 +23,18 @@ declare(strict_types=1);
 
 namespace FireflyIII\Services\Internal\Support;
 
-use Exception;
 use FireflyIII\Models\Bill;
 use FireflyIII\Models\Note;
 use FireflyIII\Models\RuleAction;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Trait BillServiceTrait
  *
- * @codeCoverageIgnore
+
  */
 trait BillServiceTrait
 {
-
     /**
      * @param Bill   $bill
      * @param string $oldName
@@ -71,11 +69,7 @@ trait BillServiceTrait
         if ('' === $note) {
             $dbNote = $bill->notes()->first();
             if (null !== $dbNote) {
-                try {
-                    $dbNote->delete();
-                } catch (Exception $e) { // @phpstan-ignore-line
-                    // @ignoreException
-                }
+                $dbNote->delete();
             }
 
             return true;
@@ -90,5 +84,4 @@ trait BillServiceTrait
 
         return true;
     }
-
 }

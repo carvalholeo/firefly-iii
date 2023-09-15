@@ -25,21 +25,27 @@ declare(strict_types=1);
 namespace FireflyIII\Console\Commands\Tools;
 
 use Carbon\Carbon;
+use FireflyIII\Console\Commands\ShowsFriendlyMessages;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Support\Cronjobs\AutoBudgetCronjob;
 use FireflyIII\Support\Cronjobs\BillWarningCronjob;
+use FireflyIII\Support\Cronjobs\ExchangeRatesCronjob;
 use FireflyIII\Support\Cronjobs\RecurringCronjob;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
-use Log;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class Cron
  *
- * @codeCoverageIgnore
+
  */
 class Cron extends Command
 {
+    use ShowsFriendlyMessages;
+
     /**
      * The console command description.
      *
@@ -58,6 +64,8 @@ class Cron extends Command
 
     /**
      * @return int
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function handle(): int
     {
@@ -65,9 +73,22 @@ class Cron extends Command
         try {
             $date = new Carbon($this->option('date'));
         } catch (InvalidArgumentException $e) {
-            $this->error(sprintf('"%s" is not a valid date', $this->option('date')));
+            $this->friendlyError(sprintf('"%s" is not a valid date', $this->option('date')));
         }
-        $force = (bool) $this->option('force');
+        $force = (bool)$this->option('force');
+
+        /*
+         * Fire exchange rates cron job.
+         */
+        if (true === config('cer.download_enabled')) {
+            try {
+                $this->exchangeRatesCronJob($force, $date);
+            } catch (FireflyException $e) {
+                Log::error($e->getMessage());
+                Log::error($e->getTraceAsString());
+                $this->friendlyError($e->getMessage());
+            }
+        }
 
         /*
          * Fire recurring transaction cron job.
@@ -77,7 +98,7 @@ class Cron extends Command
         } catch (FireflyException $e) {
             Log::error($e->getMessage());
             Log::error($e->getTraceAsString());
-            $this->error($e->getMessage());
+            $this->friendlyError($e->getMessage());
         }
 
         /*
@@ -88,7 +109,7 @@ class Cron extends Command
         } catch (FireflyException $e) {
             Log::error($e->getMessage());
             Log::error($e->getTraceAsString());
-            $this->error($e->getMessage());
+            $this->friendlyError($e->getMessage());
         }
 
         /*
@@ -99,10 +120,10 @@ class Cron extends Command
         } catch (FireflyException $e) {
             Log::error($e->getMessage());
             Log::error($e->getTraceAsString());
-            $this->error($e->getMessage());
+            $this->friendlyError($e->getMessage());
         }
 
-        $this->info('More feedback on the cron jobs can be found in the log files.');
+        $this->friendlyInfo('More feedback on the cron jobs can be found in the log files.');
 
         return 0;
     }
@@ -110,12 +131,40 @@ class Cron extends Command
     /**
      * @param bool        $force
      * @param Carbon|null $date
+     */
+    private function exchangeRatesCronJob(bool $force, ?Carbon $date): void
+    {
+        $exchangeRates = new ExchangeRatesCronjob();
+        $exchangeRates->setForce($force);
+        // set date in cron job:
+        if (null !== $date) {
+            $exchangeRates->setDate($date);
+        }
+
+        $exchangeRates->fire();
+
+        if ($exchangeRates->jobErrored) {
+            $this->friendlyError(sprintf('Error in "exchange rates" cron: %s', $exchangeRates->message));
+        }
+        if ($exchangeRates->jobFired) {
+            $this->friendlyInfo(sprintf('"Exchange rates" cron fired: %s', $exchangeRates->message));
+        }
+        if ($exchangeRates->jobSucceeded) {
+            $this->friendlyPositive(sprintf('"Exchange rates" cron ran with success: %s', $exchangeRates->message));
+        }
+    }
+
+    /**
+     * @param bool        $force
+     * @param Carbon|null $date
      *
+     * @throws ContainerExceptionInterface
      * @throws FireflyException
+     * @throws NotFoundExceptionInterface
      */
     private function recurringCronJob(bool $force, ?Carbon $date): void
     {
-        $recurring = new RecurringCronjob;
+        $recurring = new RecurringCronjob();
         $recurring->setForce($force);
 
         // set date in cron job:
@@ -125,13 +174,13 @@ class Cron extends Command
 
         $recurring->fire();
         if ($recurring->jobErrored) {
-            $this->error(sprintf('Error in "create recurring transactions" cron: %s', $recurring->message));
+            $this->friendlyError(sprintf('Error in "create recurring transactions" cron: %s', $recurring->message));
         }
         if ($recurring->jobFired) {
-            $this->error(sprintf('"Create recurring transactions" cron fired: %s', $recurring->message));
+            $this->friendlyInfo(sprintf('"Create recurring transactions" cron fired: %s', $recurring->message));
         }
         if ($recurring->jobSucceeded) {
-            $this->error(sprintf('"Create recurring transactions" cron ran with success: %s', $recurring->message));
+            $this->friendlyPositive(sprintf('"Create recurring transactions" cron ran with success: %s', $recurring->message));
         }
     }
 
@@ -142,7 +191,7 @@ class Cron extends Command
      */
     private function autoBudgetCronJob(bool $force, ?Carbon $date): void
     {
-        $autoBudget = new AutoBudgetCronjob;
+        $autoBudget = new AutoBudgetCronjob();
         $autoBudget->setForce($force);
         // set date in cron job:
         if (null !== $date) {
@@ -152,25 +201,27 @@ class Cron extends Command
         $autoBudget->fire();
 
         if ($autoBudget->jobErrored) {
-            $this->error(sprintf('Error in "create auto budgets" cron: %s', $autoBudget->message));
+            $this->friendlyError(sprintf('Error in "create auto budgets" cron: %s', $autoBudget->message));
         }
         if ($autoBudget->jobFired) {
-            $this->error(sprintf('"Create auto budgets" cron fired: %s', $autoBudget->message));
+            $this->friendlyInfo(sprintf('"Create auto budgets" cron fired: %s', $autoBudget->message));
         }
         if ($autoBudget->jobSucceeded) {
-            $this->error(sprintf('"Create auto budgets" cron ran with success: %s', $autoBudget->message));
+            $this->friendlyPositive(sprintf('"Create auto budgets" cron ran with success: %s', $autoBudget->message));
         }
-
     }
 
     /**
      * @param bool        $force
      * @param Carbon|null $date
+     *
      * @throws FireflyException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     private function billWarningCronJob(bool $force, ?Carbon $date): void
     {
-        $autoBudget = new BillWarningCronjob;
+        $autoBudget = new BillWarningCronjob();
         $autoBudget->setForce($force);
         // set date in cron job:
         if (null !== $date) {
@@ -180,14 +231,13 @@ class Cron extends Command
         $autoBudget->fire();
 
         if ($autoBudget->jobErrored) {
-            $this->error(sprintf('Error in "bill warnings" cron: %s', $autoBudget->message));
+            $this->friendlyError(sprintf('Error in "bill warnings" cron: %s', $autoBudget->message));
         }
         if ($autoBudget->jobFired) {
-            $this->error(sprintf('"Send bill warnings" cron fired: %s', $autoBudget->message));
+            $this->friendlyInfo(sprintf('"Send bill warnings" cron fired: %s', $autoBudget->message));
         }
         if ($autoBudget->jobSucceeded) {
-            $this->error(sprintf('"Send bill warnings" cron ran with success: %s', $autoBudget->message));
+            $this->friendlyPositive(sprintf('"Send bill warnings" cron ran with success: %s', $autoBudget->message));
         }
-
     }
 }

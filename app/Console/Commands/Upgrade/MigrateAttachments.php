@@ -23,17 +23,22 @@ declare(strict_types=1);
 
 namespace FireflyIII\Console\Commands\Upgrade;
 
+use FireflyIII\Console\Commands\ShowsFriendlyMessages;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Attachment;
 use FireflyIII\Models\Note;
 use Illuminate\Console\Command;
-use Log;
+use Illuminate\Support\Facades\Log;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class MigrateAttachments
  */
 class MigrateAttachments extends Command
 {
+    use ShowsFriendlyMessages;
+
     public const CONFIG_NAME = '480_migrate_attachments';
     /**
      * The console command description.
@@ -52,14 +57,15 @@ class MigrateAttachments extends Command
      * Execute the console command.
      *
      * @return int
+     * @throws ContainerExceptionInterface
      * @throws FireflyException
+     * @throws NotFoundExceptionInterface
      */
     public function handle(): int
     {
-
         $start = microtime(true);
         if ($this->isExecuted() && true !== $this->option('force')) {
-            $this->warn('This command has already been executed.');
+            $this->friendlyInfo('This command has already been executed.');
 
             return 0;
         }
@@ -70,15 +76,13 @@ class MigrateAttachments extends Command
 
         /** @var Attachment $att */
         foreach ($attachments as $att) {
-
             // move description:
-            $attDescription = (string) $att->description;
+            $attDescription = (string)$att->description;
             if ('' !== $attDescription) {
-
                 // find or create note:
                 $note = $att->notes()->first();
                 if (null === $note) {
-                    $note = new Note;
+                    $note = new Note();
                     $note->noteable()->associate($att);
                 }
                 $note->text = $attDescription;
@@ -93,13 +97,13 @@ class MigrateAttachments extends Command
             }
         }
         if (0 === $count) {
-            $this->line('All attachments are OK.');
+            $this->friendlyPositive('All attachments are OK.');
         }
         if (0 !== $count) {
-            $this->line(sprintf('Updated %d attachment(s).', $count));
+            $this->friendlyInfo(sprintf('Updated %d attachment(s).', $count));
         }
         $end = round(microtime(true) - $start, 2);
-        $this->info(sprintf('Migrated attachment notes in %s seconds.', $end));
+        $this->friendlyInfo(sprintf('Migrated attachment notes in %s seconds.', $end));
         $this->markAsExecuted();
 
         return 0;
@@ -107,15 +111,14 @@ class MigrateAttachments extends Command
 
     /**
      * @return bool
-     * @throws FireflyException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     private function isExecuted(): bool
     {
         $configVar = app('fireflyconfig')->get(self::CONFIG_NAME, false);
         if (null !== $configVar) {
-            return (bool) $configVar->data;
+            return (bool)$configVar->data;
         }
 
         return false;

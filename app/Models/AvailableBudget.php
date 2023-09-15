@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AvailableBudget.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -24,6 +25,7 @@ namespace FireflyIII\Models;
 
 use Eloquent;
 use FireflyIII\User;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -60,9 +62,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * @method static \Illuminate\Database\Eloquent\Builder|AvailableBudget whereUserId($value)
  * @method static Builder|AvailableBudget withTrashed()
  * @method static Builder|AvailableBudget withoutTrashed()
- * @mixin Eloquent
  * @property int|null                 $user_group_id
  * @method static \Illuminate\Database\Eloquent\Builder|AvailableBudget whereUserGroupId($value)
+ * @mixin Eloquent
  */
 class AvailableBudget extends Model
 {
@@ -83,7 +85,7 @@ class AvailableBudget extends Model
             'transaction_currency_id' => 'int',
         ];
     /** @var array Fields that can be filled */
-    protected $fillable = ['user_id', 'transaction_currency_id', 'amount', 'start_date', 'end_date'];
+    protected $fillable = ['user_id', 'user_group_id', 'transaction_currency_id', 'amount', 'start_date', 'end_date'];
 
     /**
      * Route binder. Converts the key in the URL to the specified object (or throw 404).
@@ -96,7 +98,7 @@ class AvailableBudget extends Model
     public static function routeBinder(string $value): AvailableBudget
     {
         if (auth()->check()) {
-            $availableBudgetId = (int) $value;
+            $availableBudgetId = (int)$value;
             /** @var User $user */
             $user = auth()->user();
             /** @var AvailableBudget $availableBudget */
@@ -105,11 +107,18 @@ class AvailableBudget extends Model
                 return $availableBudget;
             }
         }
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
     }
 
     /**
-     * @codeCoverageIgnore
+     * @return BelongsTo
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
      * @return BelongsTo
      */
     public function transactionCurrency(): BelongsTo
@@ -118,11 +127,12 @@ class AvailableBudget extends Model
     }
 
     /**
-     * @codeCoverageIgnore
-     * @return BelongsTo
+     * @return Attribute
      */
-    public function user(): BelongsTo
+    protected function amount(): Attribute
     {
-        return $this->belongsTo(User::class);
+        return Attribute::make(
+            get: fn ($value) => (string)$value,
+        );
     }
 }

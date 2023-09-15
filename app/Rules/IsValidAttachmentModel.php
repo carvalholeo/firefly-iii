@@ -40,7 +40,7 @@ use FireflyIII\Repositories\Journal\JournalRepositoryInterface;
 use FireflyIII\Repositories\PiggyBank\PiggyBankRepositoryInterface;
 use FireflyIII\Repositories\Tag\TagRepositoryInterface;
 use Illuminate\Contracts\Validation\Rule;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class IsValidAttachmentModel
@@ -53,7 +53,6 @@ class IsValidAttachmentModel implements Rule
     /**
      * IsValidAttachmentModel constructor.
      *
-     * @codeCoverageIgnore
      *
      * @param string $model
      */
@@ -80,12 +79,11 @@ class IsValidAttachmentModel implements Rule
     /**
      * Get the validation error message.
      *
-     * @codeCoverageIgnore
      * @return string
      */
     public function message(): string
     {
-        return (string) trans('validation.model_id_invalid');
+        return (string)trans('validation.model_id_invalid');
     }
 
     /**
@@ -112,13 +110,13 @@ class IsValidAttachmentModel implements Rule
             TransactionJournal::class => 'validateJournal',
         ];
         if (!array_key_exists($this->model, $methods)) {
-            Log::error(sprintf('Cannot validate model "%s" in %s.', $this->model, __METHOD__));
+            Log::error(sprintf('Cannot validate model "%s" in %s.', substr($this->model, 0, 20), __METHOD__));
 
             return false;
         }
         $method = $methods[$this->model];
 
-        return $this->$method((int) $value);
+        return $this->$method((int)$value);
     }
 
     /**
@@ -229,6 +227,6 @@ class IsValidAttachmentModel implements Rule
         $repository = app(JournalAPIRepositoryInterface::class);
         $repository->setUser(auth()->user());
 
-        return null !== $repository->findTransaction((int) $value);
+        return null !== $repository->findTransaction((int)$value);
     }
 }

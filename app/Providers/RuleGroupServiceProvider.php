@@ -1,4 +1,5 @@
 <?php
+
 /**
  * RuleGroupServiceProvider.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -28,7 +29,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 
 /**
- * @codeCoverageIgnore
  * Class RuleGroupServiceProvider.
  */
 class RuleGroupServiceProvider extends ServiceProvider
@@ -50,7 +50,7 @@ class RuleGroupServiceProvider extends ServiceProvider
             function (Application $app) {
                 /** @var RuleGroupRepository $repository */
                 $repository = app(RuleGroupRepository::class);
-                if ($app->auth->check()) { // @phpstan-ignore-line
+                if ($app->auth->check()) { // @phpstan-ignore-line (phpstan does not understand the reference to auth)
                     $repository->setUser(auth()->user());
                 }
 

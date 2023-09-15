@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Transaction.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -25,6 +26,7 @@ namespace FireflyIII\Models;
 use Carbon\Carbon;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -82,12 +84,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static Builder|Transaction whereUpdatedAt($value)
  * @method static \Illuminate\Database\Query\Builder|Transaction withTrashed()
  * @method static \Illuminate\Database\Query\Builder|Transaction withoutTrashed()
- * @mixin Eloquent
  * @property int                             $the_count
+ * @mixin Eloquent
  */
 class Transaction extends Model
 {
-    use SoftDeletes, HasFactory;
+    use SoftDeletes;
+    use HasFactory;
 
     /**
      * The attributes that should be casted to native types.
@@ -106,15 +109,23 @@ class Transaction extends Model
         ];
     /** @var array Fields that can be filled */
     protected $fillable
-        = ['account_id', 'transaction_journal_id', 'description', 'amount', 'identifier', 'transaction_currency_id', 'foreign_currency_id',
-           'foreign_amount', 'reconciled'];
+        = [
+            'account_id',
+            'transaction_journal_id',
+            'description',
+            'amount',
+            'identifier',
+            'transaction_currency_id',
+            'foreign_currency_id',
+            'foreign_amount',
+            'reconciled',
+        ];
     /** @var array Hidden from view */
     protected $hidden = ['encrypted'];
 
     /**
      * Get the account this object belongs to.
      *
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function account(): BelongsTo
@@ -125,7 +136,6 @@ class Transaction extends Model
     /**
      * Get the budget(s) this object belongs to.
      *
-     * @codeCoverageIgnore
      * @return BelongsToMany
      */
     public function budgets(): BelongsToMany
@@ -136,7 +146,6 @@ class Transaction extends Model
     /**
      * Get the category(ies) this object belongs to.
      *
-     * @codeCoverageIgnore
      * @return BelongsToMany
      */
     public function categories(): BelongsToMany
@@ -147,7 +156,6 @@ class Transaction extends Model
     /**
      * Get the currency this object belongs to.
      *
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function foreignCurrency(): BelongsTo
@@ -158,7 +166,6 @@ class Transaction extends Model
     /**
      * Check for transactions AFTER a specified date.
      *
-     * @codeCoverageIgnore
      *
      * @param Builder $query
      * @param Carbon  $date
@@ -178,7 +185,6 @@ class Transaction extends Model
      * @param string  $table
      *
      * @return bool
-     * @codeCoverageIgnore
      */
     public static function isJoined(Builder $query, string $table): bool
     {
@@ -198,7 +204,6 @@ class Transaction extends Model
     /**
      * Check for transactions BEFORE the specified date.
      *
-     * @codeCoverageIgnore
      *
      * @param Builder $query
      * @param Carbon  $date
@@ -212,7 +217,6 @@ class Transaction extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      *
      * @param Builder $query
      * @param array   $types
@@ -230,17 +234,15 @@ class Transaction extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      *
      * @param mixed $value
      */
     public function setAmountAttribute($value): void
     {
-        $this->attributes['amount'] = (string) $value;
+        $this->attributes['amount'] = (string)$value;
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function transactionCurrency(): BelongsTo
@@ -249,11 +251,34 @@ class Transaction extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return BelongsTo
      */
     public function transactionJournal(): BelongsTo
     {
         return $this->belongsTo(TransactionJournal::class);
+    }
+
+    /**
+     * Get the amount
+     *
+     * @return Attribute
+     */
+    protected function amount(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => (string)$value,
+        );
+    }
+
+    /**
+     * Get the foreign amount
+     *
+     * @return Attribute
+     */
+    protected function foreignAmount(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => (string)$value,
+        );
     }
 }

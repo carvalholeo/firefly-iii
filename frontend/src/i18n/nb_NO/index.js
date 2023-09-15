@@ -1,3 +1,23 @@
+/*
+ * index.js
+ * Copyright (c) 2022 james@firefly-iii.org
+ *
+ * This file is part of Firefly III (https://github.com/firefly-iii).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 export default {
     "config": {
         "html_language": "nb",
@@ -7,7 +27,7 @@ export default {
         "name": "Navn",
         "amount_min": "Minimumsbel\u00f8p",
         "amount_max": "Maksimumsbel\u00f8p",
-        "url": "URL",
+        "url": "Nettadresse",
         "title": "Tittel",
         "first_date": "F\u00f8rste dato",
         "repetitions": "Repetisjoner",
@@ -40,15 +60,19 @@ export default {
         "liabilities_accounts": "Gjeld"
     },
     "firefly": {
+        "administration_index": "\u00d8konomisk administrasjon",
         "actions": "Handlinger",
         "edit": "Rediger",
         "delete": "Slett",
-        "reconcile": "Reconcile",
+        "reconcile": "Avstem",
         "create_new_asset": "Opprett ny aktivakonto",
         "confirm_action": "Bekreft handling",
         "new_budget": "Nytt budsjett",
         "new_asset_account": "Ny aktivakonto",
         "newTransfer": "Ny overf\u00f8ring",
+        "submission_options": "Alternativer for innsending",
+        "apply_rules_checkbox": "Bruk regler",
+        "fire_webhooks_checkbox": "Fire webhooks",
         "newDeposit": "Nytt innskudd",
         "newWithdrawal": "Ny utgift",
         "bills_paid": "Regninger betalt",
@@ -56,7 +80,7 @@ export default {
         "no_budget": "(ingen budsjett)",
         "budgeted": "Budsjettert",
         "spent": "Brukt",
-        "no_bill": "(no bill)",
+        "no_bill": "(ingen regning)",
         "rule_trigger_source_account_starts_choice": "Kildekonto navn starter med..",
         "rule_trigger_source_account_ends_choice": "Kildenavnet slutter med..",
         "rule_trigger_source_account_is_choice": "Kildekonto navn er..",
@@ -81,9 +105,9 @@ export default {
         "rule_trigger_destination_account_nr_contains_choice": "M\u00e5lkontonummer \/ IBAN inneholder..",
         "rule_trigger_transaction_type_choice": "Transaksjonen er av typen..",
         "rule_trigger_category_is_choice": "Kategori er..",
-        "rule_trigger_amount_less_choice": "Bel\u00f8pet er mindre enn..",
+        "rule_trigger_amount_less_choice": "Amount is less than or equal to ..",
         "rule_trigger_amount_is_choice": "Bel\u00f8pet er..",
-        "rule_trigger_amount_more_choice": "Bel\u00f8pet er mer enn..",
+        "rule_trigger_amount_more_choice": "Amount is more than or equal to..",
         "rule_trigger_description_starts_choice": "Beskrivelse starter med..",
         "rule_trigger_description_ends_choice": "Beskrivelse slutter med..",
         "rule_trigger_description_contains_choice": "Beskrivelse inneholder..",
@@ -96,7 +120,7 @@ export default {
         "rule_trigger_budget_is_choice": "Budsjett er..",
         "rule_trigger_tag_is_choice": "(En) tagg er..",
         "rule_trigger_currency_is_choice": "Transaksjonsvaluta er..",
-        "rule_trigger_foreign_currency_is_choice": "Transaction foreign currency is..",
+        "rule_trigger_foreign_currency_is_choice": "Transaksjonens fremmed valuta er..",
         "rule_trigger_has_attachments_choice": "Har minst s\u00e5 mange vedlegg",
         "rule_trigger_has_no_category_choice": "Har ingen kategori",
         "rule_trigger_has_any_category_choice": "Har en (hvilken som helst) kategori",
@@ -115,29 +139,29 @@ export default {
         "rule_trigger_bill_is_choice": "Regning er..",
         "rule_trigger_external_id_is_choice": "Ekstern ID er..",
         "rule_trigger_internal_reference_is_choice": "Intern referanse er..",
-        "rule_trigger_journal_id_choice": "Transaction journal ID is..",
-        "rule_trigger_any_external_url_choice": "Transaction has an external URL",
-        "rule_trigger_no_external_url_choice": "Transaction has no external URL",
+        "rule_trigger_journal_id_choice": "Transaksjonens journal ID er..",
+        "rule_trigger_any_external_url_choice": "Transaction has an (any) external URL",
+        "rule_trigger_no_external_url_choice": "Transaksjonen har ingen ekstern URL",
         "rule_trigger_id_choice": "Transaksjons-ID er",
-        "rule_action_delete_transaction_choice": "SLETT transaksjon (!)",
-        "rule_action_set_category_choice": "Sett kategori til..",
+        "rule_action_delete_transaction_choice": "SLETT transaksjon(!)",
+        "rule_action_set_category_choice": "Sett kategori til ..",
         "rule_action_clear_category_choice": "T\u00f8m alle kategorier",
-        "rule_action_set_budget_choice": "Sett budsjett til..",
+        "rule_action_set_budget_choice": "Sett budsjett til ..",
         "rule_action_clear_budget_choice": "T\u00f8m alle budsjetter",
-        "rule_action_add_tag_choice": "Legg til tagg..",
-        "rule_action_remove_tag_choice": "Fjern tagg..",
+        "rule_action_add_tag_choice": "Legg til tagg ..",
+        "rule_action_remove_tag_choice": "Fjern tagg ..",
         "rule_action_remove_all_tags_choice": "Fjern alle tagger",
-        "rule_action_set_description_choice": "Sett beskrivelse til..",
-        "rule_action_update_piggy_choice": "Legg til\/fjern transaksjonsbel\u00f8p i sparegriser..",
-        "rule_action_append_description_choice": "Legg til etter beskrivelse..",
-        "rule_action_prepend_description_choice": "Legg til foran beskrivelse..",
-        "rule_action_set_source_account_choice": "Sett kildekonto til..",
-        "rule_action_set_destination_account_choice": "Sett m\u00e5lkonto til..",
-        "rule_action_append_notes_choice": "Legg til notater med..",
-        "rule_action_prepend_notes_choice": "Legg til notater med..",
+        "rule_action_set_description_choice": "Sett beskrivelse til ..",
+        "rule_action_update_piggy_choice": "Legg til \/ fjern transaksjonsbel\u00f8p i sparegris ..",
+        "rule_action_append_description_choice": "Legg til i beskrivelse ..",
+        "rule_action_prepend_description_choice": "Legg til foran beskrivelsen med ..",
+        "rule_action_set_source_account_choice": "Sett kildekonto til ..",
+        "rule_action_set_destination_account_choice": "Sett m\u00e5lkonto til ..",
+        "rule_action_append_notes_choice": "Legg til i notater med ..",
+        "rule_action_prepend_notes_choice": "Legg til foran i notater med ..",
         "rule_action_clear_notes_choice": "Fjern notater",
-        "rule_action_set_notes_choice": "Sett notater til..",
-        "rule_action_link_to_bill_choice": "Knytt til en regning..",
+        "rule_action_set_notes_choice": "Sett notater til ..",
+        "rule_action_link_to_bill_choice": "Koble til en regning ..",
         "rule_action_convert_deposit_choice": "Konverter transaksjonen til et innskudd",
         "rule_action_convert_withdrawal_choice": "Konverter denne transaksjonen til et uttak",
         "rule_action_convert_transfer_choice": "Konverter transaksjonen til en overf\u00f8ring",
@@ -160,8 +184,8 @@ export default {
         "single_split": "Del opp",
         "asset_accounts": "Aktivakontoer",
         "expense_accounts": "Utgiftskontoer",
-        "liabilities_accounts": "Gjeld",
-        "undefined_accounts": "Accounts",
+        "liabilities_accounts": "Gjeldskonto",
+        "undefined_accounts": "Kontoer",
         "name": "Navn",
         "revenue_accounts": "Inntektskontoer",
         "description": "Beskrivelse",
@@ -174,7 +198,7 @@ export default {
         "accounts": "Kontoer",
         "categories": "Kategorier",
         "tags": "Tagger",
-        "object_groups_page_title": "Groups",
+        "object_groups_page_title": "Grupper",
         "reports": "Rapporter",
         "webhooks": "Webhooks",
         "currencies": "Valutaer",
@@ -184,7 +208,7 @@ export default {
         "destination_account": "Destinasjonskonto",
         "amount": "Bel\u00f8p",
         "date": "Dato",
-        "time": "Time",
+        "time": "Tid",
         "preferences": "Innstillinger",
         "transactions": "Transaksjoner",
         "balance": "Saldo",
@@ -197,8 +221,8 @@ export default {
         "pref_last90": "Siste 90 dager",
         "pref_last30": "Siste 30 dagene",
         "pref_last7": "Siste 7 dager",
-        "pref_YTD": "Year to date",
-        "pref_QTD": "Quarter to date",
-        "pref_MTD": "Month to date"
+        "pref_YTD": "\u00c5r til dato",
+        "pref_QTD": "Kvartal til dato",
+        "pref_MTD": "M\u00e5ned til dato"
     }
 }

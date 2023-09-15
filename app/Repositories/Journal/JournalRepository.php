@@ -1,4 +1,5 @@
 <?php
+
 /**
  * JournalRepository.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -36,8 +37,8 @@ use FireflyIII\Services\Internal\Destroy\TransactionGroupDestroyService;
 use FireflyIII\Services\Internal\Update\JournalUpdateService;
 use FireflyIII\Support\CacheProperties;
 use FireflyIII\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
-use JsonException;
 
 /**
  * Class JournalRepository.
@@ -67,18 +68,6 @@ class JournalRepository implements JournalRepositoryInterface
         /** @var JournalDestroyService $service */
         $service = app(JournalDestroyService::class);
         $service->destroy($journal);
-    }
-
-    /**
-     * Find a specific journal.
-     *
-     * @param int $journalId
-     *
-     * @return TransactionJournal|null
-     */
-    public function find(int $journalId): ?TransactionJournal
-    {
-        return $this->user->transactionJournals()->find($journalId);
     }
 
     /**
@@ -133,7 +122,7 @@ class JournalRepository implements JournalRepositoryInterface
      */
     public function getJournalTotal(TransactionJournal $journal): string
     {
-        $cache = new CacheProperties;
+        $cache = new CacheProperties();
         $cache->addProperty($journal->id);
         $cache->addProperty('amount-positive');
         if ($cache->has()) {
@@ -142,7 +131,7 @@ class JournalRepository implements JournalRepositoryInterface
 
         // saves on queries:
         $amount = $journal->transactions()->where('amount', '>', 0)->get()->sum('amount');
-        $amount = (string) $amount;
+        $amount = (string)$amount;
         $cache->store($amount);
 
         return $amount;
@@ -189,7 +178,7 @@ class JournalRepository implements JournalRepositoryInterface
      */
     public function getMetaDateById(int $journalId, string $field): ?Carbon
     {
-        $cache = new CacheProperties;
+        $cache = new CacheProperties();
         $cache->addProperty('journal-meta-updated');
         $cache->addProperty($journalId);
         $cache->addProperty($field);
@@ -233,6 +222,18 @@ class JournalRepository implements JournalRepositoryInterface
     }
 
     /**
+     * Find a specific journal.
+     *
+     * @param int $journalId
+     *
+     * @return TransactionJournal|null
+     */
+    public function find(int $journalId): ?TransactionJournal
+    {
+        return $this->user->transactionJournals()->find($journalId);
+    }
+
+    /**
      * Search in journal descriptions.
      *
      * @param string $search
@@ -252,11 +253,13 @@ class JournalRepository implements JournalRepositoryInterface
     }
 
     /**
-     * @param User $user
+     * @param User|Authenticatable|null $user
      */
-    public function setUser(User $user): void
+    public function setUser(User | Authenticatable | null $user): void
     {
-        $this->user = $user;
+        if (null !== $user) {
+            $this->user = $user;
+        }
     }
 
     /**

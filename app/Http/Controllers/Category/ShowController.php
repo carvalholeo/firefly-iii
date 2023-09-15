@@ -34,6 +34,8 @@ use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  *
@@ -50,7 +52,7 @@ class ShowController extends Controller
     /**
      * CategoryController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -59,7 +61,7 @@ class ShowController extends Controller
 
         $this->middleware(
             function ($request, $next) {
-                app('view')->share('title', (string) trans('firefly.categories'));
+                app('view')->share('title', (string)trans('firefly.categories'));
                 app('view')->share('mainTitleIcon', 'fa-bookmark');
                 $this->repository = app(CategoryRepositoryInterface::class);
 
@@ -78,27 +80,29 @@ class ShowController extends Controller
      *
      * @return Factory|View
      * @throws FireflyException
-     * @throws \JsonException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function show(Request $request, Category $category, Carbon $start = null, Carbon $end = null)
     {
         /** @var Carbon $start */
-        $start = $start ?? session('start', Carbon::now()->startOfMonth());
+        $start = $start ?? session('start', today(config('app.timezone'))->startOfMonth());
         /** @var Carbon $end */
-        $end          = $end ?? session('end', Carbon::now()->endOfMonth());
+        $end          = $end ?? session('end', today(config('app.timezone'))->endOfMonth());
         $subTitleIcon = 'fa-bookmark';
-        $page         = (int) $request->get('page');
+        $page         = (int)$request->get('page');
         $attachments  = $this->repository->getAttachments($category);
-        $pageSize     = (int) app('preferences')->get('listPageSize', 50)->data;
-        $oldest       = $this->repository->firstUseDate($category) ?? Carbon::now()->startOfYear();
+        $pageSize     = (int)app('preferences')->get('listPageSize', 50)->data;
+        $oldest       = $this->repository->firstUseDate($category) ?? today(config('app.timezone'))->startOfYear();
         $periods      = $this->getCategoryPeriodOverview($category, $oldest, $end);
         $path         = route('categories.show', [$category->id, $start->format('Y-m-d'), $end->format('Y-m-d')]);
         $subTitle     = trans(
             'firefly.journals_in_period_for_category',
-            ['name' => $category->name, 'start' => $start->isoFormat($this->monthAndDayFormat),
-             'end'  => $end->isoFormat($this->monthAndDayFormat),]
+            [
+                'name'  => $category->name,
+                'start' => $start->isoFormat($this->monthAndDayFormat),
+                'end'   => $end->isoFormat($this->monthAndDayFormat),
+            ]
         );
 
         /** @var GroupCollectorInterface $collector */
@@ -120,21 +124,20 @@ class ShowController extends Controller
      * @param Category $category
      *
      * @return Factory|View
-     * @throws FireflyException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function showAll(Request $request, Category $category)
     {
         // default values:
         $subTitleIcon = 'fa-bookmark';
-        $page         = (int) $request->get('page');
-        $pageSize     = (int) app('preferences')->get('listPageSize', 50)->data;
+        $page         = (int)$request->get('page');
+        $pageSize     = (int)app('preferences')->get('listPageSize', 50)->data;
         $start        = null;
         $end          = null;
-        $periods      = new Collection;
+        $periods      = new Collection();
 
-        $subTitle = (string) trans('firefly.all_journals_for_category', ['name' => $category->name]);
+        $subTitle = (string)trans('firefly.all_journals_for_category', ['name' => $category->name]);
         $first    = $this->repository->firstUseDate($category);
         /** @var Carbon $start */
         $start       = $first ?? today(config('app.timezone'));

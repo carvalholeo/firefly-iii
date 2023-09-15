@@ -1,4 +1,5 @@
 <?php
+
 /**
  * RuleGroupRepositoryInterface.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -24,6 +25,7 @@ namespace FireflyIII\Repositories\RuleGroup;
 
 use FireflyIII\Models\RuleGroup;
 use FireflyIII\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
 
 /**
@@ -31,7 +33,6 @@ use Illuminate\Support\Collection;
  */
 interface RuleGroupRepositoryInterface
 {
-
     /**
      * Make sure rule group order is correct in DB.
      */
@@ -164,9 +165,9 @@ interface RuleGroupRepositoryInterface
     public function setOrder(RuleGroup $ruleGroup, int $newOrder): void;
 
     /**
-     * @param User $user
+     * @param User|Authenticatable|null $user
      */
-    public function setUser(User $user);
+    public function setUser(User | Authenticatable | null $user): void;
 
     /**
      * @param array $data

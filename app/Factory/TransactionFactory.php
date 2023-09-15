@@ -29,9 +29,12 @@ use FireflyIII\Models\Account;
 use FireflyIII\Models\Transaction;
 use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\Models\TransactionJournal;
+use FireflyIII\Rules\UniqueIban;
+use FireflyIII\Services\Internal\Update\AccountUpdateService;
 use FireflyIII\User;
 use Illuminate\Database\QueryException;
-use Log;
+use Illuminate\Support\Facades\Log;
+use Validator;
 
 /**
  * Class TransactionFactory
@@ -39,20 +42,21 @@ use Log;
 class TransactionFactory
 {
     private Account              $account;
+    private array                $accountInformation;
     private TransactionCurrency  $currency;
     private ?TransactionCurrency $foreignCurrency;
     private TransactionJournal   $journal;
     private bool                 $reconciled;
-    private User                 $user;
 
     /**
      * Constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
-        $this->reconciled = false;
+        $this->reconciled         = false;
+        $this->accountInformation = [];
     }
 
     /**
@@ -85,7 +89,6 @@ class TransactionFactory
      */
     private function create(string $amount, ?string $foreignAmount): Transaction
     {
-        $result = null;
         if ('' === $foreignAmount) {
             $foreignAmount = null;
         }
@@ -101,39 +104,72 @@ class TransactionFactory
             'identifier'              => 0,
         ];
         try {
+            /** @var Transaction|null $result */
             $result = Transaction::create($data);
-
         } catch (QueryException $e) {
             Log::error(sprintf('Could not create transaction: %s', $e->getMessage()), $data);
             Log::error($e->getMessage());
             Log::error($e->getTraceAsString());
-            throw new FireflyException('Query exception when creating transaction.', 0, $e);
+            throw new FireflyException(sprintf('Query exception when creating transaction: %s', $e->getMessage()), 0, $e);
         }
         if (null === $result) {
             throw new FireflyException('Transaction is NULL.');
         }
 
-        if (null !== $result) {
-            Log::debug(
-                sprintf(
-                    'Created transaction #%d (%s %s, account %s), part of journal #%d',
-                    $result->id,
-                    $this->currency->code,
-                    $amount,
-                    $this->account->name,
-                    $this->journal->id
-                )
-            );
+        Log::debug(
+            sprintf(
+                'Created transaction #%d (%s %s, account %s), part of journal #%d',
+                $result->id,
+                $this->currency->code,
+                $amount,
+                $this->account->name,
+                $this->journal->id
+            )
+        );
 
-            // do foreign currency thing: add foreign currency info to $one and $two if necessary.
-            if (null !== $this->foreignCurrency && null !== $foreignAmount && $this->foreignCurrency->id !== $this->currency->id && '' !== $foreignAmount) {
-                $result->foreign_currency_id = $this->foreignCurrency->id;
-                $result->foreign_amount      = $foreignAmount;
-            }
-            $result->save();
+        // do foreign currency thing: add foreign currency info to $one and $two if necessary.
+        if (null !== $this->foreignCurrency && null !== $foreignAmount && $this->foreignCurrency->id !== $this->currency->id && '' !== $foreignAmount) {
+            $result->foreign_currency_id = $this->foreignCurrency->id;
+            $result->foreign_amount      = $foreignAmount;
         }
+        $result->save();
+
+        // if present, update account with relevant account information from the array
+        $this->updateAccountInformation();
 
         return $result;
+    }
+
+    /**
+     * @return void
+     * @throws FireflyException
+     */
+    private function updateAccountInformation(): void
+    {
+        if (!array_key_exists('iban', $this->accountInformation)) {
+            Log::debug('No IBAN information in array, will not update.');
+            return;
+        }
+        if ('' !== (string)$this->account->iban) {
+            Log::debug('Account already has IBAN information, will not update.');
+            return;
+        }
+        if ($this->account->iban === $this->accountInformation['iban']) {
+            Log::debug('Account already has this IBAN, will not update.');
+            return;
+        }
+        // validate info:
+        $validator = Validator::make(['iban' => $this->accountInformation['iban']], [
+            'iban' => ['required', new UniqueIban($this->account, $this->account->accountType->type)],
+        ]);
+        if ($validator->fails()) {
+            Log::debug('Invalid or non-unique IBAN, will not update.');
+            return;
+        }
+
+        Log::debug('Will update account with IBAN information.');
+        $service = app(AccountUpdateService::class);
+        $service->update($this->account, ['iban' => $this->accountInformation['iban']]);
     }
 
     /**
@@ -160,7 +196,7 @@ class TransactionFactory
     /**
      * @param Account $account
      *
-     * @codeCoverageIgnore
+
      */
     public function setAccount(Account $account): void
     {
@@ -168,9 +204,17 @@ class TransactionFactory
     }
 
     /**
+     * @param array $accountInformation
+     */
+    public function setAccountInformation(array $accountInformation): void
+    {
+        $this->accountInformation = $accountInformation;
+    }
+
+    /**
      * @param TransactionCurrency $currency
      *
-     * @codeCoverageIgnore
+
      */
     public function setCurrency(TransactionCurrency $currency): void
     {
@@ -180,7 +224,7 @@ class TransactionFactory
     /**
      * @param TransactionCurrency|null $foreignCurrency |null
      *
-     * @codeCoverageIgnore
+
      */
     public function setForeignCurrency(?TransactionCurrency $foreignCurrency): void
     {
@@ -190,7 +234,7 @@ class TransactionFactory
     /**
      * @param TransactionJournal $journal
      *
-     * @codeCoverageIgnore
+
      */
     public function setJournal(TransactionJournal $journal): void
     {
@@ -200,7 +244,7 @@ class TransactionFactory
     /**
      * @param bool $reconciled
      *
-     * @codeCoverageIgnore
+
      */
     public function setReconciled(bool $reconciled): void
     {
@@ -210,10 +254,10 @@ class TransactionFactory
     /**
      * @param User $user
      *
-     * @codeCoverageIgnore
+
      */
     public function setUser(User $user): void
     {
-        $this->user = $user;
+        // empty function.
     }
 }

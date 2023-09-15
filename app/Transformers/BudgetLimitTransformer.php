@@ -48,7 +48,7 @@ class BudgetLimitTransformer extends AbstractTransformer
      */
     public function includeBudget(BudgetLimit $limit)
     {
-        return $this->item($limit->budget, new BudgetTransformer, 'budgets');
+        return $this->item($limit->budget, new BudgetTransformer(), 'budgets');
     }
 
     /**
@@ -63,7 +63,11 @@ class BudgetLimitTransformer extends AbstractTransformer
         $repository = app(OperationsRepository::class);
         $repository->setUser($budgetLimit->budget->user);
         $expenses              = $repository->sumExpenses(
-            $budgetLimit->start_date, $budgetLimit->end_date, null, new Collection([$budgetLimit->budget]), $budgetLimit->transactionCurrency
+            $budgetLimit->start_date,
+            $budgetLimit->end_date,
+            null,
+            new Collection([$budgetLimit->budget]),
+            $budgetLimit->transactionCurrency
         );
         $currency              = $budgetLimit->transactionCurrency;
         $amount                = $budgetLimit->amount;
@@ -74,22 +78,22 @@ class BudgetLimitTransformer extends AbstractTransformer
         $currencySymbol        = null;
         if (null !== $currency) {
             $amount                = $budgetLimit->amount;
-            $currencyId            = (int) $currency->id;
+            $currencyId            = (int)$currency->id;
             $currencyName          = $currency->name;
             $currencyCode          = $currency->code;
             $currencySymbol        = $currency->symbol;
             $currencyDecimalPlaces = $currency->decimal_places;
         }
-        $amount = number_format((float) $amount, $currencyDecimalPlaces, '.', '');
+        $amount = app('steam')->bcround($amount, $currencyDecimalPlaces);
 
         return [
-            'id'                      => (string) $budgetLimit->id,
+            'id'                      => (string)$budgetLimit->id,
             'created_at'              => $budgetLimit->created_at->toAtomString(),
             'updated_at'              => $budgetLimit->updated_at->toAtomString(),
             'start'                   => $budgetLimit->start_date->toAtomString(),
             'end'                     => $budgetLimit->end_date->endOfDay()->toAtomString(),
-            'budget_id'               => (string) $budgetLimit->budget_id,
-            'currency_id'             => (string) $currencyId,
+            'budget_id'               => (string)$budgetLimit->budget_id,
+            'currency_id'             => (string)$currencyId,
             'currency_code'           => $currencyCode,
             'currency_name'           => $currencyName,
             'currency_decimal_places' => $currencyDecimalPlaces,

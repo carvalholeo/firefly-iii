@@ -23,7 +23,6 @@ declare(strict_types=1);
 
 namespace FireflyIII\Api\V1\Requests\Data\Export;
 
-use Carbon\Carbon;
 use FireflyIII\Models\AccountType;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use FireflyIII\Support\Request\ChecksLogin;
@@ -36,22 +35,26 @@ use Illuminate\Support\Collection;
  */
 class ExportRequest extends FormRequest
 {
-    use ChecksLogin, ConvertsDataTypes;
+    use ChecksLogin;
+    use ConvertsDataTypes;
 
+    /**
+     * @return array
+     */
     public function getAll(): array
     {
         $result     = [
-            'start' => $this->getCarbonDate('start') ?? Carbon::now()->subYear(),
-            'end'   => $this->getCarbonDate('end') ?? Carbon::now(),
+            'start' => $this->getCarbonDate('start') ?? today(config('app.timezone'))->subYear(),
+            'end'   => $this->getCarbonDate('end') ?? today(config('app.timezone')),
             'type'  => $this->convertString('type'),
         ];
         $parts      = explode(',', $this->convertString('accounts'));
         $repository = app(AccountRepositoryInterface::class);
         $repository->setUser(auth()->user());
 
-        $accounts = new Collection;
+        $accounts = new Collection();
         foreach ($parts as $part) {
-            $accountId = (int) $part;
+            $accountId = (int)$part;
             if (0 !== $accountId) {
                 $account = $repository->find($accountId);
                 if (null !== $account && AccountType::ASSET === $account->accountType->type) {
@@ -73,7 +76,7 @@ class ExportRequest extends FormRequest
     {
         return [
             'type'     => 'in:csv',
-            'accounts' => 'min:1',
+            'accounts' => 'min:1|max:65536',
             'start'    => 'date|before:end',
             'end'      => 'date|after:start',
         ];

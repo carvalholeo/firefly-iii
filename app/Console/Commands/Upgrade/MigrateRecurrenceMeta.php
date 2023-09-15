@@ -24,17 +24,22 @@ declare(strict_types=1);
 
 namespace FireflyIII\Console\Commands\Upgrade;
 
-use FireflyIII\Exceptions\FireflyException;
+use FireflyIII\Console\Commands\ShowsFriendlyMessages;
+use FireflyIII\Models\Recurrence;
 use FireflyIII\Models\RecurrenceMeta;
 use FireflyIII\Models\RecurrenceTransactionMeta;
 use Illuminate\Console\Command;
 use JsonException;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class MigrateRecurrenceMeta
  */
 class MigrateRecurrenceMeta extends Command
 {
+    use ShowsFriendlyMessages;
+
     public const CONFIG_NAME = '481_migrate_recurrence_meta';
     /**
      * The console command description.
@@ -53,45 +58,41 @@ class MigrateRecurrenceMeta extends Command
      * Execute the console command.
      *
      * @return int
-     * @throws FireflyException
+     * @throws ContainerExceptionInterface
      * @throws JsonException
+     * @throws NotFoundExceptionInterface
      */
     public function handle(): int
     {
-        $start = microtime(true);
         if ($this->isExecuted() && true !== $this->option('force')) {
-            $this->warn('This command has already been executed.');
+            $this->friendlyInfo('This command has already been executed.');
 
             return 0;
         }
         $count = $this->migrateMetaData();
 
         if (0 === $count) {
-            $this->line('No recurrence meta data migrated.');
+            $this->friendlyPositive('No recurrence meta data migrated.');
         }
         if ($count > 0) {
-            $this->line(sprintf('Migrated %d meta data entries', $count));
+            $this->friendlyInfo(sprintf('Migrated %d meta data entries', $count));
         }
 
         $this->markAsExecuted();
-
-        $end = round(microtime(true) - $start, 2);
-        $this->info(sprintf('Migrated recurrence meta data in %s seconds.', $end));
 
         return 0;
     }
 
     /**
      * @return bool
-     * @throws FireflyException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     private function isExecuted(): bool
     {
         $configVar = app('fireflyconfig')->get(self::CONFIG_NAME, false);
         if (null !== $configVar) {
-            return (bool) $configVar->data;
+            return (bool)$configVar->data;
         }
 
         return false;
@@ -122,6 +123,7 @@ class MigrateRecurrenceMeta extends Command
      */
     private function migrateEntry(RecurrenceMeta $meta): int
     {
+        /** @var Recurrence|null $recurrence */
         $recurrence = $meta->recurrence;
         if (null === $recurrence) {
             return 0;

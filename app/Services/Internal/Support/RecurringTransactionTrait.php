@@ -23,7 +23,6 @@ declare(strict_types=1);
 
 namespace FireflyIII\Services\Internal\Support;
 
-use Exception;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Factory\AccountFactory;
 use FireflyIII\Factory\BillFactory;
@@ -41,7 +40,8 @@ use FireflyIII\Models\RecurrenceTransaction;
 use FireflyIII\Models\RecurrenceTransactionMeta;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use FireflyIII\Validation\AccountValidator;
-use Log;
+use Illuminate\Support\Facades\Log;
+use JsonException;
 
 /**
  * Trait RecurringTransactionTrait
@@ -60,11 +60,7 @@ trait RecurringTransactionTrait
         if ('' === $note) {
             $dbNote = $recurrence->notes()->first();
             if (null !== $dbNote) {
-                try {
-                    $dbNote->delete();
-                } catch (Exception $e) { // @phpstan-ignore-line
-                    // @ignoreException
-                }
+                $dbNote->delete();
             }
 
             return true;
@@ -97,7 +93,6 @@ trait RecurringTransactionTrait
                     'weekend'           => $array['weekend'] ?? 1,
                 ]
             );
-
         }
     }
 
@@ -108,7 +103,7 @@ trait RecurringTransactionTrait
      * @param array      $transactions
      *
      * @throws FireflyException
-     * @throws \JsonException
+     * @throws JsonException
      */
     protected function createTransactions(Recurrence $recurrence, array $transactions): void
     {
@@ -145,10 +140,10 @@ trait RecurringTransactionTrait
             if (!$validator->validateDestination(['id' => $destination->id])) {
                 throw new FireflyException(sprintf('Destination invalid: %s', $validator->destError));
             }
-            if (array_key_exists('foreign_amount', $array) && '' === (string) $array['foreign_amount']) {
+            if (array_key_exists('foreign_amount', $array) && '' === (string)$array['foreign_amount']) {
                 unset($array['foreign_amount']);
             }
-            // See reference nr. 100
+            // TODO typeOverrule. The account validator may have a different opinion on the type of the transaction.
             $transaction = new RecurrenceTransaction(
                 [
                     'recurrence_id'           => $recurrence->id,
@@ -157,31 +152,30 @@ trait RecurringTransactionTrait
                     'source_id'               => $source->id,
                     'destination_id'          => $destination->id,
                     'amount'                  => $array['amount'],
-                    'foreign_amount'          => array_key_exists('foreign_amount', $array) ? (string) $array['foreign_amount'] : null,
+                    'foreign_amount'          => array_key_exists('foreign_amount', $array) ? (string)$array['foreign_amount'] : null,
                     'description'             => $array['description'],
                 ]
             );
             $transaction->save();
 
             if (array_key_exists('budget_id', $array)) {
-                $this->setBudget($transaction, (int) $array['budget_id']);
+                $this->setBudget($transaction, (int)$array['budget_id']);
             }
             if (array_key_exists('bill_id', $array)) {
-                $this->setBill($transaction, (int) $array['bill_id']);
+                $this->setBill($transaction, (int)$array['bill_id']);
             }
             if (array_key_exists('category_id', $array)) {
-                $this->setCategory($transaction, (int) $array['category_id']);
+                $this->setCategory($transaction, (int)$array['category_id']);
             }
 
             // same for piggy bank
             if (array_key_exists('piggy_bank_id', $array)) {
-                $this->updatePiggyBank($transaction, (int) $array['piggy_bank_id']);
+                $this->updatePiggyBank($transaction, (int)$array['piggy_bank_id']);
             }
 
             if (array_key_exists('tags', $array) && is_array($array['tags'])) {
                 $this->updateTags($transaction, $array['tags']);
             }
-
         }
     }
 
@@ -191,18 +185,19 @@ trait RecurringTransactionTrait
      * @param string|null $accountName
      *
      * @return Account
+     * @throws JsonException
      */
     protected function findAccount(array $expectedTypes, ?int $accountId, ?string $accountName): Account
     {
         $result      = null;
-        $accountId   = (int) $accountId;
-        $accountName = (string) $accountName;
+        $accountId   = (int)$accountId;
+        $accountName = (string)$accountName;
         /** @var AccountRepositoryInterface $repository */
         $repository = app(AccountRepositoryInterface::class);
         $repository->setUser($this->user);
 
         // if user has submitted an account ID, search for it.
-        $result = $repository->find((int) $accountId);
+        $result = $repository->find((int)$accountId);
         if (null !== $result) {
             return $result;
         }
@@ -226,11 +221,9 @@ trait RecurringTransactionTrait
             if (!in_array($expectedType, $cannotCreate, true)) {
                 try {
                     $result = $factory->findOrCreate($accountName, $expectedType);
-
                 } catch (FireflyException $e) {
                     Log::error($e->getMessage());
                 }
-
             }
         }
 
@@ -252,7 +245,7 @@ trait RecurringTransactionTrait
 
         $meta = $transaction->recurrenceTransactionMeta()->where('name', 'budget_id')->first();
         if (null === $meta) {
-            $meta        = new RecurrenceTransactionMeta;
+            $meta        = new RecurrenceTransactionMeta();
             $meta->rt_id = $transaction->id;
             $meta->name  = 'budget_id';
         }
@@ -275,7 +268,7 @@ trait RecurringTransactionTrait
 
         $meta = $transaction->recurrenceTransactionMeta()->where('name', 'bill_id')->first();
         if (null === $meta) {
-            $meta        = new RecurrenceTransactionMeta;
+            $meta        = new RecurrenceTransactionMeta();
             $meta->rt_id = $transaction->id;
             $meta->name  = 'bill_id';
         }
@@ -286,8 +279,6 @@ trait RecurringTransactionTrait
     /**
      * @param RecurrenceTransaction $transaction
      * @param int                   $categoryId
-     *
-     * @throws FireflyException
      */
     private function setCategory(RecurrenceTransaction $transaction, int $categoryId): void
     {
@@ -301,10 +292,10 @@ trait RecurringTransactionTrait
 
             return;
         }
-
+        $transaction->recurrenceTransactionMeta()->where('name', 'category_name')->delete();
         $meta = $transaction->recurrenceTransactionMeta()->where('name', 'category_id')->first();
         if (null === $meta) {
-            $meta        = new RecurrenceTransactionMeta;
+            $meta        = new RecurrenceTransactionMeta();
             $meta->rt_id = $transaction->id;
             $meta->name  = 'category_id';
         }
@@ -343,7 +334,7 @@ trait RecurringTransactionTrait
      */
     protected function updateTags(RecurrenceTransaction $transaction, array $tags): void
     {
-        if (!empty($tags)) {
+        if (0 !== count($tags)) {
             /** @var RecurrenceMeta|null $entry */
             $entry = $transaction->recurrenceTransactionMeta()->where('name', 'tags')->first();
             if (null === $entry) {
@@ -352,7 +343,7 @@ trait RecurringTransactionTrait
             $entry->value = json_encode($tags);
             $entry->save();
         }
-        if (empty($tags)) {
+        if (0 === count($tags)) {
             // delete if present
             $transaction->recurrenceTransactionMeta()->where('name', 'tags')->delete();
         }
@@ -361,7 +352,7 @@ trait RecurringTransactionTrait
     /**
      * @param Recurrence $recurrence
      *
-     * @codeCoverageIgnore
+
      */
     protected function deleteRepetitions(Recurrence $recurrence): void
     {
@@ -371,7 +362,7 @@ trait RecurringTransactionTrait
     /**
      * @param Recurrence $recurrence
      *
-     * @codeCoverageIgnore
+
      */
     protected function deleteTransactions(Recurrence $recurrence): void
     {
@@ -379,11 +370,8 @@ trait RecurringTransactionTrait
         /** @var RecurrenceTransaction $transaction */
         foreach ($recurrence->recurrenceTransactions as $transaction) {
             $transaction->recurrenceTransactionMeta()->delete();
-            try {
-                $transaction->delete();
-            } catch (Exception $e) { // @phpstan-ignore-line
-                // @ignoreException
-            }
+
+            $transaction->delete();
         }
     }
 }

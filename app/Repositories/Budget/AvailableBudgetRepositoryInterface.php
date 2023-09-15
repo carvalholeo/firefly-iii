@@ -27,6 +27,7 @@ use Carbon\Carbon;
 use FireflyIII\Models\AvailableBudget;
 use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
 
 /**
@@ -34,6 +35,10 @@ use Illuminate\Support\Collection;
  */
 interface AvailableBudgetRepositoryInterface
 {
+    /**
+     * @return void
+     */
+    public function cleanup(): void;
 
     /**
      * Delete all available budgets.
@@ -112,6 +117,14 @@ interface AvailableBudgetRepositoryInterface
     public function getAvailableBudgetsByDate(?Carbon $start, ?Carbon $end): Collection;
 
     /**
+     * @param Carbon $start
+     * @param Carbon $end
+     *
+     * @return Collection
+     */
+    public function getAvailableBudgetsByExactDate(Carbon $start, Carbon $end): Collection;
+
+    /**
      * Get by transaction currency and date. Should always result in one entry or NULL.
      *
      * @param Carbon              $start
@@ -134,9 +147,9 @@ interface AvailableBudgetRepositoryInterface
     public function setAvailableBudget(TransactionCurrency $currency, Carbon $start, Carbon $end, string $amount): AvailableBudget;
 
     /**
-     * @param User $user
+     * @param User|Authenticatable|null $user
      */
-    public function setUser(User $user): void;
+    public function setUser(User | Authenticatable | null $user): void;
 
     /**
      * @param array $data
@@ -160,5 +173,4 @@ interface AvailableBudgetRepositoryInterface
      * @return AvailableBudget
      */
     public function updateAvailableBudget(AvailableBudget $availableBudget, array $data): AvailableBudget;
-
 }

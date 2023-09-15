@@ -1,4 +1,5 @@
 <?php
+
 /**
  * TransactionCurrency.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -97,17 +98,16 @@ class TransactionCurrency extends Model
     public static function routeBinder(string $value): TransactionCurrency
     {
         if (auth()->check()) {
-            $currencyId = (int) $value;
+            $currencyId = (int)$value;
             $currency   = self::find($currencyId);
             if (null !== $currency) {
                 return $currency;
             }
         }
-        throw new NotFoundHttpException;
+        throw new NotFoundHttpException();
     }
 
     /**
-     * @codeCoverageIgnore
      * @return HasMany
      */
     public function budgetLimits(): HasMany
@@ -116,7 +116,6 @@ class TransactionCurrency extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return HasMany
      */
     public function transactionJournals(): HasMany
@@ -125,7 +124,6 @@ class TransactionCurrency extends Model
     }
 
     /**
-     * @codeCoverageIgnore
      * @return HasMany
      */
     public function transactions(): HasMany

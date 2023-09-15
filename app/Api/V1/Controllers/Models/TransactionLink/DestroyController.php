@@ -30,15 +30,17 @@ use FireflyIII\Repositories\LinkType\LinkTypeRepositoryInterface;
 use FireflyIII\User;
 use Illuminate\Http\JsonResponse;
 
+/**
+ * Class DestroyController
+ */
 class DestroyController extends Controller
 {
-
     private LinkTypeRepositoryInterface $repository;
 
     /**
      * TransactionLinkController constructor.
      *
-     * @codeCoverageIgnore
+
      */
     public function __construct()
     {
@@ -59,20 +61,19 @@ class DestroyController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/links/deleteTransactionLink
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/links/deleteTransactionLink
      *
      * Delete the resource.
      *
      * @param TransactionJournalLink $link
      *
      * @return JsonResponse
-     * @codeCoverageIgnore
      */
     public function destroy(TransactionJournalLink $link): JsonResponse
     {
         $this->repository->destroyLink($link);
+        app('preferences')->mark();
 
         return response()->json([], 204);
     }
-
 }

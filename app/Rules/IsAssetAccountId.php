@@ -1,4 +1,5 @@
 <?php
+
 /**
  * IsAssetAccountId.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -36,7 +37,6 @@ class IsAssetAccountId implements Rule
      * Get the validation error message. This is not translated because only the API uses it.
      *
      * @return string
-     * @codeCoverageIgnore
      */
     public function message(): string
     {
@@ -53,7 +53,7 @@ class IsAssetAccountId implements Rule
      */
     public function passes($attribute, $value): bool
     {
-        $accountId = (int) $value;
+        $accountId = (int)$value;
         $account   = Account::with('accountType')->find($accountId);
         if (null === $account) {
             return false;

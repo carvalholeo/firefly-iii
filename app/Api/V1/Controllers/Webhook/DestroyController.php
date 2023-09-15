@@ -40,7 +40,6 @@ class DestroyController extends Controller
     private WebhookRepositoryInterface $repository;
 
     /**
-     * @codeCoverageIgnore
      */
     public function __construct()
     {
@@ -57,25 +56,25 @@ class DestroyController extends Controller
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/webhooks/deleteWebhook
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/webhooks/deleteWebhook
      *
      * Remove the specified resource from storage.
      *
      * @param Webhook $webhook
      *
      * @return JsonResponse
-     * @codeCoverageIgnore
      */
     public function destroy(Webhook $webhook): JsonResponse
     {
         $this->repository->destroy($webhook);
+        app('preferences')->mark();
 
         return response()->json([], 204);
     }
 
     /**
      * This webhook is documented at:
-     * https://api-docs.firefly-iii.org/#/webhooks/deleteWebhookMessageAttempt
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/webhooks/deleteWebhookMessageAttempt
      *
      * Remove the specified resource from storage.
      *
@@ -85,26 +84,25 @@ class DestroyController extends Controller
      *
      * @return JsonResponse
      * @throws FireflyException
-     * @codeCoverageIgnore
      */
     public function destroyAttempt(Webhook $webhook, WebhookMessage $message, WebhookAttempt $attempt): JsonResponse
     {
         if ($message->webhook_id !== $webhook->id) {
-            throw new FireflyException('Webhook and webhook message are no match');
+            throw new FireflyException('200040: Webhook and webhook message are no match');
         }
         if ($attempt->webhook_message_id !== $message->id) {
-            throw new FireflyException('Webhook message and webhook attempt are no match');
-
+            throw new FireflyException('200041: Webhook message and webhook attempt are no match');
         }
 
         $this->repository->destroyAttempt($attempt);
+        app('preferences')->mark();
 
         return response()->json([], 204);
     }
 
     /**
      * This endpoint is documented at:
-     * https://api-docs.firefly-iii.org/#/webhooks/deleteWebhookMessage
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/webhooks/deleteWebhookMessage
      *
      * Remove the specified resource from storage.
      *
@@ -113,14 +111,14 @@ class DestroyController extends Controller
      *
      * @return JsonResponse
      * @throws FireflyException
-     * @codeCoverageIgnore
      */
     public function destroyMessage(Webhook $webhook, WebhookMessage $message): JsonResponse
     {
         if ($message->webhook_id !== $webhook->id) {
-            throw new FireflyException('Webhook and webhook message are no match');
+            throw new FireflyException('200040: Webhook and webhook message are no match');
         }
         $this->repository->destroyMessage($message);
+        app('preferences')->mark();
 
         return response()->json([], 204);
     }
