@@ -34,7 +34,6 @@ use FireflyIII\Repositories\Bill\BillRepositoryInterface;
 use FireflyIII\Repositories\Budget\BudgetRepositoryInterface;
 use FireflyIII\Repositories\PiggyBank\PiggyBankRepositoryInterface;
 use FireflyIII\Repositories\Recurring\RecurringRepositoryInterface;
-use Illuminate\Support\Facades\Log;
 
 /**
  *
@@ -72,17 +71,17 @@ class RecurrenceTransformer extends AbstractTransformer
      */
     public function transform(Recurrence $recurrence): array
     {
-        Log::debug('Now in Recurrence::transform()');
+        app('log')->debug('Now in Recurrence::transform()');
         $this->repository->setUser($recurrence->user);
         $this->piggyRepos->setUser($recurrence->user);
         $this->factory->setUser($recurrence->user);
         $this->budgetRepos->setUser($recurrence->user);
-        Log::debug('Set user.');
+        app('log')->debug('Set user.');
 
         $shortType = (string)config(sprintf('firefly.transactionTypesToShort.%s', $recurrence->transactionType->type));
         $notes     = $this->repository->getNoteText($recurrence);
         $reps      = 0 === (int)$recurrence->repetitions ? null : (int)$recurrence->repetitions;
-        Log::debug('Get basic data.');
+        app('log')->debug('Get basic data.');
 
         // basic data.
         return [
@@ -118,7 +117,7 @@ class RecurrenceTransformer extends AbstractTransformer
      */
     private function getRepetitions(Recurrence $recurrence): array
     {
-        Log::debug('Now in getRepetitions().');
+        app('log')->debug('Now in getRepetitions().');
         $fromDate = $recurrence->latest_date ?? $recurrence->first_date;
         $return   = [];
 
@@ -157,7 +156,7 @@ class RecurrenceTransformer extends AbstractTransformer
      */
     private function getTransactions(Recurrence $recurrence): array
     {
-        Log::debug(sprintf('Now in %s', __METHOD__));
+        app('log')->debug(sprintf('Now in %s', __METHOD__));
         $return = [];
         // get all transactions:
         /** @var RecurrenceTransaction $transaction */
@@ -246,7 +245,7 @@ class RecurrenceTransformer extends AbstractTransformer
      */
     private function getTransactionMeta(RecurrenceTransaction $transaction, array $array): array
     {
-        Log::debug(sprintf('Now in %s', __METHOD__));
+        app('log')->debug(sprintf('Now in %s', __METHOD__));
         $array['tags']            = [];
         $array['category_id']     = null;
         $array['category_name']   = null;

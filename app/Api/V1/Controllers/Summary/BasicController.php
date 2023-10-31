@@ -39,7 +39,7 @@ use FireflyIII\Repositories\Bill\BillRepositoryInterface;
 use FireflyIII\Repositories\Budget\AvailableBudgetRepositoryInterface;
 use FireflyIII\Repositories\Budget\BudgetRepositoryInterface;
 use FireflyIII\Repositories\Budget\OperationsRepositoryInterface;
-use FireflyIII\Repositories\Currency\CurrencyRepositoryInterface;
+use FireflyIII\Repositories\UserGroups\Currency\CurrencyRepositoryInterface;
 use FireflyIII\User;
 use Illuminate\Http\JsonResponse;
 
@@ -190,7 +190,7 @@ class BasicController extends Controller
                 'key'                     => sprintf('balance-in-%s', $currency->code),
                 'title'                   => trans('firefly.box_balance_in_currency', ['currency' => $currency->symbol]),
                 'monetary_value'          => $sums[$currencyId] ?? '0',
-                'currency_id'             => $currency->id,
+                'currency_id'             => (string)$currency->id,
                 'currency_code'           => $currency->code,
                 'currency_symbol'         => $currency->symbol,
                 'currency_decimal_places' => $currency->decimal_places,
@@ -203,7 +203,7 @@ class BasicController extends Controller
                 'key'                     => sprintf('spent-in-%s', $currency->code),
                 'title'                   => trans('firefly.box_spent_in_currency', ['currency' => $currency->symbol]),
                 'monetary_value'          => $expenses[$currencyId] ?? '0',
-                'currency_id'             => $currency->id,
+                'currency_id'             => (string)$currency->id,
                 'currency_code'           => $currency->code,
                 'currency_symbol'         => $currency->symbol,
                 'currency_decimal_places' => $currency->decimal_places,
@@ -215,7 +215,7 @@ class BasicController extends Controller
                 'key'                     => sprintf('earned-in-%s', $currency->code),
                 'title'                   => trans('firefly.box_earned_in_currency', ['currency' => $currency->symbol]),
                 'monetary_value'          => $incomes[$currencyId] ?? '0',
-                'currency_id'             => $currency->id,
+                'currency_id'             => (string)$currency->id,
                 'currency_code'           => $currency->code,
                 'currency_symbol'         => $currency->symbol,
                 'currency_decimal_places' => $currency->decimal_places,
@@ -236,6 +236,7 @@ class BasicController extends Controller
      */
     private function getBillInformation(Carbon $start, Carbon $end): array
     {
+        app('log')->debug(sprintf('Now in getBillInformation("%s", "%s")', $start->format('Y-m-d'), $end->format('Y-m-d-')));
         /*
          * Since both this method and the chart use the exact same data, we can suffice
          * with calling the one method in the bill repository that will get this amount.
@@ -253,7 +254,7 @@ class BasicController extends Controller
                 'key'                     => sprintf('bills-paid-in-%s', $info['code']),
                 'title'                   => trans('firefly.box_bill_paid_in_currency', ['currency' => $info['symbol']]),
                 'monetary_value'          => $amount,
-                'currency_id'             => $info['id'],
+                'currency_id'             => (string)$info['id'],
                 'currency_code'           => $info['code'],
                 'currency_symbol'         => $info['symbol'],
                 'currency_decimal_places' => $info['decimal_places'],
@@ -272,7 +273,7 @@ class BasicController extends Controller
                 'key'                     => sprintf('bills-unpaid-in-%s', $info['code']),
                 'title'                   => trans('firefly.box_bill_unpaid_in_currency', ['currency' => $info['symbol']]),
                 'monetary_value'          => $amount,
-                'currency_id'             => $info['id'],
+                'currency_id'             => (string)$info['id'],
                 'currency_code'           => $info['code'],
                 'currency_symbol'         => $info['symbol'],
                 'currency_decimal_places' => $info['decimal_places'],
@@ -281,7 +282,7 @@ class BasicController extends Controller
                 'sub_title'               => '',
             ];
         }
-
+        app('log')->debug(sprintf('Done with getBillInformation("%s", "%s")', $start->format('Y-m-d'), $end->format('Y-m-d-')));
         return $return;
     }
 
@@ -302,7 +303,7 @@ class BasicController extends Controller
 
         foreach ($spent as $row) {
             // either an amount was budgeted or 0 is available.
-            $amount          = $available[$row['currency_id']] ?? '0';
+            $amount          = (string)($available[$row['currency_id']] ?? '0');
             $spentInCurrency = $row['sum'];
             $leftToSpend     = bcadd($amount, $spentInCurrency);
 
@@ -316,7 +317,7 @@ class BasicController extends Controller
                 'key'                     => sprintf('left-to-spend-in-%s', $row['currency_code']),
                 'title'                   => trans('firefly.box_left_to_spend_in_currency', ['currency' => $row['currency_symbol']]),
                 'monetary_value'          => $leftToSpend,
-                'currency_id'             => $row['currency_id'],
+                'currency_id'             => (string)$row['currency_id'],
                 'currency_code'           => $row['currency_code'],
                 'currency_symbol'         => $row['currency_symbol'],
                 'currency_decimal_places' => $row['currency_decimal_places'],
@@ -381,7 +382,7 @@ class BasicController extends Controller
                 'key'                     => sprintf('net-worth-in-%s', $currency->code),
                 'title'                   => trans('firefly.box_net_worth_in_currency', ['currency' => $currency->symbol]),
                 'monetary_value'          => $amount,
-                'currency_id'             => $currency->id,
+                'currency_id'             => (string)$currency->id,
                 'currency_code'           => $currency->code,
                 'currency_symbol'         => $currency->symbol,
                 'currency_decimal_places' => $currency->decimal_places,

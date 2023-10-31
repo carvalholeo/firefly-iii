@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+
 /*
  * BalanceChartRequest.php
  * Copyright (c) 2023 james@firefly-iii.org
@@ -21,17 +21,24 @@ declare(strict_types=1);
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+declare(strict_types=1);
+
 namespace FireflyIII\Api\V2\Request\Chart;
 
+use FireflyIII\Support\Http\Api\ValidatesUserGroupTrait;
 use FireflyIII\Support\Request\ChecksLogin;
 use FireflyIII\Support\Request\ConvertsDataTypes;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
+/**
+ * Class BalanceChartRequest
+ */
 class BalanceChartRequest extends FormRequest
 {
     use ConvertsDataTypes;
     use ChecksLogin;
+    use ValidatesUserGroupTrait;
 
     /**
      * Get all data from the request.

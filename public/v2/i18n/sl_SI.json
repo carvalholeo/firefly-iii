@@ -9,6 +9,8 @@
             "paid": "Pla\u010dano",
             "unpaid": "Nepla\u010dano",
             "default_group_title_name_plain": "ungrouped",
+            "subscriptions_in_group": "Subscriptions in group \"%{title}\"",
+            "subscr_expected_x_times": "Expect to pay %{amount} %{times} times this period",
             "overspent": "Preve\u010d porabljeno",
             "money_flowing_in": "Na",
             "money_flowing_out": "Iz",
@@ -21,7 +23,13 @@
             "unknown_budget_plain": "Ni prora\u010duna",
             "expense_account": "Ra\u010dun stro\u0161kov",
             "revenue_account": "Ra\u010dun prihodkov",
-            "budget": "Prora\u010dun"
+            "budget": "Prora\u010dun",
+            "account_type_Asset account": "Asset account",
+            "account_type_Expense account": "Expense account",
+            "account_type_Revenue account": "Revenue account",
+            "account_type_Debt": "Dolg",
+            "account_type_Loan": "Posojilo",
+            "account_type_Mortgage": "Hipoteka"
         }
     }
 }

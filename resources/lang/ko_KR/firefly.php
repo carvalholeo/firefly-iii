@@ -43,6 +43,7 @@ return [
     'split'                                => '나누기',
     'single_split'                         => '나누기',
     'clone'                                => '복사',
+    'clone_and_edit'                       => 'Clone and edit',
     'confirm_action'                       => '액션 확인',
     'last_seven_days'                      => '최근 7일',
     'last_thirty_days'                     => '최근 30일',
@@ -1565,6 +1566,7 @@ return [
     'list_all_attachments'                      => '모든 첨부 파일 목록',
 
     // transaction index
+    'is_reconciled_fields_dropped'              => 'Because this transaction is reconciled, you will not be able to update the accounts, nor the amount(s).',
     'title_expenses'                            => '지출',
     'title_withdrawal'                          => '지출',
     'title_revenue'                             => '수익 / 수입',
@@ -1632,7 +1634,8 @@ return [
     'create_currency'                           => '새로운 통화 생성',
     'store_currency'                            => '새 통화 저장',
     'update_currency'                           => '통화 업데이트',
-    'new_default_currency'                      => '기본 통화는 이제 :name 입니다.',
+    'new_default_currency'                      => '":name" is now the default currency.',
+    'default_currency_failed'                   => 'Could not make ":name" the default currency. Please check the logs.',
     'cannot_delete_currency'                    => ':name을(를) 아직 사용 중이므로 삭제할 수 없습니다.',
     'cannot_delete_fallback_currency'           => ':name은 시스템 대체 통화이며 삭제할 수 없습니다.',
     'cannot_disable_currency_journals'          => '거래가 여전히 :name을 사용하고 있으므로 비활성화할 수 없습니다.',
@@ -1658,7 +1661,9 @@ return [
     'disable_currency'                          => '비활성화',
     'currencies_default_disabled'               => '이러한 통화는 대부분 기본적으로 비활성화되어 있습니다. 사용하려면 먼저 활성화해야 합니다.',
     'currency_is_now_enabled'                   => '":name" 통화가 활성화되었습니다',
+    'could_not_enable_currency'                 => 'Could not enable currency ":name". Please review the logs.',
     'currency_is_now_disabled'                  => '":name" 통화가 비활성화되었습니다',
+    'could_not_disable_currency'                => 'Could not disable currency ":name". Perhaps it is still in use?',
 
     // forms:
     'mandatoryFields'                           => '필수 입력 항목',
@@ -1731,7 +1736,10 @@ return [
     'remove_budgeted_amount'                    => ':currency에서 예산 금액 제거',
 
     // bills:
+    'subscription'                              => 'Subscription',
     'not_expected_period'                       => '이 기간에는 예상되지 않음',
+    'subscriptions_in_group'                    => 'Subscriptions in group "%{title}"',
+    'subscr_expected_x_times'                   => 'Expect to pay %{amount} %{times} times this period',
     'not_or_not_yet'                            => '아니요 (아직)',
     'visit_bill'                                => 'Firefly III에서 ":name" 청구서 방문하기',
     'match_between_amounts'                     => '청구서는 :low와 :high 사이의 거래를 일치시킵니다.',
@@ -1768,6 +1776,7 @@ return [
     'bill_edit_rules'                           => 'Firefly III가 이 청구서와 관련된 규칙도 수정하려고 시도합니다. 그러나 이 규칙을 직접 수정한 경우 Firefly III는 아무 것도 변경하지 않습니다.| Firefly III는 이 청구서와 관련된 :count개의 규칙도 편집하려고 시도합니다. 그러나 이러한 규칙을 직접 편집한 경우 Firefly III는 아무것도 변경하지 않습니다.',
     'bill_expected_date'                        => ':date 예정',
     'bill_expected_date_js'                     => '{date} 예정',
+    'expected_amount'                           => '(Expected) amount',
     'bill_paid_on'                              => '{date}에 결제',
     'bill_repeats_weekly'                       => '매주 반복',
     'bill_repeats_monthly'                      => '매달 반복',
@@ -1940,6 +1949,7 @@ return [
 
 
     // transactions:
+    'unreconcile'                               => 'Undo reconciliation',
     'update_withdrawal'                         => '출금 업데이트',
     'update_deposit'                            => '입금 업데이트',
     'update_transaction'                        => '거래 업데이트',
@@ -2037,6 +2047,7 @@ return [
     'first_split_overrules_destination'         => '첫 번째 분할은 대상 계정을 무시할 수 있습니다.',
     'spent_x_of_y'                              => '{total} 중 {amount} 지출',
 
+
     // new user:
     'welcome'                                   => 'Firefly III에 오신 것을 환영합니다!',
     'submit'                                    => '제출',
@@ -2103,6 +2114,9 @@ return [
     'Expense account'                           => '지출 계정',
     'Revenue account'                           => '수익 계정',
     'Initial balance account'                   => '초기 잔액 계정',
+    'account_type_Asset account'                => 'Asset account',
+    'account_type_Expense account'              => 'Expense account',
+    'account_type_Revenue account'              => 'Revenue account',
     'account_type_Debt'                         => '대출',
     'account_type_Loan'                         => '빚',
     'account_type_Mortgage'                     => '모기지',

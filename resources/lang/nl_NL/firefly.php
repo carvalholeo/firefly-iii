@@ -43,6 +43,7 @@ return [
     'split'                                => 'Splitsen',
     'single_split'                         => 'Split',
     'clone'                                => 'Dupliceren',
+    'clone_and_edit'                       => 'Clone and edit',
     'confirm_action'                       => 'Actie bevestigen',
     'last_seven_days'                      => 'Laatste zeven dagen',
     'last_thirty_days'                     => 'Laatste dertig dagen',
@@ -1565,6 +1566,7 @@ return [
     'list_all_attachments'                      => 'Lijst van alle bijlagen',
 
     // transaction index
+    'is_reconciled_fields_dropped'              => 'Because this transaction is reconciled, you will not be able to update the accounts, nor the amount(s).',
     'title_expenses'                            => 'Uitgaven',
     'title_withdrawal'                          => 'Uitgaven',
     'title_revenue'                             => 'Inkomsten',
@@ -1632,7 +1634,8 @@ return [
     'create_currency'                           => 'Voeg nieuwe valuta toe',
     'store_currency'                            => 'Sla nieuwe valuta op',
     'update_currency'                           => 'Wijzig valuta',
-    'new_default_currency'                      => ':name is nu de standaard valuta.',
+    'new_default_currency'                      => '":name" is now the default currency.',
+    'default_currency_failed'                   => 'Could not make ":name" the default currency. Please check the logs.',
     'cannot_delete_currency'                    => 'Kan ":name" niet verwijderen, want deze is in gebruik.',
     'cannot_delete_fallback_currency'           => ':naam is de systeemvaluta en kan niet verwijderd worden.',
     'cannot_disable_currency_journals'          => 'Je kan :name niet uitschakelen, er zijn nog transacties die deze valuta gebruiken.',
@@ -1658,7 +1661,9 @@ return [
     'disable_currency'                          => 'Uitschakelen',
     'currencies_default_disabled'               => 'De meeste van deze valuta zijn standaard uitgeschakeld. Om ze te gebruiken, moet je ze eerst inschakelen.',
     'currency_is_now_enabled'                   => 'Valuta ":name" is ingeschakeld',
+    'could_not_enable_currency'                 => 'Could not enable currency ":name". Please review the logs.',
     'currency_is_now_disabled'                  => 'Valuta ":name" is uitgeschakeld',
+    'could_not_disable_currency'                => 'Could not disable currency ":name". Perhaps it is still in use?',
 
     // forms:
     'mandatoryFields'                           => 'Verplichte velden',
@@ -1731,7 +1736,10 @@ return [
     'remove_budgeted_amount'                    => 'Verwijder gebudgetteerd bedrag in :currency',
 
     // bills:
+    'subscription'                              => 'Abonnement',
     'not_expected_period'                       => 'Niet verwacht deze periode',
+    'subscriptions_in_group'                    => 'Abonnementen in groep "%{title}"',
+    'subscr_expected_x_times'                   => 'Verwacht %{amount} %{times} keer te betalen in deze periode',
     'not_or_not_yet'                            => '(nog) niet',
     'visit_bill'                                => 'Bezoek contract ":name" bij Firefly III',
     'match_between_amounts'                     => 'Contract past bij transacties tussen :low en :high.',
@@ -1768,6 +1776,7 @@ return [
     'bill_edit_rules'                           => 'Firefly III gaat proberen de gerelateerde regel ook aan te passen. Als je deze zelf al hebt gewijzigd echter, zal dit niet gebeuren.|Firefly III gaat proberen de :count gerelateerde regels ook aan te passen. Als je deze zelf al hebt gewijzigd echter, zal dit niet gebeuren.',
     'bill_expected_date'                        => 'Verwacht :date',
     'bill_expected_date_js'                     => 'Verwacht op {date}',
+    'expected_amount'                           => '(Verwacht) bedrag',
     'bill_paid_on'                              => 'Betaald op {date}',
     'bill_repeats_weekly'                       => 'Herhaalt wekelijks',
     'bill_repeats_monthly'                      => 'Herhaalt maandelijks',
@@ -1940,6 +1949,7 @@ return [
 
 
     // transactions:
+    'unreconcile'                               => 'Undo reconciliation',
     'update_withdrawal'                         => 'Wijzig uitgave',
     'update_deposit'                            => 'Wijzig inkomsten',
     'update_transaction'                        => 'Update transactie',
@@ -2037,6 +2047,7 @@ return [
     'first_split_overrules_destination'         => 'De eerste split kan de doelrekening overschrijven',
     'spent_x_of_y'                              => '{amount} van {total} uitgegeven',
 
+
     // new user:
     'welcome'                                   => 'Welkom bij Firefly III!',
     'submit'                                    => 'Invoeren',
@@ -2103,6 +2114,9 @@ return [
     'Expense account'                           => 'Crediteur',
     'Revenue account'                           => 'Debiteur',
     'Initial balance account'                   => 'Startbalansrekening',
+    'account_type_Asset account'                => 'Asset account',
+    'account_type_Expense account'              => 'Expense account',
+    'account_type_Revenue account'              => 'Revenue account',
     'account_type_Debt'                         => 'Schuld',
     'account_type_Loan'                         => 'Lening',
     'account_type_Mortgage'                     => 'Hypotheek',

@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+
 /*
  * BudgetController.php
  * Copyright (c) 2023 james@firefly-iii.org
@@ -21,6 +21,8 @@ declare(strict_types=1);
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+declare(strict_types=1);
+
 namespace FireflyIII\Api\V2\Controllers\Chart;
 
 use Carbon\Carbon;
@@ -30,12 +32,12 @@ use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Budget;
 use FireflyIII\Models\BudgetLimit;
 use FireflyIII\Models\TransactionCurrency;
-use FireflyIII\Repositories\Administration\Budget\BudgetRepositoryInterface;
-use FireflyIII\Repositories\Administration\Budget\OperationsRepositoryInterface;
 use FireflyIII\Repositories\Budget\BudgetLimitRepositoryInterface;
+use FireflyIII\Repositories\UserGroups\Budget\BudgetRepositoryInterface;
+use FireflyIII\Repositories\UserGroups\Budget\OperationsRepositoryInterface;
 use FireflyIII\Support\Http\Api\CleansChartData;
 use FireflyIII\Support\Http\Api\ExchangeRateConverter;
-use FireflyIII\User;
+use FireflyIII\Support\Http\Api\ValidatesUserGroupTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
 
@@ -45,6 +47,7 @@ use Illuminate\Support\Collection;
 class BudgetController extends Controller
 {
     use CleansChartData;
+    use ValidatesUserGroupTrait;
 
     protected OperationsRepositoryInterface $opsRepository;
     private BudgetLimitRepositoryInterface  $blRepository;
@@ -61,6 +64,13 @@ class BudgetController extends Controller
                 $this->blRepository  = app(BudgetLimitRepositoryInterface::class);
                 $this->opsRepository = app(OperationsRepositoryInterface::class);
                 $this->currency      = app('amount')->getDefaultCurrency();
+
+                $userGroup = $this->validateUserGroup($request);
+                if (null !== $userGroup) {
+                    $this->repository->setUserGroup($userGroup);
+                    $this->opsRepository->setUserGroup($userGroup);
+                }
+
                 return $next($request);
             }
         );
@@ -76,14 +86,6 @@ class BudgetController extends Controller
      */
     public function dashboard(DateRequest $request): JsonResponse
     {
-        // get user.
-        /** @var User $user */
-        $user = auth()->user();
-        // group ID
-        $administrationId = $user->getAdministrationId();
-        $this->repository->setAdministrationId($administrationId);
-        $this->opsRepository->setAdministrationId($administrationId);
-
         $params = $request->getAll();
         /** @var Carbon $start */
         $start = $params['start'];
@@ -128,11 +130,11 @@ class BudgetController extends Controller
         foreach ($rows as $row) {
             $current  = [
                 'label'                   => $budget->name,
-                'currency_id'             => $row['currency_id'],
+                'currency_id'             => (string)$row['currency_id'],
                 'currency_code'           => $row['currency_code'],
                 'currency_name'           => $row['currency_name'],
                 'currency_decimal_places' => $row['currency_decimal_places'],
-                'native_id'               => $row['native_id'],
+                'native_id'               => (string)$row['native_id'],
                 'native_code'             => $row['native_code'],
                 'native_name'             => $row['native_name'],
                 'native_decimal_places'   => $row['native_decimal_places'],
@@ -199,12 +201,12 @@ class BudgetController extends Controller
         foreach ($array as $currencyId => $block) {
             $this->currencies[$currencyId] = $this->currencies[$currencyId] ?? TransactionCurrency::find($currencyId);
             $return[$currencyId]           = $return[$currencyId] ?? [
-                'currency_id'             => $currencyId,
+                'currency_id'             => (string)$currencyId,
                 'currency_code'           => $block['currency_code'],
                 'currency_name'           => $block['currency_name'],
                 'currency_symbol'         => $block['currency_symbol'],
                 'currency_decimal_places' => (int)$block['currency_decimal_places'],
-                'native_id'               => (int)$this->currency->id,
+                'native_id'               => (string)$this->currency->id,
                 'native_code'             => $this->currency->code,
                 'native_name'             => $this->currency->name,
                 'native_symbol'           => $this->currency->symbol,

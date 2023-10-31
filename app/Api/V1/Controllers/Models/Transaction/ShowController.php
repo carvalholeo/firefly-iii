@@ -58,7 +58,7 @@ class ShowController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $pageSize = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize = $this->parameters->get('limit');
         $type     = $request->get('type') ?? 'default';
         $this->parameters->set('type', $type);
 
@@ -80,7 +80,7 @@ class ShowController extends Controller
             ->setPage($this->parameters->get('page'))
             // set types of transactions to return.
             ->setTypes($types);
-        if (null !== $this->parameters->get('start') && null !== $this->parameters->get('end')) {
+        if (null !== $this->parameters->get('start') || null !== $this->parameters->get('end')) {
             $collector->setRange($this->parameters->get('start'), $this->parameters->get('end'));
         }
         $paginator = $collector->getPaginatedGroups();

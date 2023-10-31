@@ -35,7 +35,6 @@ use FireflyIII\Repositories\Bill\BillRepositoryInterface;
 use FireflyIII\Support\Http\Api\ExchangeRateConverter;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Log;
 
 /**
  * Class BillTransformer
@@ -107,6 +106,7 @@ class BillTransformer extends AbstractTransformer
         }
         $this->default   = app('amount')->getDefaultCurrency();
         $this->converter = new ExchangeRateConverter();
+
         // grab all paid dates:
         if (null !== $this->parameters->get('start') && null !== $this->parameters->get('end')) {
             $journals   = TransactionJournal::whereIn('bill_id', $bills)
@@ -128,6 +128,7 @@ class BillTransformer extends AbstractTransformer
             }
             /** @var TransactionJournal $journal */
             foreach ($journals as $journal) {
+                app('log')->debug(sprintf('Processing journal #%d', $journal->id));
                 $transaction             = $transactions[(int)$journal->id] ?? [];
                 $billId                  = (int)$journal->bill_id;
                 $currencyId              = (int)$transaction['transaction_currency_id'] ?? 0;
@@ -139,7 +140,9 @@ class BillTransformer extends AbstractTransformer
                 $foreignCurrencyName   = null;
                 $foreignCurrencySymbol = null;
                 $foreignCurrencyDp     = null;
+                app('log')->debug('Foreign currency is NULL');
                 if (null !== $transaction['foreign_currency_id']) {
+                    app('log')->debug(sprintf('Foreign currency is #%d', $transaction['foreign_currency_id']));
                     $foreignCurrencyId              = (int)$transaction['foreign_currency_id'];
                     $currencies[$foreignCurrencyId] = $currencies[$foreignCurrencyId] ?? TransactionCurrency::find($foreignCurrencyId);
                     $foreignCurrencyCode            = $currencies[$foreignCurrencyId]->code;
@@ -157,10 +160,10 @@ class BillTransformer extends AbstractTransformer
                     'currency_name'                   => $currencies[$currencyId]->name,
                     'currency_symbol'                 => $currencies[$currencyId]->symbol,
                     'currency_decimal_places'         => (int)$currencies[$currencyId]->decimal_places,
-                    'native_id'                       => (int)$currencies[$currencyId]->id,
-                    'native_code'                     => $currencies[$currencyId]->code,
-                    'native_symbol'                   => $currencies[$currencyId]->symbol,
-                    'native_decimal_places'           => (int)$currencies[$currencyId]->decimal_places,
+                    'native_currency_id'              => (int)$currencies[$currencyId]->id,
+                    'native_currency_code'            => $currencies[$currencyId]->code,
+                    'native_currency_symbol'          => $currencies[$currencyId]->symbol,
+                    'native_currency_decimal_places'  => (int)$currencies[$currencyId]->decimal_places,
                     'foreign_currency_id'             => $foreignCurrencyId,
                     'foreign_currency_code'           => $foreignCurrencyCode,
                     'foreign_currency_name'           => $foreignCurrencyName,
@@ -169,7 +172,12 @@ class BillTransformer extends AbstractTransformer
                     'amount'                          => $transaction['amount'],
                     'foreign_amount'                  => $transaction['foreign_amount'],
                     'native_amount'                   => $this->converter->convert($currencies[$currencyId], $this->default, $journal->date, $transaction['amount']),
-                    'foreign_native_amount'           => null === $transaction['foreign_amount'] ? null : $this->converter->convert($currencies[$foreignCurrencyId], $this->default, $journal->date, $transaction['foreign_amount']),
+                    'foreign_native_amount'           => '' === (string)$transaction['foreign_amount'] ? null : $this->converter->convert(
+                        $currencies[$foreignCurrencyId],
+                        $this->default,
+                        $journal->date,
+                        $transaction['foreign_amount']
+                    ),
                 ];
             }
         }
@@ -199,40 +207,40 @@ class BillTransformer extends AbstractTransformer
 
         $nextExpectedMatchDiff = $this->getNextExpectedMatchDiff($nextExpectedMatch, $payDates);
         return [
-            'id'                       => (int)$bill->id,
-            'created_at'               => $bill->created_at->toAtomString(),
-            'updated_at'               => $bill->updated_at->toAtomString(),
-            'name'                     => $bill->name,
-            'amount_min'               => app('steam')->bcround($bill->amount_min, $currency->decimal_places),
-            'amount_max'               => app('steam')->bcround($bill->amount_max, $currency->decimal_places),
-            'native_amount_min'        => $this->converter->convert($currency, $this->default, $date, $bill->amount_min),
-            'native_amount_max'        => $this->converter->convert($currency, $this->default, $date, $bill->amount_max),
-            'currency_id'              => (string)$bill->transaction_currency_id,
-            'currency_code'            => $currency->code,
-            'currency_name'            => $currency->name,
-            'currency_symbol'          => $currency->symbol,
-            'currency_decimal_places'  => (int)$currency->decimal_places,
-            'native_id'                => $this->default->id,
-            'native_code'              => $this->default->code,
-            'native_name'              => $this->default->name,
-            'native_symbol'            => $this->default->symbol,
-            'native_decimal_places'    => (int)$this->default->decimal_places,
-            'date'                     => $bill->date->toAtomString(),
-            'end_date'                 => $bill->end_date?->toAtomString(),
-            'extension_date'           => $bill->extension_date?->toAtomString(),
-            'repeat_freq'              => $bill->repeat_freq,
-            'skip'                     => (int)$bill->skip,
-            'active'                   => $bill->active,
-            'order'                    => (int)$bill->order,
-            'notes'                    => $this->notes[(int)$bill->id] ?? null,
-            'object_group_id'          => $group ? $group['object_group_id'] : null,
-            'object_group_order'       => $group ? $group['object_group_order'] : null,
-            'object_group_title'       => $group ? $group['object_group_title'] : null,
-            'next_expected_match'      => $nextExpectedMatch->toAtomString(),
-            'next_expected_match_diff' => $nextExpectedMatchDiff,
-            'pay_dates'                => $payDates,
-            'paid_dates'               => $paidData,
-            'links'                    => [
+            'id'                             => (int)$bill->id,
+            'created_at'                     => $bill->created_at->toAtomString(),
+            'updated_at'                     => $bill->updated_at->toAtomString(),
+            'name'                           => $bill->name,
+            'amount_min'                     => app('steam')->bcround($bill->amount_min, $currency->decimal_places),
+            'amount_max'                     => app('steam')->bcround($bill->amount_max, $currency->decimal_places),
+            'native_amount_min'              => $this->converter->convert($currency, $this->default, $date, $bill->amount_min),
+            'native_amount_max'              => $this->converter->convert($currency, $this->default, $date, $bill->amount_max),
+            'currency_id'                    => (string)$bill->transaction_currency_id,
+            'currency_code'                  => $currency->code,
+            'currency_name'                  => $currency->name,
+            'currency_symbol'                => $currency->symbol,
+            'currency_decimal_places'        => (int)$currency->decimal_places,
+            'native_currency_id'             => $this->default->id,
+            'native_currency_code'           => $this->default->code,
+            'native_currency_name'           => $this->default->name,
+            'native_currency_symbol'         => $this->default->symbol,
+            'native_currency_decimal_places' => (int)$this->default->decimal_places,
+            'date'                           => $bill->date->toAtomString(),
+            'end_date'                       => $bill->end_date?->toAtomString(),
+            'extension_date'                 => $bill->extension_date?->toAtomString(),
+            'repeat_freq'                    => $bill->repeat_freq,
+            'skip'                           => (int)$bill->skip,
+            'active'                         => $bill->active,
+            'order'                          => (int)$bill->order,
+            'notes'                          => $this->notes[(int)$bill->id] ?? null,
+            'object_group_id'                => $group ? $group['object_group_id'] : null,
+            'object_group_order'             => $group ? $group['object_group_order'] : null,
+            'object_group_title'             => $group ? $group['object_group_title'] : null,
+            'next_expected_match'            => $nextExpectedMatch->toAtomString(),
+            'next_expected_match_diff'       => $nextExpectedMatchDiff,
+            'pay_dates'                      => $payDates,
+            'paid_dates'                     => $paidData,
+            'links'                          => [
                 [
                     'rel' => 'self',
                     'uri' => sprintf('/bills/%d', $bill->id),
@@ -311,9 +319,9 @@ class BillTransformer extends AbstractTransformer
      */
     protected function payDates(Bill $bill): array
     {
-        //Log::debug(sprintf('Now in payDates() for bill #%d', $bill->id));
+        //app('log')->debug(sprintf('Now in payDates() for bill #%d', $bill->id));
         if (null === $this->parameters->get('start') || null === $this->parameters->get('end')) {
-            //Log::debug('No start or end date, give empty array.');
+            //app('log')->debug('No start or end date, give empty array.');
 
             return [];
         }
@@ -350,6 +358,8 @@ class BillTransformer extends AbstractTransformer
      * Given a bill and a date, this method will tell you at which moment this bill expects its next
      * transaction. Whether or not it is there already, is not relevant.
      *
+     * TODO this method is bad compared to the v1 one.
+     *
      * @param Bill   $bill
      * @param Carbon $date
      *
@@ -357,14 +367,14 @@ class BillTransformer extends AbstractTransformer
      */
     protected function nextDateMatch(Bill $bill, Carbon $date): Carbon
     {
-        //Log::debug(sprintf('Now in nextDateMatch(%d, %s)', $bill->id, $date->format('Y-m-d')));
+        //app('log')->debug(sprintf('Now in nextDateMatch(%d, %s)', $bill->id, $date->format('Y-m-d')));
         $start = clone $bill->date;
-        //Log::debug(sprintf('Bill start date is %s', $start->format('Y-m-d')));
+        //app('log')->debug(sprintf('Bill start date is %s', $start->format('Y-m-d')));
         while ($start < $date) {
             $start = app('navigation')->addPeriod($start, $bill->repeat_freq, $bill->skip);
         }
 
-        //Log::debug(sprintf('End of loop, bill start date is now %s', $start->format('Y-m-d')));
+        //app('log')->debug(sprintf('End of loop, bill start date is now %s', $start->format('Y-m-d')));
 
         return $start;
     }

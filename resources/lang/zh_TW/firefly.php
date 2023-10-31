@@ -43,6 +43,7 @@ return [
     'split'                                => '分割',
     'single_split'                         => 'Split',
     'clone'                                => '複製',
+    'clone_and_edit'                       => 'Clone and edit',
     'confirm_action'                       => 'Confirm action',
     'last_seven_days'                      => '最近7天',
     'last_thirty_days'                     => '最近30天',
@@ -1565,6 +1566,7 @@ return [
     'list_all_attachments'                      => '全部附加檔案清單',
 
     // transaction index
+    'is_reconciled_fields_dropped'              => 'Because this transaction is reconciled, you will not be able to update the accounts, nor the amount(s).',
     'title_expenses'                            => '支出',
     'title_withdrawal'                          => '支出',
     'title_revenue'                             => '收入',
@@ -1632,7 +1634,8 @@ return [
     'create_currency'                           => '建立新貨幣',
     'store_currency'                            => '儲存新貨幣',
     'update_currency'                           => '更新貨幣',
-    'new_default_currency'                      => ':name 現已為預設貨幣',
+    'new_default_currency'                      => '":name" is now the default currency.',
+    'default_currency_failed'                   => 'Could not make ":name" the default currency. Please check the logs.',
     'cannot_delete_currency'                    => '因為仍在使用中，無法刪除 :name 。',
     'cannot_delete_fallback_currency'           => ':name is the system fallback currency and can\'t be deleted.',
     'cannot_disable_currency_journals'          => 'Cannot disable :name because transactions are still using it.',
@@ -1658,7 +1661,9 @@ return [
     'disable_currency'                          => '停用',
     'currencies_default_disabled'               => '大多數的貨幣均預設為停用，如欲使用，請先啟用。',
     'currency_is_now_enabled'                   => '貨幣 ":name" 已被啟用',
+    'could_not_enable_currency'                 => 'Could not enable currency ":name". Please review the logs.',
     'currency_is_now_disabled'                  => '貨幣 ":name" 已被停用',
+    'could_not_disable_currency'                => 'Could not disable currency ":name". Perhaps it is still in use?',
 
     // forms:
     'mandatoryFields'                           => '必要欄位',
@@ -1731,7 +1736,10 @@ return [
     'remove_budgeted_amount'                    => 'Remove budgeted amount in :currency',
 
     // bills:
+    'subscription'                              => 'Subscription',
     'not_expected_period'                       => 'Not expected this period',
+    'subscriptions_in_group'                    => 'Subscriptions in group "%{title}"',
+    'subscr_expected_x_times'                   => 'Expect to pay %{amount} %{times} times this period',
     'not_or_not_yet'                            => 'Not (yet)',
     'visit_bill'                                => 'Visit bill ":name" at Firefly III',
     'match_between_amounts'                     => '帳單配合自 :low 至 :high 的交易。',
@@ -1768,6 +1776,7 @@ return [
     'bill_edit_rules'                           => 'Firefly III will attempt to edit the rule related to this bill as well. If you\'ve edited this rule yourself however, Firefly III won\'t change anything.|Firefly III will attempt to edit the :count rules related to this bill as well. If you\'ve edited these rules yourself however, Firefly III won\'t change anything.',
     'bill_expected_date'                        => 'Expected :date',
     'bill_expected_date_js'                     => 'Expected {date}',
+    'expected_amount'                           => '(Expected) amount',
     'bill_paid_on'                              => 'Paid on {date}',
     'bill_repeats_weekly'                       => 'Repeats weekly',
     'bill_repeats_monthly'                      => 'Repeats monthly',
@@ -1940,6 +1949,7 @@ return [
 
 
     // transactions:
+    'unreconcile'                               => 'Undo reconciliation',
     'update_withdrawal'                         => '更新提款',
     'update_deposit'                            => '更新存款',
     'update_transaction'                        => 'Update transaction',
@@ -2037,6 +2047,7 @@ return [
     'first_split_overrules_destination'         => 'The first split may overrule the destination account',
     'spent_x_of_y'                              => 'Spent {amount} of {total}',
 
+
     // new user:
     'welcome'                                   => '歡迎使用 Firefly III！',
     'submit'                                    => '送出',
@@ -2103,6 +2114,9 @@ return [
     'Expense account'                           => '支出帳戶',
     'Revenue account'                           => '收入帳戶',
     'Initial balance account'                   => '初始餘額帳戶',
+    'account_type_Asset account'                => 'Asset account',
+    'account_type_Expense account'              => 'Expense account',
+    'account_type_Revenue account'              => 'Revenue account',
     'account_type_Debt'                         => '負債',
     'account_type_Loan'                         => '貸款',
     'account_type_Mortgage'                     => '抵押',

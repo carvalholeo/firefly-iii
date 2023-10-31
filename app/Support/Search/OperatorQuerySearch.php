@@ -34,8 +34,8 @@ use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use FireflyIII\Repositories\Bill\BillRepositoryInterface;
 use FireflyIII\Repositories\Budget\BudgetRepositoryInterface;
 use FireflyIII\Repositories\Category\CategoryRepositoryInterface;
-use FireflyIII\Repositories\Currency\CurrencyRepositoryInterface;
 use FireflyIII\Repositories\Tag\TagRepositoryInterface;
+use FireflyIII\Repositories\UserGroups\Currency\CurrencyRepositoryInterface;
 use FireflyIII\Support\ParseDateString;
 use FireflyIII\User;
 use Gdbots\QueryParser\Enum\BoolOperator;
@@ -1536,9 +1536,9 @@ class OperatorQuerySearch implements SearchInterface
             $parts = explode(' ', $value);
             $value = trim($parts[count($parts) - 1], "() \t\n\r\0\x0B");
         }
-        $result = $this->currencyRepository->findByCodeNull($value);
+        $result = $this->currencyRepository->findByCode($value);
         if (null === $result) {
-            $result = $this->currencyRepository->findByNameNull($value);
+            $result = $this->currencyRepository->findByName($value);
         }
 
         return $result;

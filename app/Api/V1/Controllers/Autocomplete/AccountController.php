@@ -82,7 +82,8 @@ class AccountController extends Controller
         $date  = $data['date'] ?? today(config('app.timezone'));
 
         $return = [];
-        $result = $this->repository->searchAccount((string)$query, $types, $data['limit']);
+
+        $result = $this->repository->searchAccount((string)$query, $types, $this->parameters->get('limit'));
         // TODO this code is duplicated in the V2 Autocomplete controller, which means this code is due to be deprecated.
         $defaultCurrency = app('amount')->getDefaultCurrency();
 
@@ -105,7 +106,7 @@ class AccountController extends Controller
                 'name'                    => $account->name,
                 'name_with_balance'       => $nameWithBalance,
                 'type'                    => $account->accountType->type,
-                'currency_id'             => $currency->id,
+                'currency_id'             => (string)$currency->id,
                 'currency_name'           => $currency->name,
                 'currency_code'           => $currency->code,
                 'currency_symbol'         => $currency->symbol,

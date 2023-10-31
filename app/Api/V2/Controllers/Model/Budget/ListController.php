@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace FireflyIII\Api\V2\Controllers\Model\Budget;
 
 use FireflyIII\Api\V2\Controllers\Controller;
+use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Repositories\Budget\BudgetRepositoryInterface;
 use FireflyIII\Transformers\V2\BudgetTransformer;
 use Illuminate\Http\JsonResponse;
@@ -61,12 +62,12 @@ class ListController extends Controller
     public function index(Request $request): JsonResponse
     {
         echo 'this needs move to Administration';
-        exit;
+        throw new FireflyException('Needs migration to IndexController');
         $collection = $this->repository->getActiveBudgets();
         $total      = $collection->count();
-        $collection->slice($this->pageSize * $this->parameters->get('page'), $this->pageSize);
+        $collection->slice($this->pageXSize * $this->parameters->get('page'), $this->pXageSize);
 
-        $paginator   = new LengthAwarePaginator($collection, $total, $this->pageSize, $this->parameters->get('page'));
+        $paginator   = new LengthAwarePaginator($collection, $total, $this->pagXeSize, $this->parameters->get('page'));
         $transformer = new BudgetTransformer();
 
         return response()

@@ -38,7 +38,6 @@ use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use FireflyIII\Repositories\Bill\BillRepositoryInterface;
 use FireflyIII\Repositories\Budget\AvailableBudgetRepositoryInterface;
 use FireflyIII\Repositories\Budget\BudgetLimitRepositoryInterface;
-use FireflyIII\Repositories\Currency\CurrencyRepositoryInterface;
 use FireflyIII\Repositories\Recurring\RecurringRepositoryInterface;
 use FireflyIII\Repositories\Rule\RuleRepositoryInterface;
 use FireflyIII\Support\Http\Api\AccountFilter;
@@ -65,26 +64,6 @@ class ListController extends Controller
     use AccountFilter;
     use TransactionFilter;
 
-    private CurrencyRepositoryInterface $repository;
-
-    /**
-     * CurrencyRepository constructor.
-     *
-
-     */
-    public function __construct()
-    {
-        parent::__construct();
-        $this->middleware(
-            function ($request, $next) {
-                $this->repository = app(CurrencyRepositoryInterface::class);
-                $this->repository->setUser(auth()->user());
-
-                return $next($request);
-            }
-        );
-    }
-
     /**
      * This endpoint is documented at:
      * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/currencies/listAccountByCurrency
@@ -106,7 +85,7 @@ class ListController extends Controller
 
         // types to get, page size:
         $types    = $this->mapAccountTypes($this->parameters->get('type'));
-        $pageSize = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize = $this->parameters->get('limit');
 
         // get list of accounts. Count it and split it.
         /** @var AccountRepositoryInterface $accountRepository */
@@ -153,7 +132,7 @@ class ListController extends Controller
     {
         $manager = $this->getManager();
         // types to get, page size:
-        $pageSize = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize = $this->parameters->get('limit');
 
         // get list of available budgets. Count it and split it.
         /** @var AvailableBudgetRepositoryInterface $abRepository */
@@ -193,7 +172,7 @@ class ListController extends Controller
 
         /** @var BillRepositoryInterface $billRepos */
         $billRepos  = app(BillRepositoryInterface::class);
-        $pageSize   = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize   = $this->parameters->get('limit');
         $unfiltered = $billRepos->getBills();
 
         // filter and paginate list:
@@ -236,7 +215,7 @@ class ListController extends Controller
         $blRepository = app(BudgetLimitRepositoryInterface::class);
 
         $manager      = $this->getManager();
-        $pageSize     = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize     = $this->parameters->get('limit');
         $collection   = $blRepository->getAllBudgetLimitsByCurrency($currency, $this->parameters->get('start'), $this->parameters->get('end'));
         $count        = $collection->count();
         $budgetLimits = $collection->slice(($this->parameters->get('page') - 1) * $pageSize, $pageSize);
@@ -268,7 +247,7 @@ class ListController extends Controller
     {
         $manager = $this->getManager();
         // types to get, page size:
-        $pageSize = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize = $this->parameters->get('limit');
 
         // get list of budgets. Count it and split it.
         /** @var RecurringRepositoryInterface $recurringRepos */
@@ -319,7 +298,7 @@ class ListController extends Controller
     public function rules(TransactionCurrency $currency): JsonResponse
     {
         $manager  = $this->getManager();
-        $pageSize = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize = $this->parameters->get('limit');
 
         // get list of budgets. Count it and split it.
         /** @var RuleRepositoryInterface $ruleRepos */
@@ -371,7 +350,7 @@ class ListController extends Controller
      */
     public function transactions(Request $request, TransactionCurrency $currency): JsonResponse
     {
-        $pageSize = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+        $pageSize = $this->parameters->get('limit');
         $type     = $request->get('type') ?? 'default';
         $this->parameters->set('type', $type);
 
@@ -396,8 +375,11 @@ class ListController extends Controller
             ->setPage($this->parameters->get('page'))
             // set types of transactions to return.
             ->setTypes($types);
-        if (null !== $this->parameters->get('start') && null !== $this->parameters->get('end')) {
-            $collector->setRange($this->parameters->get('start'), $this->parameters->get('end'));
+        if (null !== $this->parameters->get('start')) {
+            $collector->setStart($this->parameters->get('start'));
+        }
+        if (null !== $this->parameters->get('end')) {
+            $collector->setEnd($this->parameters->get('end'));
         }
         $paginator = $collector->getPaginatedGroups();
         $paginator->setPath(route('api.v1.currencies.transactions', [$currency->code]) . $this->buildParams());

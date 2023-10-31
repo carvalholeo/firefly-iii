@@ -43,6 +43,7 @@ return [
     'split'                                => 'Opdel',
     'single_split'                         => 'Opdel',
     'clone'                                => 'Klon',
+    'clone_and_edit'                       => 'Clone and edit',
     'confirm_action'                       => 'Bekræft',
     'last_seven_days'                      => 'Sidste syv dage',
     'last_thirty_days'                     => 'Sidste tredive dage',
@@ -1565,6 +1566,7 @@ return [
     'list_all_attachments'                      => 'Liste over alle vedhæftede filer',
 
     // transaction index
+    'is_reconciled_fields_dropped'              => 'Because this transaction is reconciled, you will not be able to update the accounts, nor the amount(s).',
     'title_expenses'                            => 'Udgifter',
     'title_withdrawal'                          => 'Udgifter',
     'title_revenue'                             => 'Indtægter / indkomst',
@@ -1632,7 +1634,8 @@ return [
     'create_currency'                           => 'Opret en ny valuta',
     'store_currency'                            => 'Gem ny valuta',
     'update_currency'                           => 'Opdater valuta',
-    'new_default_currency'                      => ':name er nu standard valuta.',
+    'new_default_currency'                      => '":name" is now the default currency.',
+    'default_currency_failed'                   => 'Could not make ":name" the default currency. Please check the logs.',
     'cannot_delete_currency'                    => 'Kan ikke slette :name , fordi den stadig er i brug.',
     'cannot_delete_fallback_currency'           => ':name er systemet fallback valuta og kan ikke slettes.',
     'cannot_disable_currency_journals'          => 'Kan ikke deaktivere :name , da transaktionerne stadig bruger den.',
@@ -1658,7 +1661,9 @@ return [
     'disable_currency'                          => 'Deaktivér',
     'currencies_default_disabled'               => 'De fleste af disse valutaer er som standard deaktiveret. For at bruge dem, skal du først aktivere dem.',
     'currency_is_now_enabled'                   => 'Valuta ":name" er blevet aktiveret',
+    'could_not_enable_currency'                 => 'Could not enable currency ":name". Please review the logs.',
     'currency_is_now_disabled'                  => 'Valuta ":name" er blevet deaktiveret',
+    'could_not_disable_currency'                => 'Could not disable currency ":name". Perhaps it is still in use?',
 
     // forms:
     'mandatoryFields'                           => 'Obligatoriske felter',
@@ -1731,7 +1736,10 @@ return [
     'remove_budgeted_amount'                    => 'Fjern budgetteret beløb i :currency',
 
     // bills:
+    'subscription'                              => 'Subscription',
     'not_expected_period'                       => 'Ikke forventet denne periode',
+    'subscriptions_in_group'                    => 'Subscriptions in group "%{title}"',
+    'subscr_expected_x_times'                   => 'Expect to pay %{amount} %{times} times this period',
     'not_or_not_yet'                            => 'Ikke (endnu)',
     'visit_bill'                                => 'Visit bill ":name" at Firefly III',
     'match_between_amounts'                     => 'Faktura matcher transaktioner mellem :low og :high.',
@@ -1768,6 +1776,7 @@ return [
     'bill_edit_rules'                           => 'Firefly III vil forsøge at redigere reglen relateret til denne regning også. Hvis du selv har redigeret denne regel, vil Firefly III dog ikke ændre noget.|Firefly III vil forsøge at redigere :count regler relateret til denne regning. Hvis du har redigeret disse regler selv dog, Firefly III vil ikke ændre noget.',
     'bill_expected_date'                        => 'Forventede :date',
     'bill_expected_date_js'                     => 'Forventede {date}',
+    'expected_amount'                           => '(Expected) amount',
     'bill_paid_on'                              => 'Betalt {date}',
     'bill_repeats_weekly'                       => 'Gentages ugentligt',
     'bill_repeats_monthly'                      => 'Gentages månedligt',
@@ -1940,6 +1949,7 @@ return [
 
 
     // transactions:
+    'unreconcile'                               => 'Undo reconciliation',
     'update_withdrawal'                         => 'Opdater udbetaling',
     'update_deposit'                            => 'Opdater indbetaling',
     'update_transaction'                        => 'Opdater transaktion',
@@ -2037,6 +2047,7 @@ return [
     'first_split_overrules_destination'         => 'The first split may overrule the destination account',
     'spent_x_of_y'                              => 'Spent {amount} of {total}',
 
+
     // new user:
     'welcome'                                   => 'Welcome to Firefly III!',
     'submit'                                    => 'Submit',
@@ -2103,6 +2114,9 @@ return [
     'Expense account'                           => 'Udgiftskonto',
     'Revenue account'                           => 'Indtægtskonto',
     'Initial balance account'                   => 'Initial balance account',
+    'account_type_Asset account'                => 'Asset account',
+    'account_type_Expense account'              => 'Expense account',
+    'account_type_Revenue account'              => 'Revenue account',
     'account_type_Debt'                         => 'Gæld',
     'account_type_Loan'                         => 'Lån',
     'account_type_Mortgage'                     => 'Pant',

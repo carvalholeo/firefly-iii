@@ -26,7 +26,8 @@ namespace FireflyIII\Api\V2\Controllers\Model\Bill;
 
 use FireflyIII\Api\V2\Controllers\Controller;
 use FireflyIII\Api\V2\Request\Generic\DateRequest;
-use FireflyIII\Repositories\Administration\Bill\BillRepositoryInterface;
+use FireflyIII\Repositories\UserGroups\Bill\BillRepositoryInterface;
+use FireflyIII\Support\Http\Api\ValidatesUserGroupTrait;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -34,6 +35,8 @@ use Illuminate\Http\JsonResponse;
  */
 class SumController extends Controller
 {
+    use ValidatesUserGroupTrait;
+
     private BillRepositoryInterface $repository;
 
     /**
@@ -45,6 +48,12 @@ class SumController extends Controller
         $this->middleware(
             function ($request, $next) {
                 $this->repository = app(BillRepositoryInterface::class);
+
+                $userGroup = $this->validateUserGroup($request);
+                if (null !== $userGroup) {
+                    $this->repository->setUserGroup($userGroup);
+                }
+
 
                 return $next($request);
             }
@@ -63,7 +72,6 @@ class SumController extends Controller
      */
     public function paid(DateRequest $request): JsonResponse
     {
-        $this->repository->setAdministrationId(auth()->user()->user_group_id);
         $result = $this->repository->sumPaidInRange($this->parameters->get('start'), $this->parameters->get('end'));
 
         // convert to JSON response:
@@ -82,7 +90,6 @@ class SumController extends Controller
      */
     public function unpaid(DateRequest $request): JsonResponse
     {
-        $this->repository->setAdministrationId(auth()->user()->user_group_id);
         $result = $this->repository->sumUnpaidInRange($this->parameters->get('start'), $this->parameters->get('end'));
 
         // convert to JSON response:

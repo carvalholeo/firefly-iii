@@ -2,7 +2,7 @@
 
 /*
  * AccountController.php
- * Copyright (c) 2022 james@firefly-iii.org
+ * Copyright (c) 2023 james@firefly-iii.org
  *
  * This file is part of Firefly III (https://github.com/firefly-iii).
  *
@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace FireflyIII\Api\V2\Controllers\Transaction\List;
 
 use FireflyIII\Api\V2\Controllers\Controller;
-use FireflyIII\Api\V2\Request\Transaction\ListRequest;
+use FireflyIII\Api\V2\Request\Model\Transaction\ListRequest;
 use FireflyIII\Helpers\Collector\GroupCollectorInterface;
 use FireflyIII\Models\Account;
 use FireflyIII\Support\Http\Api\TransactionFilter;
@@ -52,30 +52,28 @@ class AccountController extends Controller
     public function list(ListRequest $request, Account $account): JsonResponse
     {
         // collect transactions:
-        $limit = $request->getLimit();
-        $page  = $request->getPage();
-        $page  = max($page, 1);
-
-        if ($limit > 0 && $limit <= $this->pageSize) {
-            $this->pageSize = $limit;
-        }
+        $page     = $request->getPage();
+        $page     = max($page, 1);
+        $pageSize = $this->parameters->get('limit');
 
 
         /** @var GroupCollectorInterface $collector */
         $collector = app(GroupCollectorInterface::class);
         $collector->setAccounts(new Collection([$account]))
                   ->withAPIInformation()
-                  ->setLimit($this->pageSize)
+                  ->setLimit($pageSize)
                   ->setPage($page)
                   ->setTypes($request->getTransactionTypes());
 
         $start = $request->getStartDate();
         $end   = $request->getEndDate();
         if (null !== $start) {
+            app('log')->debug(sprintf('Set start date to %s', $start->toIso8601String()));
             $collector->setStart($start);
         }
         if (null !== $end) {
-            $collector->setEnd($start);
+            app('log')->debug(sprintf('Set end date to %s', $start->toIso8601String()));
+            $collector->setEnd($end);
         }
 
         $paginator = $collector->getPaginatedGroups();
@@ -83,7 +81,7 @@ class AccountController extends Controller
             sprintf(
                 '%s?%s',
                 route('api.v2.accounts.transactions', [$account->id]),
-                $request->buildParams()
+                $request->buildParams($pageSize)
             )
         );
 

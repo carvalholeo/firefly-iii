@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
 /**
@@ -62,10 +63,15 @@ use Illuminate\Support\Carbon;
  * @method static Builder|CurrencyExchangeRate whereUserRate($value)
  * @property int|null                 $user_group_id
  * @method static Builder|CurrencyExchangeRate whereUserGroupId($value)
+ * @method static Builder|CurrencyExchangeRate onlyTrashed()
+ * @method static Builder|CurrencyExchangeRate withTrashed()
+ * @method static Builder|CurrencyExchangeRate withoutTrashed()
  * @mixin Eloquent
  */
 class CurrencyExchangeRate extends Model
 {
+    use SoftDeletes;
+
     /** @var array Convert these fields to other data types */
     protected $casts
                         = [

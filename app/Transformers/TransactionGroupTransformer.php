@@ -36,7 +36,6 @@ use FireflyIII\Models\TransactionType;
 use FireflyIII\Repositories\TransactionGroup\TransactionGroupRepositoryInterface;
 use FireflyIII\Support\NullArrayObject;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Class TransactionGroupTransformer
@@ -344,8 +343,8 @@ class TransactionGroupTransformer extends AbstractTransformer
                 ],
             ];
         } catch (FireflyException $e) {
-            Log::error($e->getMessage());
-            Log::error($e->getTraceAsString());
+            app('log')->error($e->getMessage());
+            app('log')->error($e->getTraceAsString());
             throw new FireflyException(sprintf('Transaction group #%d is broken. Please check out your log files.', $group->id), 0, $e);
         }
 

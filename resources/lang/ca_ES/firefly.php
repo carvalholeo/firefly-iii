@@ -43,6 +43,7 @@ return [
     'split'                                => 'Dividir',
     'single_split'                         => 'Divisió',
     'clone'                                => 'Duplicar',
+    'clone_and_edit'                       => 'Clone and edit',
     'confirm_action'                       => 'Confirmar acció',
     'last_seven_days'                      => 'Últims set dies',
     'last_thirty_days'                     => 'Últims trenta dies',
@@ -1565,6 +1566,7 @@ return [
     'list_all_attachments'                      => 'Llistat de tots els adjunts',
 
     // transaction index
+    'is_reconciled_fields_dropped'              => 'Because this transaction is reconciled, you will not be able to update the accounts, nor the amount(s).',
     'title_expenses'                            => 'Despeses',
     'title_withdrawal'                          => 'Despeses',
     'title_revenue'                             => 'Ingressos / salari',
@@ -1632,7 +1634,8 @@ return [
     'create_currency'                           => 'Crear una nova moneda',
     'store_currency'                            => 'Guardar nova moneda',
     'update_currency'                           => 'Actualitza la moneda',
-    'new_default_currency'                      => ':name és ara la moneda per defecte.',
+    'new_default_currency'                      => '":name" is now the default currency.',
+    'default_currency_failed'                   => 'Could not make ":name" the default currency. Please check the logs.',
     'cannot_delete_currency'                    => 'No es pot eliminar :name perquè encara s\'utilitza.',
     'cannot_delete_fallback_currency'           => ':name és la moneda alternativa del sistema i no es pot eliminar.',
     'cannot_disable_currency_journals'          => 'No es pot deshabilitar :name perquè les transaccions encara la fan servir.',
@@ -1658,7 +1661,9 @@ return [
     'disable_currency'                          => 'Deshabilitar',
     'currencies_default_disabled'               => 'La majoria d\'aquestes monedes estan deshabilitades per defecte. Per utilitzar-les, les has d\'habilitar primer.',
     'currency_is_now_enabled'                   => 'La moneda ":name" s\'ha habilitat',
+    'could_not_enable_currency'                 => 'Could not enable currency ":name". Please review the logs.',
     'currency_is_now_disabled'                  => 'La moneda ":name" s\'ha deshabilitat',
+    'could_not_disable_currency'                => 'Could not disable currency ":name". Perhaps it is still in use?',
 
     // forms:
     'mandatoryFields'                           => 'Camps obligatoris',
@@ -1731,7 +1736,10 @@ return [
     'remove_budgeted_amount'                    => 'S\'ha eliminat la quantitat pressupostada en :currency',
 
     // bills:
+    'subscription'                              => 'Subscripció',
     'not_expected_period'                       => 'No s\'espera aquest periode',
+    'subscriptions_in_group'                    => 'Subscripcions al grup "%{title}"',
+    'subscr_expected_x_times'                   => 'S\'espera que pagues %{amount} %{times} vegades aquest període',
     'not_or_not_yet'                            => 'No (encara)',
     'visit_bill'                                => 'Visita la factura ":name" en Firefly III',
     'match_between_amounts'                     => 'La factura coincideix amb les transaccions entre :low i :high.',
@@ -1768,6 +1776,7 @@ return [
     'bill_edit_rules'                           => 'Firefly III intentarà editar la norma relacionada amb aquesta factura. Tot i això, si has editat aquesta norma pel teu compte, Firefly III no canviarà res.|Firefly III intentarà editar les :count normes relacionades amb aquesta factura. Tot i això, si les has editat pel teu compte, Firefly III no canviarà res.',
     'bill_expected_date'                        => 'S\'espera :date',
     'bill_expected_date_js'                     => 'S\'espera {date}',
+    'expected_amount'                           => 'Quantitat (esperada)',
     'bill_paid_on'                              => 'Pagat el {date}',
     'bill_repeats_weekly'                       => 'Es repeteix setmanalment',
     'bill_repeats_monthly'                      => 'Es repeteix mensualment',
@@ -1940,6 +1949,7 @@ return [
 
 
     // transactions:
+    'unreconcile'                               => 'Undo reconciliation',
     'update_withdrawal'                         => 'Actualitzar retirada',
     'update_deposit'                            => 'Actualitzar ingrés',
     'update_transaction'                        => 'Actualitzar transacció',
@@ -2037,6 +2047,7 @@ return [
     'first_split_overrules_destination'         => 'La primera divisió pot sobreescriure el compte de destinació',
     'spent_x_of_y'                              => 'Gastat {amount} de {total}',
 
+
     // new user:
     'welcome'                                   => 'Benvingut a Firefly III!',
     'submit'                                    => 'Enviar',
@@ -2103,6 +2114,9 @@ return [
     'Expense account'                           => 'Compte de despeses',
     'Revenue account'                           => 'Compte de beneficis',
     'Initial balance account'                   => 'Compte de balanç inicial',
+    'account_type_Asset account'                => 'Compte d\'actius',
+    'account_type_Expense account'              => 'Compte de despeses',
+    'account_type_Revenue account'              => 'Compte d\'ingressos',
     'account_type_Debt'                         => 'Deute',
     'account_type_Loan'                         => 'Crèdit',
     'account_type_Mortgage'                     => 'Hipoteca',

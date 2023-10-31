@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+
 /*
  * rules.php
  * Copyright (c) 2023 james@firefly-iii.org
@@ -21,6 +21,7 @@ declare(strict_types=1);
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+declare(strict_types=1);
 
 return [
     'main_message'                                => 'Action ":action", present in rule ":rule", could not be applied to transaction #:group: :error',
@@ -50,16 +51,18 @@ return [
     'already_has_destination'                     => 'This transaction already has ":name" as the destination account',
     'already_has_source'                          => 'This transaction already has ":name" as the source account',
     'already_linked_to_subscription'              => 'The transaction is already linked to subscription ":name"',
+    'already_linked_to_category'                  => 'The transaction is already linked to category ":name"',
+    'already_linked_to_budget'                    => 'The transaction is already linked to budget ":name"',
     'cannot_find_subscription'                    => 'Firefly III can\'t find subscription ":name"',
     'no_notes_to_move'                            => 'The transaction has no notes to move to the description field',
     'no_tags_to_remove'                           => 'The transaction has no tags to remove',
     'cannot_find_tag'                             => 'Firefly III can\'t find tag ":tag"',
     'cannot_find_asset'                           => 'Firefly III can\'t find asset account ":name"',
-    'cannot_find_accounts'                        => 'Firefly III can\'t find the source or destination account',
+    'cannot_find_accounts'                        => 'Firefly III nie może znaleźć konta źródłowego lub docelowego',
     'cannot_find_source_transaction'              => 'Firefly III can\'t find the source transaction',
-    'cannot_find_destination_transaction'         => 'Firefly III can\'t find the destination transaction',
+    'cannot_find_destination_transaction'         => 'Firefly III nie może znaleźć docelowej transakcji',
     'cannot_find_source_transaction_account'      => 'Firefly III can\'t find the source transaction account',
-    'cannot_find_destination_transaction_account' => 'Firefly III can\'t find the destination transaction account',
+    'cannot_find_destination_transaction_account' => 'Firefly III nie może znaleźć konta docelowego transakcji',
     'cannot_find_piggy'                           => 'Firefly III can\'t find a piggy bank named ":name"',
     'no_link_piggy'                               => 'This transaction\'s accounts are not linked to the piggy bank, so no action will be taken',
     'cannot_unlink_tag'                           => 'Tag ":tag" nie jest powiązany z tą transakcją',

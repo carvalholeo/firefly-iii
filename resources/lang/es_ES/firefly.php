@@ -43,6 +43,7 @@ return [
     'split'                                => 'Separar',
     'single_split'                         => 'División',
     'clone'                                => 'Duplicar',
+    'clone_and_edit'                       => 'Clone and edit',
     'confirm_action'                       => 'Confirmar acción',
     'last_seven_days'                      => 'Últimos siete días',
     'last_thirty_days'                     => 'Últimos treinta días',
@@ -1565,6 +1566,7 @@ return [
     'list_all_attachments'                      => 'Listado de documentos adjuntos',
 
     // transaction index
+    'is_reconciled_fields_dropped'              => 'Because this transaction is reconciled, you will not be able to update the accounts, nor the amount(s).',
     'title_expenses'                            => 'Gastos',
     'title_withdrawal'                          => 'Gastos',
     'title_revenue'                             => 'Ingresos / salarios',
@@ -1632,7 +1634,8 @@ return [
     'create_currency'                           => 'Crear nueva moneda',
     'store_currency'                            => 'Crear moneda',
     'update_currency'                           => 'Actualizar moneda',
-    'new_default_currency'                      => ':name es ahora moneda por defecto.',
+    'new_default_currency'                      => '":name" is now the default currency.',
+    'default_currency_failed'                   => 'Could not make ":name" the default currency. Please check the logs.',
     'cannot_delete_currency'                    => 'No puede eliminar :name porque todavía esta en uso.',
     'cannot_delete_fallback_currency'           => ':name es la moneda de reserva del sistema y no se puede eliminar.',
     'cannot_disable_currency_journals'          => 'No se puede desactivar :name porque las transacciones siguen utilizándola.',
@@ -1658,7 +1661,9 @@ return [
     'disable_currency'                          => 'Desactivar',
     'currencies_default_disabled'               => 'La mayoría de estas monedas están desactivadas por defecto. Para usarlas, debes activarlas primero.',
     'currency_is_now_enabled'                   => 'Moneda ":name" ha sido activada',
+    'could_not_enable_currency'                 => 'Could not enable currency ":name". Please review the logs.',
     'currency_is_now_disabled'                  => 'Moneda ":name" ha sido desactivada',
+    'could_not_disable_currency'                => 'Could not disable currency ":name". Perhaps it is still in use?',
 
     // forms:
     'mandatoryFields'                           => 'Campos obligatorios',
@@ -1731,7 +1736,10 @@ return [
     'remove_budgeted_amount'                    => 'Eliminar la cantidad presupuestada en :currency',
 
     // bills:
+    'subscription'                              => 'Subscripción',
     'not_expected_period'                       => 'No se espera en este período',
+    'subscriptions_in_group'                    => 'Suscripciones en el grupo "%{title}"',
+    'subscr_expected_x_times'                   => 'Se espera pagar %{amount} %{times} veces este periodo',
     'not_or_not_yet'                            => 'No (todavía)',
     'visit_bill'                                => 'Ver factura ":name" en Firefly III',
     'match_between_amounts'                     => 'La cuenta iguala transacciones entre :low y :high.',
@@ -1768,6 +1776,7 @@ return [
     'bill_edit_rules'                           => 'Firefly III también intentará editar la regla relacionada con esta factura. Sin embargo, si ha editado esta regla usted mismo, Firefly III no cambiará nada.|Firefly III intentará editar también las :count reglas relacionadas con esta factura. Sin embargo, si ha editado estas reglas usted mismo, Firefly III no cambiará nada.',
     'bill_expected_date'                        => 'Se espera :date',
     'bill_expected_date_js'                     => 'Fecha prevista {date}',
+    'expected_amount'                           => 'Cantidad (esperada)',
     'bill_paid_on'                              => 'Pagado el {date}',
     'bill_repeats_weekly'                       => 'Repetir semanalmente',
     'bill_repeats_monthly'                      => 'Repetir mensualmente',
@@ -1940,6 +1949,7 @@ return [
 
 
     // transactions:
+    'unreconcile'                               => 'Undo reconciliation',
     'update_withdrawal'                         => 'Actualización de gasto',
     'update_deposit'                            => 'Actualizar ingreso',
     'update_transaction'                        => 'Actualizar transacción',
@@ -2037,6 +2047,7 @@ return [
     'first_split_overrules_destination'         => 'La primera división puede anular la cuenta de destino',
     'spent_x_of_y'                              => '{amount} gastado de {total}',
 
+
     // new user:
     'welcome'                                   => 'Bienvenido a Firefly III!',
     'submit'                                    => 'Enviar',
@@ -2103,6 +2114,9 @@ return [
     'Expense account'                           => 'Cuenta de gastos',
     'Revenue account'                           => 'Cuenta de ganancia',
     'Initial balance account'                   => 'Cuenta de balance inicial',
+    'account_type_Asset account'                => 'Cuenta de activos',
+    'account_type_Expense account'              => 'Cuenta de gastos',
+    'account_type_Revenue account'              => 'Cuenta de ingresos',
     'account_type_Debt'                         => 'Deuda',
     'account_type_Loan'                         => 'Préstamo',
     'account_type_Mortgage'                     => 'Hipoteca',

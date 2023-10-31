@@ -25,7 +25,6 @@ declare(strict_types=1);
 namespace FireflyIII\Notifications\Admin;
 
 use FireflyIII\Support\Notifications\UrlValidator;
-use FireflyIII\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Messages\SlackMessage;
@@ -99,9 +98,7 @@ class TestNotification extends Notification
      */
     public function via($notifiable)
     {
-        /** @var User|null $user */
-        $user     = auth()->user();
-        $slackUrl = null === $user ? '' : (string)app('preferences')->getForUser(auth()->user(), 'slack_webhook_url', '')->data;
+        $slackUrl = app('fireflyconfig')->get('slack_webhook_url', '')->data;
         if (UrlValidator::isValidWebhookURL($slackUrl)) {
             return ['mail', 'slack'];
         }

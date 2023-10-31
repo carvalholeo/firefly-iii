@@ -30,7 +30,7 @@ use FireflyIII\Models\Account;
 use FireflyIII\Models\AccountMeta;
 use FireflyIII\Models\AccountType;
 use FireflyIII\Models\TransactionCurrency;
-use FireflyIII\Repositories\Currency\CurrencyRepositoryInterface;
+use FireflyIII\Repositories\UserGroups\Currency\CurrencyRepositoryInterface;
 use Illuminate\Support\Collection;
 
 /**
@@ -56,8 +56,10 @@ class AccountTransformer extends AbstractTransformer
         $this->accountTypes      = [];
         $this->balances          = app('steam')->balancesByAccounts($objects, $this->getDate());
         $this->convertedBalances = app('steam')->balancesByAccountsConverted($objects, $this->getDate());
-        $repository              = app(CurrencyRepositoryInterface::class);
-        $this->default           = app('amount')->getDefaultCurrency();
+
+        /** @var CurrencyRepositoryInterface $repository */
+        $repository    = app(CurrencyRepositoryInterface::class);
+        $this->default = app('amount')->getDefaultCurrency();
 
         // get currencies:
         $accountIds  = $objects->pluck('id')->toArray();
@@ -144,15 +146,15 @@ class AccountTransformer extends AbstractTransformer
             'currency_symbol'         => $currency->symbol,
             'currency_decimal_places' => (int)$currency->decimal_places,
 
-            'native_id'              => (string)$this->default->id,
-            'native_code'            => $this->default->code,
-            'native_symbol'          => $this->default->symbol,
-            'native_decimal_places'  => (int)$this->default->decimal_places,
+            'native_currency_id'             => (string)$this->default->id,
+            'native_currency_code'           => $this->default->code,
+            'native_currency_symbol'         => $this->default->symbol,
+            'native_currency_decimal_places' => (int)$this->default->decimal_places,
 
             // balance:
-            'current_balance'        => $balance,
-            'native_current_balance' => $nativeBalance,
-            'current_balance_date'   => $this->getDate(),
+            'current_balance'                => $balance,
+            'native_current_balance'         => $nativeBalance,
+            'current_balance_date'           => $this->getDate(),
 
             // more meta
 
@@ -173,7 +175,7 @@ class AccountTransformer extends AbstractTransformer
             //            'longitude'               => $longitude,
             //            'latitude'                => $latitude,
             //            'zoom_level'              => $zoomLevel,
-            'links'                  => [
+            'links'                          => [
                 [
                     'rel' => 'self',
                     'uri' => '/accounts/' . $account->id,

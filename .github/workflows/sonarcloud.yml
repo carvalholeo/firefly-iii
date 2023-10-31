@@ -1,21 +1,21 @@
-name: Sonarcloud
+name: 'Code - Run Sonarcloud'
 on:
-  pull_request: 
+  pull_request:
+  workflow_dispatch:
   push:
     branches:
       - main
       - develop
+env:
+  DB_CONNECTION: sqlite
+  APP_KEY: UfpBqqeXx7zpNodsC6yjYQcRfDdm4Bxh
 jobs:
   sonarcloud:
     name: SonarCloud
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -24,15 +24,38 @@ jobs:
         with:
           php-version: '8.2'
           coverage: xdebug
+          extensions: >-
+            bcmath
+            curl
+            fileinfo
+            iconv
+            intl
+            json
+            sqlite3
+            mbstring
+            openssl
+            pdo
+            session
+            simplexml
+            sodium
+            tokenizer
+            xml
+            xmlwriter
 
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-interaction --no-progress --no-scripts
 
-      - name: Copy environment file
-        run: cp .env.example .env
+      - name: "Create database file"
+        run: touch storage/database/database.sqlite
 
-      - name: Generate app key
-        run: php artisan key:generate
+      - name: "Create the database"
+        run: php artisan firefly-iii:create-database
+
+      - name: "Upgrades the database to the latest version"
+        run: php artisan firefly-iii:upgrade-database
+
+      - name: "Integrity Database Report"
+        run: php artisan firefly-iii:report-integrity
 
       - name: "Run tests with coverage"
         run: composer coverage

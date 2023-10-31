@@ -26,7 +26,7 @@ namespace FireflyIII\Api\V1\Controllers\Autocomplete;
 use FireflyIII\Api\V1\Controllers\Controller;
 use FireflyIII\Api\V1\Requests\Autocomplete\AutocompleteRequest;
 use FireflyIII\Models\TransactionCurrency;
-use FireflyIII\Repositories\Currency\CurrencyRepositoryInterface;
+use FireflyIII\Repositories\UserGroups\Currency\CurrencyRepositoryInterface;
 use FireflyIII\User;
 use Illuminate\Http\JsonResponse;
 
@@ -66,7 +66,7 @@ class CurrencyController extends Controller
     public function currencies(AutocompleteRequest $request): JsonResponse
     {
         $data       = $request->getData();
-        $collection = $this->repository->searchCurrency($data['query'], $data['limit']);
+        $collection = $this->repository->searchCurrency($data['query'], $this->parameters->get('limit'));
         $result     = [];
 
         /** @var TransactionCurrency $currency */
@@ -95,7 +95,7 @@ class CurrencyController extends Controller
     public function currenciesWithCode(AutocompleteRequest $request): JsonResponse
     {
         $data       = $request->getData();
-        $collection = $this->repository->searchCurrency($data['query'], $data['limit']);
+        $collection = $this->repository->searchCurrency($data['query'], $this->parameters->get('limit'));
         $result     = [];
 
         /** @var TransactionCurrency $currency */

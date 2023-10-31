@@ -43,6 +43,7 @@ return [
     'split'                                => 'Felosztás',
     'single_split'                         => 'Felosztás',
     'clone'                                => 'Másolás',
+    'clone_and_edit'                       => 'Clone and edit',
     'confirm_action'                       => 'Confirm action',
     'last_seven_days'                      => 'Utolsó hét nap',
     'last_thirty_days'                     => 'Elmúlt harminc nap',
@@ -1565,6 +1566,7 @@ return [
     'list_all_attachments'                      => 'Mellékletek listája',
 
     // transaction index
+    'is_reconciled_fields_dropped'              => 'Because this transaction is reconciled, you will not be able to update the accounts, nor the amount(s).',
     'title_expenses'                            => 'Költségek',
     'title_withdrawal'                          => 'Költségek',
     'title_revenue'                             => 'Jövedelem / bevétel',
@@ -1632,7 +1634,8 @@ return [
     'create_currency'                           => 'Új pénznem létrehozása',
     'store_currency'                            => 'Új pénznem tárolása',
     'update_currency'                           => 'Pénznem frissítése',
-    'new_default_currency'                      => ':name lett az alapértelmezett pénznem.',
+    'new_default_currency'                      => '":name" is now the default currency.',
+    'default_currency_failed'                   => 'Could not make ":name" the default currency. Please check the logs.',
     'cannot_delete_currency'                    => ':name nem törölhető mert még használatban van.',
     'cannot_delete_fallback_currency'           => ':name a rendszer biztonsági pénzneme és nem törölhető.',
     'cannot_disable_currency_journals'          => ':name nem tiltható le mert még használják tranzakciók.',
@@ -1658,7 +1661,9 @@ return [
     'disable_currency'                          => 'Tiltás',
     'currencies_default_disabled'               => 'A pénznemek többsége alapértelmezés szerint tiltva van. A használathoz először engedélyezni kell azokat.',
     'currency_is_now_enabled'                   => 'Pénznem ":name" engedélyezve',
+    'could_not_enable_currency'                 => 'Could not enable currency ":name". Please review the logs.',
     'currency_is_now_disabled'                  => 'Pénznem ":name" letiltva',
+    'could_not_disable_currency'                => 'Could not disable currency ":name". Perhaps it is still in use?',
 
     // forms:
     'mandatoryFields'                           => 'Kötelező mezők',
@@ -1731,7 +1736,10 @@ return [
     'remove_budgeted_amount'                    => 'Remove budgeted amount in :currency',
 
     // bills:
+    'subscription'                              => 'Subscription',
     'not_expected_period'                       => 'Nem várható ebben az időszakban',
+    'subscriptions_in_group'                    => 'Subscriptions in group "%{title}"',
+    'subscr_expected_x_times'                   => 'Expect to pay %{amount} %{times} times this period',
     'not_or_not_yet'                            => 'Nincs (még)',
     'visit_bill'                                => 'Visit bill ":name" at Firefly III',
     'match_between_amounts'                     => 'Tranzakciókkal egyező számlák :low és :high között.',
@@ -1768,6 +1776,7 @@ return [
     'bill_edit_rules'                           => 'A Firefly III megpróbálja szerkeszteni a a számlához kapcsolódó szabályt is. Ha ön már szerkesztette a szabályt, a Firefly III nem fogja módosítani.|A Firefly III megpróbálja szerkeszteni a a számlához kapcsolódó :count szabályt is. Ha ön már szerkesztette a szabályt, a Firefly III nem fogja módosítani.',
     'bill_expected_date'                        => 'Várható dátum :date',
     'bill_expected_date_js'                     => 'Expected {date}',
+    'expected_amount'                           => '(Expected) amount',
     'bill_paid_on'                              => 'Paid on {date}',
     'bill_repeats_weekly'                       => 'Repeats weekly',
     'bill_repeats_monthly'                      => 'Repeats monthly',
@@ -1940,6 +1949,7 @@ return [
 
 
     // transactions:
+    'unreconcile'                               => 'Undo reconciliation',
     'update_withdrawal'                         => 'Költség frissítése',
     'update_deposit'                            => 'Bevétel szerkesztése',
     'update_transaction'                        => 'Tranzakció frissítése',
@@ -2037,6 +2047,7 @@ return [
     'first_split_overrules_destination'         => 'The first split may overrule the destination account',
     'spent_x_of_y'                              => 'Spent {amount} of {total}',
 
+
     // new user:
     'welcome'                                   => 'Üdvözöli a Firefly III!',
     'submit'                                    => 'Beküldés',
@@ -2103,6 +2114,9 @@ return [
     'Expense account'                           => 'Költségszámla',
     'Revenue account'                           => 'Jövedelemszámla',
     'Initial balance account'                   => 'Számla kezdeti egyenlege',
+    'account_type_Asset account'                => 'Asset account',
+    'account_type_Expense account'              => 'Expense account',
+    'account_type_Revenue account'              => 'Revenue account',
     'account_type_Debt'                         => 'Adósság',
     'account_type_Loan'                         => 'Hitel',
     'account_type_Mortgage'                     => 'Jelzálog',

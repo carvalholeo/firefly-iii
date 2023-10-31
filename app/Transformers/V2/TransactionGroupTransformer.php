@@ -36,7 +36,6 @@ use FireflyIII\Support\Http\Api\ExchangeRateConverter;
 use FireflyIII\Support\NullArrayObject;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use stdClass;
 
 /**
@@ -192,11 +191,11 @@ class TransactionGroupTransformer extends AbstractTransformer
             'currency_decimal_places'         => (int)$transaction['currency_decimal_places'],
 
             // converted to native currency
-            'native_id'                       => (string)$this->default->id,
-            'native_code'                     => $this->default->code,
-            'native_name'                     => $this->default->name,
-            'native_symbol'                   => $this->default->symbol,
-            'native_decimal_places'           => (int)$this->default->decimal_places,
+            'native_currency_id'              => (string)$this->default->id,
+            'native_currency_code'            => $this->default->code,
+            'native_currency_name'            => $this->default->name,
+            'native_currency_symbol'          => $this->default->symbol,
+            'native_currency_decimal_places'  => (int)$this->default->decimal_places,
 
             // foreign currency amount:
             'foreign_currency_id'             => $this->stringFromArray($transaction, 'foreign_currency_id', null),
@@ -271,7 +270,7 @@ class TransactionGroupTransformer extends AbstractTransformer
      */
     private function stringFromArray(NullArrayObject $array, string $key, ?string $default): ?string
     {
-        //Log::debug(sprintf('%s: %s', $key, var_export($array[$key], true)));
+        //app('log')->debug(sprintf('%s: %s', $key, var_export($array[$key], true)));
         if (null === $array[$key] && null === $default) {
             return null;
         }
@@ -302,7 +301,7 @@ class TransactionGroupTransformer extends AbstractTransformer
         if (null === $string) {
             return null;
         }
-        //        Log::debug(sprintf('Now in date("%s")', $string));
+        //        app('log')->debug(sprintf('Now in date("%s")', $string));
         if (10 === strlen($string)) {
             return Carbon::createFromFormat('Y-m-d', $string, config('app.timezone'));
         }

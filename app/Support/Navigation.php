@@ -55,10 +55,10 @@ class Navigation
      * @param int    $skip
      *
      * @return Carbon
-     * @deprecated This method will be substituted by nextDateByInterval()
      */
     public function addPeriod(Carbon $theDate, string $repeatFreq, int $skip = 0): Carbon
     {
+        $date        = clone $theDate;
         $functionMap = [
             '1D'        => Periodicity::Daily,
             'daily'     => Periodicity::Daily,
@@ -96,7 +96,7 @@ class Navigation
             return $theDate;
         }
 
-        return $this->nextDateByInterval($theDate, $functionMap[$repeatFreq], $skip);
+        return $this->nextDateByInterval($date, $functionMap[$repeatFreq], $skip);
     }
 
     /**
@@ -340,6 +340,67 @@ class Navigation
         }
 
         return $currentEnd;
+    }
+
+    /**
+     * @param string $period
+     * @param Carbon $beginning
+     * @param Carbon $end
+     *
+     * @return int
+     */
+    public function diffInPeriods(string $period, int $skip, Carbon $beginning, Carbon $end): int
+    {
+        app('log')->debug(sprintf(
+            'diffInPeriods: %s (skip: %d), between %s and %s.',
+            $period,
+            $skip,
+            $beginning->format('Y-m-d'),
+            $end->format('Y-m-d')
+        ));
+        $map = [
+            'daily'     => 'floatDiffInDays',
+            'weekly'    => 'floatDiffInWeeks',
+            'monthly'   => 'floatDiffInMonths',
+            'quarterly' => 'floatDiffInMonths',
+            'half-year' => 'floatDiffInMonths',
+            'yearly'    => 'floatDiffInYears',
+        ];
+        if (!array_key_exists($period, $map)) {
+            app('log')->warning(sprintf('No diffInPeriods for period "%s"', $period));
+            return 1;
+        }
+        $func = $map[$period];
+        // first do the diff
+        $diff = $beginning->$func($end);
+
+        // then correct for quarterly or half-year
+        if ('quarterly' === $period) {
+            app('log')->debug(sprintf('Q: Corrected %f to %f', $diff, $diff / 3));
+            $diff = $diff / 3;
+        }
+        if ('half-year' === $period) {
+            app('log')->debug(sprintf('H: Corrected %f to %f', $diff, $diff / 6));
+            $diff = $diff / 6;
+        }
+
+        // then do ceil()
+        $diff = ceil($diff);
+
+        app('log')->debug(sprintf('Diff is %f (%d)', $beginning->$func($end), $diff));
+
+        if ($skip > 0) {
+            $parameter = $skip + 1;
+            $diff      = ceil($diff / $parameter) * $parameter;
+            app('log')->debug(sprintf(
+                'diffInPeriods: skip is %d, so param is %d, and diff becomes %d',
+                $skip,
+                $parameter,
+                $diff
+            ));
+        }
+
+        return (int)$diff;
     }
 
     /**

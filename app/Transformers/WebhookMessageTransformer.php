@@ -24,7 +24,6 @@ declare(strict_types=1);
 namespace FireflyIII\Transformers;
 
 use FireflyIII\Models\WebhookMessage;
-use Illuminate\Support\Facades\Log;
 use Jsonexception;
 
 /**
@@ -45,7 +44,7 @@ class WebhookMessageTransformer extends AbstractTransformer
         try {
             $json = json_encode($message->message, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
-            Log::error(sprintf('Could not encode webhook message #%d: %s', $message->id, $e->getMessage()));
+            app('log')->error(sprintf('Could not encode webhook message #%d: %s', $message->id, $e->getMessage()));
         }
 
         return [

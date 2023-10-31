@@ -43,6 +43,7 @@ return [
     'split'                                => 'Rozdělit',
     'single_split'                         => 'Rozdělit',
     'clone'                                => 'Klonovat',
+    'clone_and_edit'                       => 'Clone and edit',
     'confirm_action'                       => 'Confirm action',
     'last_seven_days'                      => 'Uplynulých 7 dnů',
     'last_thirty_days'                     => 'Uplynulých 30 dní',
@@ -1565,6 +1566,7 @@ return [
     'list_all_attachments'                      => 'Seznam všech příloh',
 
     // transaction index
+    'is_reconciled_fields_dropped'              => 'Because this transaction is reconciled, you will not be able to update the accounts, nor the amount(s).',
     'title_expenses'                            => 'Výdaje',
     'title_withdrawal'                          => 'Výdaje',
     'title_revenue'                             => 'Odměna/příjem',
@@ -1632,7 +1634,8 @@ return [
     'create_currency'                           => 'Vytvořit novou měnu',
     'store_currency'                            => 'Uložit novou měnu',
     'update_currency'                           => 'Aktualizovat měnu',
-    'new_default_currency'                      => ':name je nyní výchozí měna.',
+    'new_default_currency'                      => '":name" is now the default currency.',
+    'default_currency_failed'                   => 'Could not make ":name" the default currency. Please check the logs.',
     'cannot_delete_currency'                    => ':name nelze odstranit, protože je v aplikaci stále pro něco používáno.',
     'cannot_delete_fallback_currency'           => ':name is the system fallback currency and can\'t be deleted.',
     'cannot_disable_currency_journals'          => 'Cannot disable :name because transactions are still using it.',
@@ -1658,7 +1661,9 @@ return [
     'disable_currency'                          => 'Vypnout',
     'currencies_default_disabled'               => 'Většina těchto měn je ve výchozím stavu vypnutá. Pro jejich použití, je třeba je nejdříve zapnout.',
     'currency_is_now_enabled'                   => 'Měna „:name“ byla zapnuta',
+    'could_not_enable_currency'                 => 'Could not enable currency ":name". Please review the logs.',
     'currency_is_now_disabled'                  => 'Měna „:name“ byla vypnuta',
+    'could_not_disable_currency'                => 'Could not disable currency ":name". Perhaps it is still in use?',
 
     // forms:
     'mandatoryFields'                           => 'Povinné kolonky',
@@ -1731,7 +1736,10 @@ return [
     'remove_budgeted_amount'                    => 'Remove budgeted amount in :currency',
 
     // bills:
+    'subscription'                              => 'Subscription',
     'not_expected_period'                       => 'Not expected this period',
+    'subscriptions_in_group'                    => 'Subscriptions in group "%{title}"',
+    'subscr_expected_x_times'                   => 'Expect to pay %{amount} %{times} times this period',
     'not_or_not_yet'                            => 'Zatím ne',
     'visit_bill'                                => 'Visit bill ":name" at Firefly III',
     'match_between_amounts'                     => 'Bill matches transactions between :low and :high.',
@@ -1768,6 +1776,7 @@ return [
     'bill_edit_rules'                           => 'Firefly III will attempt to edit the rule related to this bill as well. If you\'ve edited this rule yourself however, Firefly III won\'t change anything.|Firefly III will attempt to edit the :count rules related to this bill as well. If you\'ve edited these rules yourself however, Firefly III won\'t change anything.',
     'bill_expected_date'                        => 'Expected :date',
     'bill_expected_date_js'                     => 'Expected {date}',
+    'expected_amount'                           => '(Expected) amount',
     'bill_paid_on'                              => 'Paid on {date}',
     'bill_repeats_weekly'                       => 'Repeats weekly',
     'bill_repeats_monthly'                      => 'Repeats monthly',
@@ -1940,6 +1949,7 @@ return [
 
 
     // transactions:
+    'unreconcile'                               => 'Undo reconciliation',
     'update_withdrawal'                         => 'Aktualizovat výběr',
     'update_deposit'                            => 'Aktualizovat vklad',
     'update_transaction'                        => 'Aktualizovat transakci',
@@ -2037,6 +2047,7 @@ return [
     'first_split_overrules_destination'         => 'The first split may overrule the destination account',
     'spent_x_of_y'                              => 'Spent {amount} of {total}',
 
+
     // new user:
     'welcome'                                   => 'Vítejte ve Firefly III!',
     'submit'                                    => 'Odeslat',
@@ -2103,6 +2114,9 @@ return [
     'Expense account'                           => 'Výdajový účet',
     'Revenue account'                           => 'Příjmový účet',
     'Initial balance account'                   => 'Účet počátečního zůstatku',
+    'account_type_Asset account'                => 'Asset account',
+    'account_type_Expense account'              => 'Expense account',
+    'account_type_Revenue account'              => 'Revenue account',
     'account_type_Debt'                         => 'Dluh',
     'account_type_Loan'                         => 'Půjčka',
     'account_type_Mortgage'                     => 'Hypotéka',

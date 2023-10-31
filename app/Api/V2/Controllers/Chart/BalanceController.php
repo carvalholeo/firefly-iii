@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+
 /*
  * BalanceController.php
  * Copyright (c) 2023 james@firefly-iii.org
@@ -21,6 +21,8 @@ declare(strict_types=1);
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+declare(strict_types=1);
+
 namespace FireflyIII\Api\V2\Controllers\Chart;
 
 use Carbon\Carbon;
@@ -30,7 +32,7 @@ use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Helpers\Collector\GroupCollectorInterface;
 use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\Models\TransactionType;
-use FireflyIII\Repositories\Administration\Account\AccountRepositoryInterface;
+use FireflyIII\Repositories\UserGroups\Account\AccountRepositoryInterface;
 use FireflyIII\Support\Http\Api\CleansChartData;
 use FireflyIII\Support\Http\Api\ExchangeRateConverter;
 use Illuminate\Http\JsonResponse;
@@ -69,7 +71,7 @@ class BalanceController extends Controller
      * If the transaction being processed is already in native currency OR if the
      * foreign amount is in the native currency, the amount will not be converted.
      *
-     * TODO validate and set administration_id
+     * TODO validate and set user_group_id
      * TODO collector set group, not user
      *
      * @param BalanceChartRequest $request
@@ -112,12 +114,12 @@ class BalanceController extends Controller
         // set array for default currency (even if unused later on)
         $defaultCurrencyId        = (int)$default->id;
         $data[$defaultCurrencyId] = [
-            'currency_id'             => $defaultCurrencyId,
+            'currency_id'             => (string)$defaultCurrencyId,
             'currency_symbol'         => $default->symbol,
             'currency_code'           => $default->code,
             'currency_name'           => $default->name,
             'currency_decimal_places' => (int)$default->decimal_places,
-            'native_id'               => $defaultCurrencyId,
+            'native_id'               => (string)$defaultCurrencyId,
             'native_symbol'           => $default->symbol,
             'native_code'             => $default->code,
             'native_name'             => $default->name,
@@ -138,13 +140,13 @@ class BalanceController extends Controller
 
             // set the array with monetary info, if it does not exist.
             $data[$currencyId] = $data[$currencyId] ?? [
-                'currency_id'             => $currencyId,
+                'currency_id'             => (string)$currencyId,
                 'currency_symbol'         => $journal['currency_symbol'],
                 'currency_code'           => $journal['currency_code'],
                 'currency_name'           => $journal['currency_name'],
                 'currency_decimal_places' => $journal['currency_decimal_places'],
                 // native currency info (could be the same)
-                'native_id'               => (int)$default->id,
+                'native_id'               => (string)$default->id,
                 'native_code'             => $default->code,
                 'native_symbol'           => $default->symbol,
                 'native_decimal_places'   => (int)$default->decimal_places,
@@ -203,11 +205,11 @@ class BalanceController extends Controller
             // income and expense array prepped:
             $income  = [
                 'label'                   => 'earned',
-                'currency_id'             => $currency['currency_id'],
+                'currency_id'             => (string)$currency['currency_id'],
                 'currency_symbol'         => $currency['currency_symbol'],
                 'currency_code'           => $currency['currency_code'],
                 'currency_decimal_places' => $currency['currency_decimal_places'],
-                'native_id'               => $currency['native_id'],
+                'native_id'               => (string)$currency['native_id'],
                 'native_symbol'           => $currency['native_symbol'],
                 'native_code'             => $currency['native_code'],
                 'native_decimal_places'   => $currency['native_decimal_places'],
@@ -219,11 +221,11 @@ class BalanceController extends Controller
             ];
             $expense = [
                 'label'                   => 'spent',
-                'currency_id'             => $currency['currency_id'],
+                'currency_id'             => (string)$currency['currency_id'],
                 'currency_symbol'         => $currency['currency_symbol'],
                 'currency_code'           => $currency['currency_code'],
                 'currency_decimal_places' => $currency['currency_decimal_places'],
-                'native_id'               => $currency['native_id'],
+                'native_id'               => (string)$currency['native_id'],
                 'native_symbol'           => $currency['native_symbol'],
                 'native_code'             => $currency['native_code'],
                 'native_decimal_places'   => $currency['native_decimal_places'],

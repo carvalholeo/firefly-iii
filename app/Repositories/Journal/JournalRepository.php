@@ -46,7 +46,7 @@ use Illuminate\Support\Collection;
 class JournalRepository implements JournalRepositoryInterface
 {
     /** @var User */
-    private $user;
+    private User $user;
 
     /**
      * @param TransactionGroup $transactionGroup
@@ -245,7 +245,7 @@ class JournalRepository implements JournalRepositoryInterface
     {
         $query = $this->user->transactionJournals()
                             ->orderBy('date', 'DESC');
-        if ('' !== $query) {
+        if ('' !== $search) {
             $query->where('description', 'LIKE', sprintf('%%%s%%', $search));
         }
 
@@ -260,6 +260,16 @@ class JournalRepository implements JournalRepositoryInterface
         if (null !== $user) {
             $this->user = $user;
         }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function unreconcileById(int $journalId): void
+    {
+        /** @var TransactionJournal $journal */
+        $journal = $this->user->transactionJournals()->find($journalId);
+        $journal?->transactions()->update(['reconciled' => false]);
     }
 
     /**

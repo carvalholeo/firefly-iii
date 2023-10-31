@@ -3,6 +3,123 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## 6.0.30 - 2023-10-29
+
+### Fixed
+
+- Missing method after refactoring.
+
+## 6.0.29 - 2023-10-29
+
+### Fixed
+
+- Null pointer in bill overview
+
+## 6.0.28 - 2023-10-29
+
+### Added
+
+- [Issue 8076](https://github.com/firefly-iii/firefly-iii/issues/8076) Added a "Clone and edit"-button
+- [Issue 7204](https://github.com/firefly-iii/firefly-iii/issues/7204) Added the ability to customize the URL protocol types Firefly III accepts 
+- [Issue 8098](https://github.com/firefly-iii/firefly-iii/issues/8098) More tests in the navigation class, thanks @tonicospinelli!
+
+### Changed
+
+- Refactored the Actions of GitHub
+- The transaction currencies are now linked to users, and can be enabled per user
+- A few upgrade commands are refactored
+- You can no longer edit vital parts of reconciled transactions
+
+### Deprecated
+
+- Remove old v3 layout.
+
+### Fixed
+
+- Bad math in the order of piggy banks
+- [Issue 8084](https://github.com/firefly-iii/firefly-iii/issues/8084) @JoSchrader fixed an issue with a duplicate button
+- [Issue 8103](https://github.com/firefly-iii/firefly-iii/issues/8103) Bulk edit would not accept transaction descriptions longer than 255 characters
+- [Issue 8099](https://github.com/firefly-iii/firefly-iii/issues/8099) The bill index would never skip the number of periods you indicated
+- [Issue 8069](https://github.com/firefly-iii/firefly-iii/issues/8069) Rule descriptions would always "1" as description. Thanks @Maxco10!
+
+### API
+
+- API will no longer accept changes to amount and account fields for reconciled transactions
+
+## v6.0.27 - 2023-10-16
+
+### Added
+
+- [Issue 8004](https://github.com/firefly-iii/firefly-iii/issues/8004) Warning in entrypoint script for missing variables.
+
+### Changed
+
+- Experimental database validation command.
+- Add some values to the debug form.
+- Better debug logs at various places
+
+### Fixed
+
+- [Issue 8020](https://github.com/firefly-iii/firefly-iii/issues/8020), [issue 8028](https://github.com/firefly-iii/firefly-iii/issues/8028) Liability calculation edge case found by @tieu1991
+- [Issue 7655](https://github.com/firefly-iii/firefly-iii/issues/7655), [issue 8026](https://github.com/firefly-iii/firefly-iii/issues/8026) Bill date calculation edge case found by @devfaz
+- [Issue 8051](https://github.com/firefly-iii/firefly-iii/issues/8051) Null pointer when deleting account
+- [Issue 8041](https://github.com/firefly-iii/firefly-iii/issues/8041) Confusing chart is no longer confusing
+- [Issue 8050](https://github.com/firefly-iii/firefly-iii/issues/8050) Path is normal for page 2.
+- [Issue 8057](https://github.com/firefly-iii/firefly-iii/issues/8057) negative query parameters are handled correctly.
+
+### API (v2.0.10)
+
+- All endpoints (v1 and v2) should now respect the `?limit=` param.
+
+## 6.0.26 - 2023-09-24
+
+### Fixed
+
+- [Issue 7986](https://github.com/firefly-iii/firefly-iii/issues/7986), [issue 7992](https://github.com/firefly-iii/firefly-iii/issues/7992) Fix exception when calling specific end points
+- [Issue 7990](https://github.com/firefly-iii/firefly-iii/issues/7990) Remove unused translations
+
+## 6.0.25 - 2023-09-24
+
+### Changed
+
+- v2 index has better overview of bills (now called subscriptions)
+
+### Deprecated
+
+- My attempt to build the `v3`-layout is now officially deprecated and removed. To see the new layout (in beta), use `FIREFLY_III_LAYOUT=v2`.
+
+### Fixed
+
+- [Issue 7970](https://github.com/firefly-iii/firefly-iii/issues/7970) Bad redirect for mass edit/delete forms.
+- [Issue 7983](https://github.com/firefly-iii/firefly-iii/issues/7983) Bad math in the calculation of liabilities
+- [Issue 7973](https://github.com/firefly-iii/firefly-iii/issues/7973) Bad account validation broke certain imports
+- [Issue 7981](https://github.com/firefly-iii/firefly-iii/issues/7981) Menu had a bad link, thanks @Maxco10!
+- Slack alerts now use the correct URL
+- Better htaccess files thanks to Softaculous.
+
+### Security
+
+- Change htaccess rules so certain files can't be accessed.
+
+### API
+
+- [Issue 7972](https://github.com/firefly-iii/firefly-iii/issues/7972) The API needed start
+  *and* end parameters for transactions, this is no longer the case.
+- New APIs for user group and rights management. Not yet documented.
+
+## 6.0.24 - 2023-09-16
+
+### Fixed
+
+- [Issue 7920](https://github.com/firefly-iii/firefly-iii/issues/7920) Issues with automatic budgets
+- [Issue 7940](https://github.com/firefly-iii/firefly-iii/issues/7940) Edge cases in the data import routine
+- [Issue 7963](https://github.com/firefly-iii/firefly-iii/issues/7963) Fix audit items for rules
+- Fixed all issues with relative URLs (which I caused myself)
+
+### API
+
+- [Issue 7944](https://github.com/firefly-iii/firefly-iii/issues/7944) Make sure all IDs are strings in the API
+
 ## 6.0.23 - 2023-09-04
 
 ### Changed

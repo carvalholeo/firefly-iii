@@ -46,6 +46,7 @@ use FireflyIII\Models\TransactionGroup;
 use FireflyIII\Models\TransactionJournal;
 use FireflyIII\Models\TransactionJournalLink;
 use FireflyIII\Models\TransactionType as TransactionTypeModel;
+use FireflyIII\Models\UserGroup;
 use FireflyIII\Models\Webhook;
 use FireflyIII\Models\WebhookAttempt;
 use FireflyIII\Models\WebhookMessage;
@@ -111,9 +112,9 @@ return [
         'handle_debts' => true,
         // see cer.php for exchange rates feature flag.
     ],
-    'version'                      => '6.0.23',
-    'api_version'                  => '2.0.7',
-    'db_version'                   => 20,
+    'version'                      => '6.0.30',
+    'api_version'                  => '2.0.11',
+    'db_version'                   => 21,
 
     // generic settings
     'maxUploadSize'                => 1073741824, // 1 GB
@@ -250,6 +251,7 @@ return [
     'available_dark_modes'         => ['light', 'dark', 'browser'],
     'bill_reminder_periods'        => [90, 30, 14, 7, 0],
     'valid_view_ranges'            => ['1D', '1W', '1M', '3M', '6M', '1Y',],
+    'valid_url_protocols'          => envNonEmpty('VALID_URL_PROTOCOLS', 'http,https,ftp,ftps,mailto'),
     'allowedMimes'                 => [
         /* plain files */
         'text/plain',
@@ -482,6 +484,7 @@ return [
         // V2 API endpoints:
         'userGroupAccount' => UserGroupAccount::class,
         'userGroupBill'    => UserGroupBill::class,
+        'userGroup'        => UserGroup::class,
 
 
     ],

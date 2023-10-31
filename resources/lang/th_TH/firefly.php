@@ -43,6 +43,7 @@ return [
     'split'                                => 'แบ่ง',
     'single_split'                         => 'การแบ่ง',
     'clone'                                => 'ทำสำเนา',
+    'clone_and_edit'                       => 'Clone and edit',
     'confirm_action'                       => 'Confirm action',
     'last_seven_days'                      => '7 วันที่แล้ว',
     'last_thirty_days'                     => '30 วันที่ผ่านมา',
@@ -1565,6 +1566,7 @@ return [
     'list_all_attachments'                      => 'List of all attachments',
 
     // transaction index
+    'is_reconciled_fields_dropped'              => 'Because this transaction is reconciled, you will not be able to update the accounts, nor the amount(s).',
     'title_expenses'                            => 'Expenses',
     'title_withdrawal'                          => 'Expenses',
     'title_revenue'                             => 'Revenue / income',
@@ -1632,7 +1634,8 @@ return [
     'create_currency'                           => 'Create a new currency',
     'store_currency'                            => 'Store new currency',
     'update_currency'                           => 'Update currency',
-    'new_default_currency'                      => ':name is now the default currency.',
+    'new_default_currency'                      => '":name" is now the default currency.',
+    'default_currency_failed'                   => 'Could not make ":name" the default currency. Please check the logs.',
     'cannot_delete_currency'                    => 'Cannot delete :name because it is still in use.',
     'cannot_delete_fallback_currency'           => ':name is the system fallback currency and can\'t be deleted.',
     'cannot_disable_currency_journals'          => 'Cannot disable :name because transactions are still using it.',
@@ -1658,7 +1661,9 @@ return [
     'disable_currency'                          => 'Disable',
     'currencies_default_disabled'               => 'Most of these currencies are disabled by default. To use them, you must enable them first.',
     'currency_is_now_enabled'                   => 'Currency ":name" has been enabled',
+    'could_not_enable_currency'                 => 'Could not enable currency ":name". Please review the logs.',
     'currency_is_now_disabled'                  => 'Currency ":name" has been disabled',
+    'could_not_disable_currency'                => 'Could not disable currency ":name". Perhaps it is still in use?',
 
     // forms:
     'mandatoryFields'                           => 'Mandatory fields',
@@ -1731,7 +1736,10 @@ return [
     'remove_budgeted_amount'                    => 'Remove budgeted amount in :currency',
 
     // bills:
+    'subscription'                              => 'Subscription',
     'not_expected_period'                       => 'Not expected this period',
+    'subscriptions_in_group'                    => 'Subscriptions in group "%{title}"',
+    'subscr_expected_x_times'                   => 'Expect to pay %{amount} %{times} times this period',
     'not_or_not_yet'                            => 'Not (yet)',
     'visit_bill'                                => 'Visit bill ":name" at Firefly III',
     'match_between_amounts'                     => 'Bill matches transactions between :low and :high.',
@@ -1768,6 +1776,7 @@ return [
     'bill_edit_rules'                           => 'Firefly III will attempt to edit the rule related to this bill as well. If you\'ve edited this rule yourself however, Firefly III won\'t change anything.|Firefly III will attempt to edit the :count rules related to this bill as well. If you\'ve edited these rules yourself however, Firefly III won\'t change anything.',
     'bill_expected_date'                        => 'Expected :date',
     'bill_expected_date_js'                     => 'Expected {date}',
+    'expected_amount'                           => '(Expected) amount',
     'bill_paid_on'                              => 'จ่ายเมื่อ {date}',
     'bill_repeats_weekly'                       => 'Repeats weekly',
     'bill_repeats_monthly'                      => 'Repeats monthly',
@@ -1940,6 +1949,7 @@ return [
 
 
     // transactions:
+    'unreconcile'                               => 'Undo reconciliation',
     'update_withdrawal'                         => 'Update withdrawal',
     'update_deposit'                            => 'Update deposit',
     'update_transaction'                        => 'Update transaction',
@@ -2037,6 +2047,7 @@ return [
     'first_split_overrules_destination'         => 'The first split may overrule the destination account',
     'spent_x_of_y'                              => 'Spent {amount} of {total}',
 
+
     // new user:
     'welcome'                                   => 'Welcome to Firefly III!',
     'submit'                                    => 'Submit',
@@ -2103,6 +2114,9 @@ return [
     'Expense account'                           => 'Expense account',
     'Revenue account'                           => 'Revenue account',
     'Initial balance account'                   => 'Initial balance account',
+    'account_type_Asset account'                => 'Asset account',
+    'account_type_Expense account'              => 'Expense account',
+    'account_type_Revenue account'              => 'Revenue account',
     'account_type_Debt'                         => 'Debt',
     'account_type_Loan'                         => 'Loan',
     'account_type_Mortgage'                     => 'Mortgage',

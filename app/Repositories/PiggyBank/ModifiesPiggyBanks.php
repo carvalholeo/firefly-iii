@@ -25,7 +25,8 @@ declare(strict_types=1);
 namespace FireflyIII\Repositories\PiggyBank;
 
 use Exception;
-use FireflyIII\Events\ChangedPiggyBankAmount;
+use FireflyIII\Events\Model\PiggyBank\ChangedAmount;
+use FireflyIII\Events\Model\PiggyBank\ChangedPiggyBankAmount;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Note;
 use FireflyIII\Models\PiggyBank;
@@ -80,7 +81,7 @@ trait ModifiesPiggyBanks
         $repetition->save();
 
         Log::debug('addAmount [a]: Trigger change for negative amount.');
-        event(new ChangedPiggyBankAmount($piggyBank, bcmul($amount, '-1'), $journal, null));
+        event(new ChangedAmount($piggyBank, bcmul($amount, '-1'), $journal, null));
 
         return true;
     }
@@ -103,7 +104,7 @@ trait ModifiesPiggyBanks
         $repetition->save();
 
         Log::debug('addAmount [b]: Trigger change for positive amount.');
-        event(new ChangedPiggyBankAmount($piggyBank, $amount, $journal, null));
+        event(new ChangedAmount($piggyBank, $amount, $journal, null));
 
         return true;
     }
@@ -202,11 +203,11 @@ trait ModifiesPiggyBanks
 
         if (-1 === bccomp($difference, '0')) {
             Log::debug('addAmount [c]: Trigger change for negative amount.');
-            event(new ChangedPiggyBankAmount($piggyBank, $difference, null, null));
+            event(new ChangedAmount($piggyBank, $difference, null, null));
         }
         if (1 === bccomp($difference, '0')) {
             Log::debug('addAmount [d]: Trigger change for positive amount.');
-            event(new ChangedPiggyBankAmount($piggyBank, $difference, null, null));
+            event(new ChangedAmount($piggyBank, $difference, null, null));
         }
 
         return $piggyBank;
@@ -312,13 +313,13 @@ trait ModifiesPiggyBanks
     public function setOrder(PiggyBank $piggyBank, int $newOrder): bool
     {
         $oldOrder = (int)$piggyBank->order;
-        Log::debug(sprintf('Will move piggy bank #%d ("%s") from %d to %d', $piggyBank->id, $piggyBank->name, $oldOrder, $newOrder));
+        //Log::debug(sprintf('Will move piggy bank #%d ("%s") from %d to %d', $piggyBank->id, $piggyBank->name, $oldOrder, $newOrder));
         if ($newOrder > $oldOrder) {
             $this->user->piggyBanks()->where('piggy_banks.order', '<=', $newOrder)->where('piggy_banks.order', '>', $oldOrder)
                        ->where('piggy_banks.id', '!=', $piggyBank->id)
                        ->decrement('piggy_banks.order');
             $piggyBank->order = $newOrder;
-            Log::debug(sprintf('Order of piggy #%d ("%s") is now %d', $piggyBank->id, $piggyBank->name, $newOrder));
+            Log::debug(sprintf('[1] Order of piggy #%d ("%s") from %d to %d', $piggyBank->id, $piggyBank->name, $oldOrder, $newOrder));
             $piggyBank->save();
 
             return true;
@@ -328,7 +329,7 @@ trait ModifiesPiggyBanks
                    ->where('piggy_banks.id', '!=', $piggyBank->id)
                    ->increment('piggy_banks.order');
         $piggyBank->order = $newOrder;
-        Log::debug(sprintf('Order of piggy #%d ("%s") is now %d', $piggyBank->id, $piggyBank->name, $newOrder));
+        Log::debug(sprintf('[2] Order of piggy #%d ("%s") from %d to %d', $piggyBank->id, $piggyBank->name, $oldOrder, $newOrder));
         $piggyBank->save();
 
         return true;
@@ -386,7 +387,7 @@ trait ModifiesPiggyBanks
             $difference = bcsub($piggyBank->targetamount, $repetition->currentamount);
 
             // an amount will be removed, create "negative" event:
-            event(new ChangedPiggyBankAmount($piggyBank, $difference, null, null));
+            event(new ChangedAmount($piggyBank, $difference, null, null));
 
             $repetition->currentamount = $piggyBank->targetamount;
             $repetition->save();
