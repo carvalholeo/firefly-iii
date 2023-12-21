@@ -84,9 +84,9 @@ class IndexController extends Controller
 
         // order so default is on top:
         $collection = $collection->sortBy(
-            function (TransactionCurrency $currency) {
-                $default = true === $currency->userDefault ? 0 : 1;
-                $enabled = true === $currency->userEnabled ? 0 : 1;
+            static function (TransactionCurrency $currency) {
+                $default = true === $currency->userGroupDefault ? 0 : 1;
+                $enabled = true === $currency->userGroupEnabled ? 0 : 1;
                 return sprintf('%s-%s-%s', $default, $enabled, $currency->code);
             }
         );

@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## 6.1.0 - 2023-12-17
+
+> ⚠️⚠️ This release required **PHP 8.3.0** and will not work on earlier releases of PHP ⚠️⚠️
+
+### Added
+
+- [Issue 7571](https://github.com/firefly-iii/firefly-iii/issues/7571) More tag search options
+- [Issue 7781](https://github.com/firefly-iii/firefly-iii/issues/7781) Nice wrapper script for artisan commands
+- UI also supports time for transactions
+
+### Changed
+
+- ⚠️⚠️ Requires PHP8.3 ⚠️⚠️
+- [Issue 8148](https://github.com/firefly-iii/firefly-iii/issues/8148) Slovenian language updates
+- [Issue 8023](https://github.com/firefly-iii/firefly-iii/issues/8023) Top bar is now fixed in place
+- Completely rewrote the documentation.
+
+### Deprecated
+
+- ⚠️⚠️ Removed support for PHP 8.2 ⚠️⚠️
+
+### Fixed
+
+- [Issue 8106](https://github.com/firefly-iii/firefly-iii/issues/8106) [issue 8195](https://github.com/firefly-iii/firefly-iii/issues/8195) [issue 8163](https://github.com/firefly-iii/firefly-iii/issues/8163) Various changes and fixes to bill date calculation
+- [Issue 8137](https://github.com/firefly-iii/firefly-iii/issues/8137) Fix uneven amount error from cron job
+- [Issue 8192](https://github.com/firefly-iii/firefly-iii/issues/8192) No matching transactions found.Rule with trigger NOT Transaction is reconciled returns
+- [Issue 8207](https://github.com/firefly-iii/firefly-iii/issues/8207) Broken links, thanks @Maxco10!
+- [Issue 8138](https://github.com/firefly-iii/firefly-iii/issues/8138) Reconciled transactions can't be "store(d) as new"
+- [Issue 7716](https://github.com/firefly-iii/firefly-iii/issues/7716) Removed bar in budget overview
+- [Issue 8251](https://github.com/firefly-iii/firefly-iii/issues/8251) Removing a budget would not remove available budget
+
+### API
+
+- [Issue 8022](https://github.com/firefly-iii/firefly-iii/issues/8022) API chart expansions
+- [Issue 8106](https://github.com/firefly-iii/firefly-iii/issues/8106) API reports empty string instead of NULL
+
 ## 6.0.30 - 2023-10-29
 
 ### Fixed
@@ -295,7 +331,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 - 🇰🇷 Korean translations!
 - A new "adjusted" auto-budget type that will correct itself after
-  spending. [Read more](https://docs.firefly-iii.org/firefly-iii/financial-concepts/organizing/#adjusted-and-correct-for-overspending)
+  spending. [Read more](https://docs.firefly-iii.org/xfirefly-iii/financial-concepts/organizing/#adjusted-and-correct-for-overspending)
 - [Issue 6631](https://github.com/firefly-iii/firefly-iii/issues/6631) Can now link withdrawals and deposits to piggy
   banks, thanks @ChrisWin22!
 
@@ -508,10 +544,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 This is release
 
-*
-
-*6.0.0
-** of Firefly III.
+**6.0.0** of Firefly III.
 
 ### Warnings
 
@@ -1088,7 +1121,7 @@ https://api-docs.firefly-iii.org/.
 - ⚠️ This is the last release that supports PHP 8.0
 - 👍 Want to try the new v3 layout? At your own risk, browse to `/v3/`.
 
-Please refer to the [documentation](https://docs.firefly-iii.org/firefly-iii/) and support channels if you run into
+Please refer to the [documentation](https://docs.firefly-iii.org/xfirefly-iii/) and support channels if you run into
 problems:
 
 - [Gitter.im](https://gitter.im/firefly-iii/firefly-iii)
@@ -1166,6 +1199,6 @@ problems:
 
 # Full change log
 
-Can be found here: https://docs.firefly-iii.org/firefly-iii/about-firefly-iii/changelog/
+Can be found here: https://docs.firefly-iii.org/references/firefly-iii/changelog/
 
 
