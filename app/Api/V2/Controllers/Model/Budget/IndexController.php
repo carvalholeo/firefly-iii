@@ -52,15 +52,12 @@ class IndexController extends Controller
     /**
      * This endpoint is documented at:
      * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v2)#/budgets/listBudgets
-     *
-     *
-     * @return JsonResponse
      */
     public function index(): JsonResponse
     {
-        $pageSize   = $this->parameters->get('limit');
-        $collection = $this->repository->getActiveBudgets();
-        $total      = $collection->count();
+        $pageSize    = $this->parameters->get('limit');
+        $collection  = $this->repository->getActiveBudgets();
+        $total       = $collection->count();
         $collection->slice($pageSize * $this->parameters->get('page'), $pageSize);
 
         $paginator   = new LengthAwarePaginator($collection, $total, $pageSize, $this->parameters->get('page'));
@@ -68,6 +65,7 @@ class IndexController extends Controller
 
         return response()
             ->api($this->jsonApiList('budgets', $paginator, $transformer))
-            ->header('Content-Type', self::CONTENT_TYPE);
+            ->header('Content-Type', self::CONTENT_TYPE)
+        ;
     }
 }

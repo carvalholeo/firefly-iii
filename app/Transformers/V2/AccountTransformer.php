@@ -46,7 +46,6 @@ class AccountTransformer extends AbstractTransformer
     private TransactionCurrency $default;
 
     /**
-     * @inheritDoc
      * @throws FireflyException
      */
     public function collectMetaData(Collection $objects): void
@@ -58,17 +57,18 @@ class AccountTransformer extends AbstractTransformer
         $this->convertedBalances = app('steam')->balancesByAccountsConverted($objects, $this->getDate());
 
         /** @var CurrencyRepositoryInterface $repository */
-        $repository    = app(CurrencyRepositoryInterface::class);
-        $this->default = app('amount')->getDefaultCurrency();
+        $repository              = app(CurrencyRepositoryInterface::class);
+        $this->default           = app('amount')->getDefaultCurrency();
 
         // get currencies:
-        $accountIds  = $objects->pluck('id')->toArray();
-        $meta        = AccountMeta::whereIn('account_id', $accountIds)
-                                  ->where('name', 'currency_id')
-                                  ->get(['account_meta.id', 'account_meta.account_id', 'account_meta.name', 'account_meta.data']);
-        $currencyIds = $meta->pluck('data')->toArray();
+        $accountIds              = $objects->pluck('id')->toArray();
+        $meta                    = AccountMeta::whereIn('account_id', $accountIds)
+            ->where('name', 'currency_id')
+            ->get(['account_meta.id', 'account_meta.account_id', 'account_meta.name', 'account_meta.data'])
+        ;
+        $currencyIds             = $meta->pluck('data')->toArray();
 
-        $currencies = $repository->getByIds($currencyIds);
+        $currencies              = $repository->getByIds($currencyIds);
         foreach ($currencies as $currency) {
             $id                    = $currency->id;
             $this->currencies[$id] = $currency;
@@ -79,9 +79,11 @@ class AccountTransformer extends AbstractTransformer
         }
         // get account types:
         // select accounts.id, account_types.type from account_types left join accounts on accounts.account_type_id = account_types.id;
-        $accountTypes = AccountType::leftJoin('accounts', 'accounts.account_type_id', '=', 'account_types.id')
-                                   ->whereIn('accounts.id', $accountIds)
-                                   ->get(['accounts.id', 'account_types.type']);
+        $accountTypes            = AccountType::leftJoin('accounts', 'accounts.account_type_id', '=', 'account_types.id')
+            ->whereIn('accounts.id', $accountIds)
+            ->get(['accounts.id', 'account_types.type'])
+        ;
+
         /** @var AccountType $row */
         foreach ($accountTypes as $row) {
             $this->accountTypes[$row->id] = (string)config(sprintf('firefly.shortNamesByFullName.%s', $row->type));
@@ -89,36 +91,19 @@ class AccountTransformer extends AbstractTransformer
     }
 
     /**
-     * @return Carbon
-     */
-    private function getDate(): Carbon
-    {
-        $date = today(config('app.timezone'));
-        if (null !== $this->parameters->get('date')) {
-            $date = $this->parameters->get('date');
-        }
-
-        return $date;
-    }
-
-    /**
      * Transform the account.
-     *
-     * @param Account $account
-     *
-     * @return array
      */
     public function transform(Account $account): array
     {
-        $id = $account->id;
+        $id            = $account->id;
 
         // various meta
-        $accountRole = $this->accountMeta[$id]['account_role'] ?? null;
-        $accountType = $this->accountTypes[$id];
-        $order       = $account->order;
+        $accountRole   = $this->accountMeta[$id]['account_role'] ?? null;
+        $accountType   = $this->accountTypes[$id];
+        $order         = $account->order;
 
         // no currency? use default
-        $currency = $this->default;
+        $currency      = $this->default;
         if (0 !== (int)$this->accountMeta[$id]['currency_id']) {
             $currency = $this->currencies[(int)$this->accountMeta[$id]['currency_id']];
         }
@@ -132,19 +117,19 @@ class AccountTransformer extends AbstractTransformer
         }
 
         return [
-            'id'                      => (string)$account->id,
-            'created_at'              => $account->created_at->toAtomString(),
-            'updated_at'              => $account->updated_at->toAtomString(),
-            'active'                  => $account->active,
-            'order'                   => $order,
-            'name'                    => $account->name,
-            'iban'                    => '' === $account->iban ? null : $account->iban,
-            'type'                    => strtolower($accountType),
-            'account_role'            => $accountRole,
-            'currency_id'             => (string)$currency->id,
-            'currency_code'           => $currency->code,
-            'currency_symbol'         => $currency->symbol,
-            'currency_decimal_places' => $currency->decimal_places,
+            'id'                             => (string)$account->id,
+            'created_at'                     => $account->created_at->toAtomString(),
+            'updated_at'                     => $account->updated_at->toAtomString(),
+            'active'                         => $account->active,
+            'order'                          => $order,
+            'name'                           => $account->name,
+            'iban'                           => '' === $account->iban ? null : $account->iban,
+            'type'                           => strtolower($accountType),
+            'account_role'                   => $accountRole,
+            'currency_id'                    => (string)$currency->id,
+            'currency_code'                  => $currency->code,
+            'currency_symbol'                => $currency->symbol,
+            'currency_decimal_places'        => $currency->decimal_places,
 
             'native_currency_id'             => (string)$this->default->id,
             'native_currency_code'           => $this->default->code,
@@ -154,7 +139,7 @@ class AccountTransformer extends AbstractTransformer
             // balance:
             'current_balance'                => $balance,
             'native_current_balance'         => $nativeBalance,
-            'current_balance_date'           => $this->getDate(),
+            'current_balance_date'           => $this->getDate()->endOfDay()->toAtomString(),
 
             // more meta
 
@@ -178,9 +163,19 @@ class AccountTransformer extends AbstractTransformer
             'links'                          => [
                 [
                     'rel' => 'self',
-                    'uri' => '/accounts/' . $account->id,
+                    'uri' => '/accounts/'.$account->id,
                 ],
             ],
         ];
+    }
+
+    private function getDate(): Carbon
+    {
+        $date = today(config('app.timezone'));
+        if (null !== $this->parameters->get('date')) {
+            $date = $this->parameters->get('date');
+        }
+
+        return $date;
     }
 }

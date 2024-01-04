@@ -44,8 +44,6 @@ class DestroyController extends Controller
 
     /**
      * TransactionController constructor.
-     *
-
      */
     public function __construct()
     {
@@ -53,9 +51,9 @@ class DestroyController extends Controller
         $this->middleware(
             function ($request, $next) {
                 /** @var User $admin */
-                $admin = auth()->user();
+                $admin                 = auth()->user();
 
-                $this->repository = app(JournalRepositoryInterface::class);
+                $this->repository      = app(JournalRepositoryInterface::class);
                 $this->repository->setUser($admin);
 
                 $this->groupRepository = app(TransactionGroupRepository::class);
@@ -71,16 +69,13 @@ class DestroyController extends Controller
      * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/transactions/deleteTransaction
      *
      * Remove the specified resource from storage.
-     *
-     * @param TransactionGroup $transactionGroup
-     *
-     * @return JsonResponse
      */
     public function destroy(TransactionGroup $transactionGroup): JsonResponse
     {
         app('log')->debug(sprintf('Now in %s', __METHOD__));
         // grab asset account(s) from group:
         $accounts = [];
+
         /** @var TransactionJournal $journal */
         foreach ($transactionGroup->transactionJournals as $journal) {
             /** @var Transaction $transaction */
@@ -111,10 +106,6 @@ class DestroyController extends Controller
      * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/transactions/deleteTransactionJournal
      *
      * Remove the specified resource from storage.
-     *
-     * @param TransactionJournal $transactionJournal
-     *
-     * @return JsonResponse
      */
     public function destroyJournal(TransactionJournal $transactionJournal): JsonResponse
     {

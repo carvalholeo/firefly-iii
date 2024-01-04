@@ -37,8 +37,6 @@ class LinkTypeFormRequest extends FormRequest
 
     /**
      * Rules for this request.
-     *
-     * @return array
      */
     public function rules(): array
     {
@@ -47,7 +45,7 @@ class LinkTypeFormRequest extends FormRequest
         $idRule   = '';
 
         // get parameter link:
-        $link = $this->route()->parameter('linkType');
+        $link     = $this->route()->parameter('linkType');
 
         if (null !== $link) {
             $idRule   = 'exists:link_types,id';

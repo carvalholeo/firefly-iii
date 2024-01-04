@@ -1,6 +1,5 @@
 <?php
 
-
 /*
  * DeleteController.php
  * Copyright (c) 2023 james@firefly-iii.org
@@ -47,8 +46,6 @@ class DeleteController extends Controller
 
     /**
      * CurrencyController constructor.
-     *
-
      */
     public function __construct()
     {
@@ -66,19 +63,15 @@ class DeleteController extends Controller
         );
     }
 
-
     /**
      * Deletes a currency.
      *
-     * @param Request             $request
-     * @param TransactionCurrency $currency
-     *
-     * @return Factory|RedirectResponse|Redirector|View
+     * @return Factory|Redirector|RedirectResponse|View
      */
     public function delete(Request $request, TransactionCurrency $currency)
     {
         /** @var User $user */
-        $user = auth()->user();
+        $user     = auth()->user();
         if (!$this->userRepository->hasRole($user, 'owner')) {
             $request->session()->flash('error', (string)trans('firefly.ask_site_owner', ['owner' => e(config('firefly.site_owner'))]));
             Log::channel('audit')->info(sprintf('Tried to visit page to delete currency %s but is not site owner.', $currency->code));
@@ -106,10 +99,7 @@ class DeleteController extends Controller
     /**
      * Destroys a currency.
      *
-     * @param Request             $request
-     * @param TransactionCurrency $currency
-     *
-     * @return RedirectResponse|Redirector
+     * @return Redirector|RedirectResponse
      */
     public function destroy(Request $request, TransactionCurrency $currency)
     {
@@ -143,5 +133,4 @@ class DeleteController extends Controller
 
         return redirect($this->getPreviousUrl('currencies.delete.url'));
     }
-
 }

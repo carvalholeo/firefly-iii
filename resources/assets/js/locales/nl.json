@@ -25,6 +25,7 @@
         "destination_account": "Doelrekening",
         "add_another_split": "Voeg een split toe",
         "submission": "Indienen",
+        "stored_journal": "Nieuw transactie \":description\" opgeslagen",
         "create_another": "Terug naar deze pagina voor een nieuwe transactie.",
         "reset_after": "Reset formulier na opslaan",
         "submit": "Invoeren",
@@ -154,6 +155,6 @@
     },
     "config": {
         "html_language": "nl",
-        "date_time_fns": "D MMMM yyyy @ HH:mm:ss"
+        "date_time_fns": "d MMMM yyyy @ HH:mm:ss"
     }
 }

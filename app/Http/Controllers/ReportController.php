@@ -39,12 +39,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Redirector;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class ReportController.
- *
  */
 class ReportController extends Controller
 {
@@ -76,11 +73,7 @@ class ReportController extends Controller
     /**
      * Show audit report.
      *
-     * @param Collection $accounts
-     * @param Carbon     $start
-     * @param Carbon     $end
-     *
-     * @return Factory|View|string
+     * @return Factory|string|View
      *
      * @throws FireflyException
      */
@@ -111,12 +104,7 @@ class ReportController extends Controller
     /**
      * Show budget report.
      *
-     * @param Collection $accounts
-     * @param Collection $budgets
-     * @param Carbon     $start
-     * @param Carbon     $end
-     *
-     * @return Factory|View|string
+     * @return Factory|string|View
      *
      * @throws FireflyException
      */
@@ -148,12 +136,7 @@ class ReportController extends Controller
     /**
      * Show category report.
      *
-     * @param Collection $accounts
-     * @param Collection $categories
-     * @param Carbon     $start
-     * @param Carbon     $end
-     *
-     * @return Factory|View|string
+     * @return Factory|string|View
      *
      * @throws FireflyException
      */
@@ -185,11 +168,7 @@ class ReportController extends Controller
     /**
      * Show default report.
      *
-     * @param Collection $accounts
-     * @param Carbon     $start
-     * @param Carbon     $end
-     *
-     * @return Factory|View|string
+     * @return Factory|string|View
      *
      * @throws FireflyException
      */
@@ -221,12 +200,8 @@ class ReportController extends Controller
     /**
      * Show account report.
      *
-     * @param Collection $accounts
-     * @param Collection $expense
-     * @param Carbon     $start
-     * @param Carbon     $end
-     *
      * @return string
+     *
      * @throws FireflyException
      */
     public function doubleReport(Collection $accounts, Collection $expense, Carbon $start, Carbon $end)
@@ -258,11 +233,7 @@ class ReportController extends Controller
     /**
      * Show index.
      *
-     * @param AccountRepositoryInterface $repository
-     *
      * @return Factory|View
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
      */
     public function index(AccountRepositoryInterface $repository)
     {
@@ -275,11 +246,12 @@ class ReportController extends Controller
         );
 
         // group accounts by role:
-        $groupedAccounts = [];
+        $groupedAccounts  = [];
+
         /** @var Account $account */
         foreach ($accounts as $account) {
-            $type = $account->accountType->type;
-            $role = sprintf('opt_group_%s', $repository->getMetaValue($account, 'account_role'));
+            $type                                                                       = $account->accountType->type;
+            $role                                                                       = sprintf('opt_group_%s', $repository->getMetaValue($account, 'account_role'));
 
             if (in_array($type, [AccountType::MORTGAGE, AccountType::DEBT, AccountType::LOAN], true)) {
                 $role = sprintf('opt_group_l_%s', $type);
@@ -292,7 +264,7 @@ class ReportController extends Controller
         }
         ksort($groupedAccounts);
 
-        $accountList = implode(',', $accounts->pluck('id')->toArray());
+        $accountList      = implode(',', $accounts->pluck('id')->toArray());
         $this->repository->cleanupBudgets();
 
         return view('reports.index', compact('months', 'accounts', 'start', 'accountList', 'groupedAccounts', 'customFiscalYear'));
@@ -301,9 +273,8 @@ class ReportController extends Controller
     /**
      * Show options for reports.
      *
-     * @param string $reportType
-     *
      * @return JsonResponse
+     *
      * @throws FireflyException
      */
     public function options(string $reportType)
@@ -322,14 +293,9 @@ class ReportController extends Controller
     /**
      * Process the submit of report.
      *
-     * @param ReportFormRequest $request
-     *
-     * @return RedirectResponse|Redirector|View
-     *
      * @throws FireflyException
-     *
      */
-    public function postIndex(ReportFormRequest $request): RedirectResponse | Redirector | View
+    public function postIndex(ReportFormRequest $request): Redirector|RedirectResponse|View
     {
         // report type:
         $reportType = $request->get('report_type');
@@ -376,7 +342,7 @@ class ReportController extends Controller
             return view('error')->with('message', (string)trans('firefly.end_after_start_date'));
         }
 
-        $url = match ($reportType) {
+        $url        = match ($reportType) {
             default    => route('reports.report.default', [$accounts, $start, $end]),
             'category' => route('reports.report.category', [$accounts, $categories, $start, $end]),
             'audit'    => route('reports.report.audit', [$accounts, $start, $end]),
@@ -391,12 +357,8 @@ class ReportController extends Controller
     /**
      * Get a tag report.
      *
-     * @param Collection $accounts
-     * @param Collection $tags
-     * @param Carbon     $start
-     * @param Carbon     $end
+     * @return Factory|string|View
      *
-     * @return Factory|View|string
      * @throws FireflyException
      */
     public function tagReport(Collection $accounts, Collection $tags, Carbon $start, Carbon $end)

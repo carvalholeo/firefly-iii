@@ -34,8 +34,8 @@ return [
      |
      */
 
-    'enabled' => env('DEBUGBAR_ENABLED', null),
-    'except'  => [
+    'enabled'         => env('DEBUGBAR_ENABLED', null),
+    'except'          => [
         'telescope*',
     ],
 
@@ -51,7 +51,7 @@ return [
      | can also be used. For PDO, run the package migrations first.
      |
      */
-    'storage' => [
+    'storage'         => [
         'enabled'    => true,
         'driver'     => 'file', // redis, file, pdo, custom
         'path'       => storage_path('debugbar'), // For file driver
@@ -120,7 +120,7 @@ return [
      |
      */
 
-    'collectors' => [
+    'collectors'      => [
         'phpinfo'         => true,  // Php version
         'messages'        => true,  // Messages
         'time'            => true,  // Time Datalogger
@@ -154,7 +154,7 @@ return [
      |
      */
 
-    'options' => [
+    'options'         => [
         'auth'  => [
             'show_name' => true,   // Also show the users name/email in the debugbar
         ],
@@ -163,9 +163,9 @@ return [
             'backtrace'   => true,   // Use a backtrace to find the origin of the query in your files.
             'timeline'    => false,  // Add the queries to the timeline
             'explain'     => [                 // Show EXPLAIN output on queries
-                                               'enabled' => false,
-                                               'types'   => ['SELECT'],
-                                               // // workaround ['SELECT'] only. https://github.com/barryvdh/laravel-debugbar/issues/888 ['SELECT', 'INSERT', 'UPDATE', 'DELETE']; for MySQL 5.6.3+
+                'enabled' => false,
+                'types'   => ['SELECT'],
+                // // workaround ['SELECT'] only. https://github.com/barryvdh/laravel-debugbar/issues/888 ['SELECT', 'INSERT', 'UPDATE', 'DELETE']; for MySQL 5.6.3+
             ],
             'hints'       => true,    // Show hints for common mistakes
         ],
@@ -173,7 +173,7 @@ return [
             'full_log' => false,
         ],
         'views' => [
-            'data' => true,    //Note: Can slow down the application, because the data can be quite large..
+            'data' => true,    // Note: Can slow down the application, because the data can be quite large..
         ],
         'route' => [
             'label' => true,  // show complete route on bar
@@ -197,7 +197,7 @@ return [
      |
      */
 
-    'inject'       => true,
+    'inject'          => true,
 
     /*
      |--------------------------------------------------------------------------
@@ -209,7 +209,7 @@ return [
      | from trying to overcome bugs like this: http://trac.nginx.org/nginx/ticket/97
      |
      */
-    'route_prefix' => '_debugbar',
+    'route_prefix'    => '_debugbar',
 
     /*
      |--------------------------------------------------------------------------
@@ -219,5 +219,5 @@ return [
      | By default DebugBar route served from the same domain that request served.
      | To override default domain, specify it as a non-empty value.
      */
-    'route_domain' => null,
+    'route_domain'    => null,
 ];

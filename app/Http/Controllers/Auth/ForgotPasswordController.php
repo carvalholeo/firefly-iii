@@ -32,13 +32,9 @@ use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class ForgotPasswordController
- *
-
  */
 class ForgotPasswordController extends Controller
 {
@@ -60,9 +56,6 @@ class ForgotPasswordController extends Controller
     /**
      * Send a reset link to the given user.
      *
-     * @param Request                 $request
-     * @param UserRepositoryInterface $repository
-     *
      * @return Factory|RedirectResponse|View
      */
     public function sendResetLinkEmail(Request $request, UserRepositoryInterface $repository)
@@ -75,12 +68,11 @@ class ForgotPasswordController extends Controller
             return view('error', compact('message'));
         }
 
-
         $this->validateEmail($request);
 
         // verify if the user is not a demo user. If so, we give him back an error.
-        /** @var User|null $user */
-        $user = User::where('email', $request->get('email'))->first();
+        /** @var null|User $user */
+        $user     = User::where('email', $request->get('email'))->first();
 
         if (null !== $user && $repository->hasRole($user, 'demo')) {
             return back()->withErrors(['email' => (string)trans('firefly.cannot_reset_demo_user')]);
@@ -89,7 +81,7 @@ class ForgotPasswordController extends Controller
         // We will send the password reset link to this user. Once we have attempted
         // to send the link, we will examine the response then see the message we
         // need to show to the user. Finally, we'll send out a proper response.
-        $result = $this->broker()->sendResetLink($request->only('email'));
+        $result   = $this->broker()->sendResetLink($request->only('email'));
         if ('passwords.throttled' === $result) {
             app('log')->error(sprintf('Cowardly refuse to send a password reset message to user #%d because the reset button has been throttled.', $user->id));
         }
@@ -103,11 +95,9 @@ class ForgotPasswordController extends Controller
     /**
      * Show form for email recovery.
      *
-     *
      * @return Factory|View
+     *
      * @throws FireflyException
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
      */
     public function showLinkRequestForm()
     {

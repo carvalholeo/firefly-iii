@@ -27,7 +27,6 @@ namespace FireflyIII\Console\Commands\System;
 use FireflyIII\Console\Commands\ShowsFriendlyMessages;
 use Illuminate\Console\Command;
 use PDO;
-use PDOException;
 
 /**
  * Class CreateDatabase
@@ -36,15 +35,14 @@ class CreateDatabase extends Command
 {
     use ShowsFriendlyMessages;
 
-
     protected $description = 'Tries to create the database if it doesn\'t exist yet.';
 
-    protected $signature = 'firefly-iii:create-database';
+    protected $signature   = 'firefly-iii:create-database';
 
     /**
      * Execute the console command.
      *
-     * @return int
+     * @suppressWarnings(PHPMD.MissingImport)
      */
     public function handle(): int
     {
@@ -54,8 +52,8 @@ class CreateDatabase extends Command
             return 0;
         }
         // try to set up a raw connection:
-        $exists = false;
-        $dsn    = sprintf('mysql:host=%s;port=%d;charset=utf8mb4', env('DB_HOST', 'localhost'), env('DB_PORT', '3306'));
+        $exists  = false;
+        $dsn     = sprintf('mysql:host=%s;port=%d;charset=utf8mb4', env('DB_HOST', 'localhost'), env('DB_PORT', '3306'));
 
         if ('' !== env('DB_SOCKET', '')) {
             $dsn = sprintf('mysql:unix_socket=%s;charset=utf8mb4', env('DB_SOCKET', ''));
@@ -63,23 +61,24 @@ class CreateDatabase extends Command
         $this->friendlyLine(sprintf('DSN is %s', $dsn));
 
         $options = [
-            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES   => false,
+            \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
+            \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+            \PDO::ATTR_EMULATE_PREPARES   => false,
         ];
 
         // when it fails, display error
         try {
-            $pdo = new PDO($dsn, env('DB_USERNAME'), env('DB_PASSWORD'), $options);
-        } catch (PDOException $e) {
+            $pdo = new \PDO($dsn, env('DB_USERNAME'), env('DB_PASSWORD'), $options);
+        } catch (\PDOException $e) {
             $this->friendlyError(sprintf('Error when connecting to DB: %s', $e->getMessage()));
+
             return 1;
         }
 
         // only continue when no error.
         // with PDO, try to list DB's (
         /** @var array $stmt */
-        $stmt = $pdo->query('SHOW DATABASES;');
+        $stmt    = $pdo->query('SHOW DATABASES;');
         // slightly more complex but less error-prone.
         foreach ($stmt as $row) {
             $name = $row['Database'] ?? false;

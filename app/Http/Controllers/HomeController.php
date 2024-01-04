@@ -25,7 +25,6 @@ namespace FireflyIII\Http\Controllers;
 
 use Carbon\Carbon;
 use Carbon\Exceptions\InvalidFormatException;
-use Exception;
 use FireflyIII\Events\RequestedVersionCheckStatus;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Helpers\Collector\GroupCollectorInterface;
@@ -46,8 +45,6 @@ class HomeController extends Controller
 {
     /**
      * HomeController constructor.
-     *
-
      */
     public function __construct()
     {
@@ -60,15 +57,13 @@ class HomeController extends Controller
     /**
      * Change index date range.
      *
-     * @param Request $request
-     *
-     * @return JsonResponse
-     * @throws Exception
+     * @throws \Exception
      */
     public function dateRange(Request $request): JsonResponse
     {
-        $stringStart = '';
-        $stringEnd   = '';
+        $stringStart   = '';
+        $stringEnd     = '';
+
         try {
             $stringStart = e((string)$request->get('start'));
             $start       = Carbon::createFromFormat('Y-m-d', $stringStart);
@@ -76,6 +71,7 @@ class HomeController extends Controller
             app('log')->error(sprintf('Start: could not parse date string "%s" so ignore it.', $stringStart));
             $start = Carbon::now()->startOfMonth();
         }
+
         try {
             $stringEnd = e((string)$request->get('end'));
             $end       = Carbon::createFromFormat('Y-m-d', $stringEnd);
@@ -101,7 +97,7 @@ class HomeController extends Controller
             app('log')->debug('Range is now marked as "custom".');
         }
 
-        $diff = $start->diffInDays($end) + 1;
+        $diff          = $start->diffInDays($end) + 1;
 
         if ($diff > 50) {
             $request->session()->flash('warning', (string)trans('firefly.warning_much_data', ['days' => $diff]));
@@ -120,15 +116,12 @@ class HomeController extends Controller
     /**
      * Show index.
      *
-     * @param AccountRepositoryInterface $repository
-     *
-     * @return mixed
      * @throws FireflyException
      */
     public function index(AccountRepositoryInterface $repository): mixed
     {
-        $types = config('firefly.accountTypesByIdentifier.asset');
-        $count = $repository->count($types);
+        $types          = config('firefly.accountTypesByIdentifier.asset');
+        $count          = $repository->count($types);
         Log::channel('audit')->info('User visits homepage.');
 
         if (0 === $count) {
@@ -142,16 +135,16 @@ class HomeController extends Controller
             $frontPageArray = [];
         }
 
-
         /** @var Carbon $start */
-        $start = session('start', today(config('app.timezone'))->startOfMonth());
+        $start          = session('start', today(config('app.timezone'))->startOfMonth());
+
         /** @var Carbon $end */
-        $end      = session('end', today(config('app.timezone'))->endOfMonth());
-        $accounts = $repository->getAccountsById($frontPageArray);
-        $today    = today(config('app.timezone'));
+        $end            = session('end', today(config('app.timezone'))->endOfMonth());
+        $accounts       = $repository->getAccountsById($frontPageArray);
+        $today          = today(config('app.timezone'));
 
         // sort frontpage accounts by order
-        $accounts = $accounts->sortBy('order');
+        $accounts       = $accounts->sortBy('order');
 
         app('log')->debug('Frontpage accounts are ', $frontPageArray);
 
@@ -161,14 +154,14 @@ class HomeController extends Controller
         // collect groups for each transaction.
         foreach ($accounts as $account) {
             /** @var GroupCollectorInterface $collector */
-            $collector = app(GroupCollectorInterface::class);
+            $collector      = app(GroupCollectorInterface::class);
             $collector->setAccounts(new Collection([$account]))->withAccountInformation()->setRange($start, $end)->setLimit(10)->setPage(1);
             $set            = $collector->getExtractedJournals();
             $transactions[] = ['transactions' => $set, 'account' => $account];
         }
 
         /** @var User $user */
-        $user = auth()->user();
+        $user           = auth()->user();
         event(new RequestedVersionCheckStatus($user));
 
         return view('index', compact('count', 'subTitle', 'transactions', 'billCount', 'start', 'end', 'today'));

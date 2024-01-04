@@ -37,9 +37,6 @@ class TestRequest extends FormRequest
     use ChecksLogin;
     use ConvertsDataTypes;
 
-    /**
-     * @return array
-     */
     public function getTestParameters(): array
     {
         return [
@@ -47,48 +44,9 @@ class TestRequest extends FormRequest
             'start'    => $this->getDate('start'),
             'end'      => $this->getDate('end'),
             'accounts' => $this->getAccounts(),
-
         ];
     }
 
-    /**
-     * @return int
-     */
-    private function getPage(): int
-    {
-        return 0 === (int)$this->query('page') ? 1 : (int)$this->query('page');
-    }
-
-    /**
-     * @param string $field
-     *
-     * @return Carbon|null
-     */
-    private function getDate(string $field): ?Carbon
-    {
-        $value = $this->query($field);
-        if (is_array($value)) {
-            return null;
-        }
-        $value  = (string)$value;
-        $result = null === $this->query($field) ? null : Carbon::createFromFormat('Y-m-d', substr($value, 0, 10));
-        if (false === $result) {
-            return null;
-        }
-        return $result;
-    }
-
-    /**
-     * @return array
-     */
-    private function getAccounts(): array
-    {
-        return $this->get('accounts');
-    }
-
-    /**
-     * @return array
-     */
     public function rules(): array
     {
         return [
@@ -97,5 +55,30 @@ class TestRequest extends FormRequest
             'accounts'   => '',
             'accounts.*' => 'required|exists:accounts,id|belongsToUser:accounts',
         ];
+    }
+
+    private function getPage(): int
+    {
+        return 0 === (int)$this->query('page') ? 1 : (int)$this->query('page');
+    }
+
+    private function getDate(string $field): ?Carbon
+    {
+        $value  = $this->query($field);
+        if (is_array($value)) {
+            return null;
+        }
+        $value  = (string)$value;
+        $result = null === $this->query($field) ? null : Carbon::createFromFormat('Y-m-d', substr($value, 0, 10));
+        if (false === $result) {
+            return null;
+        }
+
+        return $result;
+    }
+
+    private function getAccounts(): array
+    {
+        return $this->get('accounts');
     }
 }

@@ -23,7 +23,6 @@
 declare(strict_types=1);
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | View Name
@@ -47,7 +46,7 @@ return [
     |
     */
 
-    'view' => 'partials/layout/breadcrumbs',
+    'view'                                     => 'partials/layout/breadcrumbs',
 
     /*
     |--------------------------------------------------------------------------
@@ -95,5 +94,4 @@ return [
 
     // Generator
     'generator-class'                          => Diglactic\Breadcrumbs\Generator::class,
-
 ];

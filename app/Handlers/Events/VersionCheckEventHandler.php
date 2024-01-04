@@ -28,8 +28,6 @@ use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Helpers\Update\UpdateTrait;
 use FireflyIII\Models\Configuration;
 use FireflyIII\Repositories\User\UserRepositoryInterface;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class VersionCheckEventHandler
@@ -41,11 +39,8 @@ class VersionCheckEventHandler
     /**
      * Checks with GitHub to see if there is a new version.
      *
-     * @param RequestedVersionCheckStatus $event
-     *
      * @throws FireflyException
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
+     *
      * @deprecated ?
      */
     public function checkForUpdates(RequestedVersionCheckStatus $event): void
@@ -53,8 +48,8 @@ class VersionCheckEventHandler
         app('log')->debug('Now in checkForUpdates()');
 
         // should not check for updates:
-        $permission = app('fireflyconfig')->get('permission_update_check', -1);
-        $value      = (int)$permission->data;
+        $permission    = app('fireflyconfig')->get('permission_update_check', -1);
+        $value         = (int)$permission->data;
         if (1 !== $value) {
             app('log')->debug('Update check is not enabled.');
             $this->warnToCheckForUpdates($event);
@@ -63,8 +58,8 @@ class VersionCheckEventHandler
         }
 
         /** @var UserRepositoryInterface $repository */
-        $repository = app(UserRepositoryInterface::class);
-        $user       = $event->user;
+        $repository    = app(UserRepositoryInterface::class);
+        $user          = $event->user;
         if (!$repository->hasRole($user, 'owner')) {
             app('log')->debug('User is not admin, done.');
 
@@ -83,24 +78,20 @@ class VersionCheckEventHandler
         }
         // last check time was more than a week ago.
         app('log')->debug('Have not checked for a new version in a week!');
-        $release = $this->getLatestRelease();
+        $release       = $this->getLatestRelease();
 
         session()->flash($release['level'], $release['message']);
         app('fireflyconfig')->set('last_update_check', time());
     }
 
     /**
-     * @param RequestedVersionCheckStatus $event
-     *
      * @throws FireflyException
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
      */
     protected function warnToCheckForUpdates(RequestedVersionCheckStatus $event): void
     {
         /** @var UserRepositoryInterface $repository */
-        $repository = app(UserRepositoryInterface::class);
-        $user       = $event->user;
+        $repository    = app(UserRepositoryInterface::class);
+        $user          = $event->user;
         if (!$repository->hasRole($user, 'owner')) {
             app('log')->debug('User is not admin, done.');
 

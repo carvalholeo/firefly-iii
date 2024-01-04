@@ -23,27 +23,21 @@ declare(strict_types=1);
 
 namespace FireflyIII\Console\Commands\System;
 
-use Crypt;
 use FireflyIII\Console\Commands\ShowsFriendlyMessages;
 use FireflyIII\Models\Attachment;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Encryption\DecryptException;
-use Storage;
 
 /**
  * Class ScanAttachments.
- *
-
  */
 class ScanAttachments extends Command
 {
     use ShowsFriendlyMessages;
 
-
     protected $description = 'Rescan all attachments and re-set the correct MD5 hash and mime.';
 
-
-    protected $signature = 'firefly-iii:scan-attachments';
+    protected $signature   = 'firefly-iii:scan-attachments';
 
     /**
      * Execute the console command.
@@ -51,24 +45,28 @@ class ScanAttachments extends Command
     public function handle(): int
     {
         $attachments = Attachment::get();
-        $disk        = Storage::disk('upload');
+        $disk        = \Storage::disk('upload');
+
         /** @var Attachment $attachment */
         foreach ($attachments as $attachment) {
             $fileName         = $attachment->fileName();
             $encryptedContent = $disk->get($fileName);
             if (null === $encryptedContent) {
                 app('log')->error(sprintf('No content for attachment #%d under filename "%s"', $attachment->id, $fileName));
+
                 continue;
             }
+
             try {
-                $decryptedContent = Crypt::decrypt($encryptedContent); // verified
+                $decryptedContent = \Crypt::decrypt($encryptedContent); // verified
             } catch (DecryptException $e) {
                 app('log')->error(sprintf('Could not decrypt data of attachment #%d: %s', $attachment->id, $e->getMessage()));
                 $decryptedContent = $encryptedContent;
             }
-            $tempFileName = tempnam(sys_get_temp_dir(), 'FireflyIII');
+            $tempFileName     = tempnam(sys_get_temp_dir(), 'FireflyIII');
             if (false === $tempFileName) {
                 app('log')->error(sprintf('Could not create temporary file for attachment #%d', $attachment->id));
+
                 exit(1);
             }
             file_put_contents($tempFileName, $decryptedContent);

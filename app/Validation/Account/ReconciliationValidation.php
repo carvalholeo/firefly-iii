@@ -34,11 +34,6 @@ trait ReconciliationValidation
     public ?Account $destination;
     public ?Account $source;
 
-    /**
-     * @param array $array
-     *
-     * @return bool
-     */
     protected function validateReconciliationDestination(array $array): bool
     {
         $accountId   = array_key_exists('id', $array) ? $array['id'] : null;
@@ -55,8 +50,8 @@ trait ReconciliationValidation
         app('log')->debug('Now in validateReconciliationDestination', $array);
 
         // source can be any of the following types.
-        $validTypes = array_keys($this->combinations[$this->transactionType]);
-        $search     = $this->findExistingAccount($validTypes, $array);
+        $validTypes  = array_keys($this->combinations[$this->transactionType]);
+        $search      = $this->findExistingAccount($validTypes, $array);
         if (null === $search) {
             $this->sourceError = (string)trans('validation.reconciliation_source_bad_data', ['id' => $accountId, 'name' => $accountName]);
             app('log')->warning('Not a valid source. Cant find it.', $validTypes);
@@ -71,10 +66,6 @@ trait ReconciliationValidation
 
     /**
      * Basically the same check
-     *
-     * @param array $array
-     *
-     * @return bool
      */
     protected function validateReconciliationSource(array $array): bool
     {
@@ -86,6 +77,7 @@ trait ReconciliationValidation
         if (null === $accountId && null === $accountName) {
             app('log')->debug('The source is valid because ID and name are NULL.');
             $this->setSource(new Account());
+
             return true;
         }
 
@@ -93,8 +85,8 @@ trait ReconciliationValidation
         app('log')->debug('Now in validateReconciliationSource', $array);
 
         // source can be any of the following types.
-        $validTypes = array_keys($this->combinations[$this->transactionType]);
-        $search     = $this->findExistingAccount($validTypes, $array);
+        $validTypes  = array_keys($this->combinations[$this->transactionType]);
+        $search      = $this->findExistingAccount($validTypes, $array);
         if (null === $search) {
             $this->sourceError = (string)trans('validation.reconciliation_source_bad_data', ['id' => $accountId, 'name' => $accountName]);
             app('log')->warning('Not a valid source. Cant find it.', $validTypes);

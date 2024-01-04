@@ -40,9 +40,6 @@ class RuleFormRequest extends FormRequest
 
     /**
      * Get all data for controller.
-     *
-     * @return array
-     *
      */
     public function getRuleData(): array
     {
@@ -59,36 +56,6 @@ class RuleFormRequest extends FormRequest
         ];
     }
 
-    /**
-     * @return array
-     */
-    private function getRuleTriggerData(): array
-    {
-        $return      = [];
-        $triggerData = $this->get('triggers');
-        if (is_array($triggerData)) {
-            foreach ($triggerData as $trigger) {
-                $stopProcessing = $trigger['stop_processing'] ?? '0';
-                $prohibited     = $trigger['prohibited'] ?? '0';
-                $set            = [
-                    'type'            => $trigger['type'] ?? 'invalid',
-                    'value'           => $trigger['value'] ?? '',
-                    'stop_processing' => 1 === (int)$stopProcessing,
-                    'prohibited'      => 1 === (int)$prohibited,
-                ];
-                $set            = self::replaceAmountTrigger($set);
-                $return[]       = $set;
-            }
-        }
-
-        return $return;
-    }
-
-    /**
-     * @param array $array
-     *
-     * @return array
-     */
     public static function replaceAmountTrigger(array $array): array
     {
         // do some sneaky search and replace.
@@ -110,12 +77,70 @@ class RuleFormRequest extends FormRequest
         if (in_array($array['type'], $amountFields, true) && '0' === $array['value']) {
             $array['value'] = '0.00';
         }
+
         return $array;
     }
 
     /**
-     * @return array
+     * Rules for this request.
      */
+    public function rules(): array
+    {
+        $validTriggers   = $this->getTriggers();
+        $validActions    = array_keys(config('firefly.rule-actions'));
+
+        // some actions require text (aka context):
+        $contextActions  = implode(',', config('firefly.context-rule-actions'));
+
+        // some triggers require text (aka context):
+        $contextTriggers = implode(',', $this->getTriggersWithContext());
+
+        // initial set of rules:
+        $rules           = [
+            'title'            => 'required|between:1,100|uniqueObjectForUser:rules,title',
+            'description'      => 'between:1,5000|nullable',
+            'stop_processing'  => 'boolean',
+            'rule_group_id'    => 'required|belongsToUser:rule_groups',
+            'trigger'          => 'required|in:store-journal,update-journal',
+            'triggers.*.type'  => 'required|in:'.implode(',', $validTriggers),
+            'triggers.*.value' => sprintf('required_if:triggers.*.type,%s|max:1024|min:1|ruleTriggerValue', $contextTriggers),
+            'actions.*.type'   => 'required|in:'.implode(',', $validActions),
+            'actions.*.value'  => sprintf('required_if:actions.*.type,%s|min:0|max:1024|ruleActionValue', $contextActions),
+            'strict'           => 'in:0,1',
+        ];
+
+        /** @var null|Rule $rule */
+        $rule            = $this->route()->parameter('rule');
+
+        if (null !== $rule) {
+            $rules['title'] = 'required|between:1,100|uniqueObjectForUser:rules,title,'.$rule->id;
+        }
+
+        return $rules;
+    }
+
+    private function getRuleTriggerData(): array
+    {
+        $return      = [];
+        $triggerData = $this->get('triggers');
+        if (is_array($triggerData)) {
+            foreach ($triggerData as $trigger) {
+                $stopProcessing = $trigger['stop_processing'] ?? '0';
+                $prohibited     = $trigger['prohibited'] ?? '0';
+                $set            = [
+                    'type'            => $trigger['type'] ?? 'invalid',
+                    'value'           => $trigger['value'] ?? '',
+                    'stop_processing' => 1 === (int) $stopProcessing,
+                    'prohibited'      => 1 === (int) $prohibited,
+                ];
+                $set            = self::replaceAmountTrigger($set);
+                $return[]       = $set;
+            }
+        }
+
+        return $return;
+    }
+
     private function getRuleActionData(): array
     {
         $return     = [];
@@ -126,51 +151,11 @@ class RuleFormRequest extends FormRequest
                 $return[]       = [
                     'type'            => $action['type'] ?? 'invalid',
                     'value'           => $action['value'] ?? '',
-                    'stop_processing' => 1 === (int)$stopProcessing,
+                    'stop_processing' => 1 === (int) $stopProcessing,
                 ];
             }
         }
 
         return $return;
-    }
-
-    /**
-     * Rules for this request.
-     *
-     * @return array
-     */
-    public function rules(): array
-    {
-        $validTriggers = $this->getTriggers();
-        $validActions  = array_keys(config('firefly.rule-actions'));
-
-        // some actions require text (aka context):
-        $contextActions = implode(',', config('firefly.context-rule-actions'));
-
-        // some triggers require text (aka context):
-        $contextTriggers = implode(',', $this->getTriggersWithContext());
-
-        // initial set of rules:
-        $rules = [
-            'title'            => 'required|between:1,100|uniqueObjectForUser:rules,title',
-            'description'      => 'between:1,5000|nullable',
-            'stop_processing'  => 'boolean',
-            'rule_group_id'    => 'required|belongsToUser:rule_groups',
-            'trigger'          => 'required|in:store-journal,update-journal',
-            'triggers.*.type'  => 'required|in:' . implode(',', $validTriggers),
-            'triggers.*.value' => sprintf('required_if:triggers.*.type,%s|max:1024|min:1|ruleTriggerValue', $contextTriggers),
-            'actions.*.type'   => 'required|in:' . implode(',', $validActions),
-            'actions.*.value'  => sprintf('required_if:actions.*.type,%s|min:0|max:1024|ruleActionValue', $contextActions),
-            'strict'           => 'in:0,1',
-        ];
-
-        /** @var Rule|null $rule */
-        $rule = $this->route()->parameter('rule');
-
-        if (null !== $rule) {
-            $rules['title'] = 'required|between:1,100|uniqueObjectForUser:rules,title,' . $rule->id;
-        }
-
-        return $rules;
     }
 }

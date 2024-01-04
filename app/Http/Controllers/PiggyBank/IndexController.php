@@ -36,7 +36,6 @@ use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use JsonException;
 use Symfony\Component\HttpFoundation\ParameterBag;
 
 /**
@@ -50,8 +49,6 @@ class IndexController extends Controller
 
     /**
      * PiggyBankController constructor.
-     *
-
      */
     public function __construct()
     {
@@ -75,36 +72,38 @@ class IndexController extends Controller
      * TODO very complicated function.
      *
      * @return Factory|View
+     *
      * @throws FireflyException
-     * @throws JsonException
      */
     public function index()
     {
         $this->cleanupObjectGroups();
         $this->piggyRepos->resetOrder();
-        $collection = $this->piggyRepos->getPiggyBanks();
-        $accounts   = [];
+        $collection         = $this->piggyRepos->getPiggyBanks();
+        $accounts           = [];
+
         /** @var Carbon $end */
-        $end = session('end', today(config('app.timezone'))->endOfMonth());
+        $end                = session('end', today(config('app.timezone'))->endOfMonth());
 
         // transform piggies using the transformer:
-        $parameters = new ParameterBag();
+        $parameters         = new ParameterBag();
         $parameters->set('end', $end);
 
         // make piggy bank groups:
-        $piggyBanks = [];
+        $piggyBanks         = [];
 
         /** @var PiggyBankTransformer $transformer */
-        $transformer = app(PiggyBankTransformer::class);
+        $transformer        = app(PiggyBankTransformer::class);
         $transformer->setParameters(new ParameterBag());
 
         /** @var AccountTransformer $accountTransformer */
         $accountTransformer = app(AccountTransformer::class);
         $accountTransformer->setParameters($parameters);
+
         /** @var PiggyBank $piggy */
         foreach ($collection as $piggy) {
-            $array      = $transformer->transform($piggy);
-            $groupOrder = (int)$array['object_group_order'];
+            $array                                    = $transformer->transform($piggy);
+            $groupOrder                               = (int)$array['object_group_order'];
             // make group array if necessary:
             $piggyBanks[$groupOrder] ??= [
                 'object_group_id'    => $array['object_group_id'] ?? 0,
@@ -112,12 +111,12 @@ class IndexController extends Controller
                 'piggy_banks'        => [],
             ];
 
-            $account              = $accountTransformer->transform($piggy->account);
-            $accountId            = (int)$account['id'];
-            $array['attachments'] = $this->piggyRepos->getAttachments($piggy);
+            $account                                  = $accountTransformer->transform($piggy->account);
+            $accountId                                = (int)$account['id'];
+            $array['attachments']                     = $this->piggyRepos->getAttachments($piggy);
             if (!array_key_exists($accountId, $accounts)) {
                 // create new:
-                $accounts[$accountId] = $account;
+                $accounts[$accountId]            = $account;
 
                 // add some interesting details:
                 $accounts[$accountId]['left']    = $accounts[$accountId]['current_balance'];
@@ -135,7 +134,7 @@ class IndexController extends Controller
             $piggyBanks[$groupOrder]['piggy_banks'][] = $array;
         }
         // do a bunch of summaries.
-        $piggyBanks = $this->makeSums($piggyBanks);
+        $piggyBanks         = $this->makeSums($piggyBanks);
 
         ksort($piggyBanks);
 
@@ -143,17 +142,30 @@ class IndexController extends Controller
     }
 
     /**
-     * @param array $piggyBanks
-     *
-     * @return array
+     * Set the order of a piggy bank.
      */
+    public function setOrder(Request $request, PiggyBank $piggyBank): JsonResponse
+    {
+        $objectGroupTitle = (string)$request->get('objectGroupTitle');
+        $newOrder         = (int)$request->get('order');
+        $this->piggyRepos->setOrder($piggyBank, $newOrder);
+        if ('' !== $objectGroupTitle) {
+            $this->piggyRepos->setObjectGroup($piggyBank, $objectGroupTitle);
+        }
+        if ('' === $objectGroupTitle) {
+            $this->piggyRepos->removeObjectGroup($piggyBank);
+        }
+
+        return response()->json(['data' => 'OK']);
+    }
+
     private function makeSums(array $piggyBanks): array
     {
         $sums = [];
         foreach ($piggyBanks as $groupOrder => $group) {
             $groupId = $group['object_group_id'];
             foreach ($group['piggy_banks'] as $piggy) {
-                $currencyId                  = $piggy['currency_id'];
+                $currencyId                                    = $piggy['currency_id'];
                 $sums[$groupId][$currencyId] ??= [
                     'target'                  => '0',
                     'saved'                   => '0',
@@ -180,28 +192,5 @@ class IndexController extends Controller
         }
 
         return $piggyBanks;
-    }
-
-    /**
-     * Set the order of a piggy bank.
-     *
-     * @param Request   $request
-     * @param PiggyBank $piggyBank
-     *
-     * @return JsonResponse
-     */
-    public function setOrder(Request $request, PiggyBank $piggyBank): JsonResponse
-    {
-        $objectGroupTitle = (string)$request->get('objectGroupTitle');
-        $newOrder         = (int)$request->get('order');
-        $this->piggyRepos->setOrder($piggyBank, $newOrder);
-        if ('' !== $objectGroupTitle) {
-            $this->piggyRepos->setObjectGroup($piggyBank, $objectGroupTitle);
-        }
-        if ('' === $objectGroupTitle) {
-            $this->piggyRepos->removeObjectGroup($piggyBank);
-        }
-
-        return response()->json(['data' => 'OK']);
     }
 }

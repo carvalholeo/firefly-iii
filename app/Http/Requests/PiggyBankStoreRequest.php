@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Http\Requests;
 
+use FireflyIII\Rules\IsValidPositiveAmount;
 use FireflyIII\Support\Request\ChecksLogin;
 use FireflyIII\Support\Request\ConvertsDataTypes;
 use Illuminate\Foundation\Http\FormRequest;
@@ -37,8 +38,6 @@ class PiggyBankStoreRequest extends FormRequest
 
     /**
      * Returns the data required by the controller.
-     *
-     * @return array
      */
     public function getPiggyBankData(): array
     {
@@ -55,19 +54,18 @@ class PiggyBankStoreRequest extends FormRequest
 
     /**
      * Rules for this request.
-     *
-     * @return array
      */
     public function rules(): array
     {
         return [
             'name'         => 'required|between:1,255|uniquePiggyBankForUser',
             'account_id'   => 'required|belongsToUser:accounts',
-            'targetamount' => 'nullable|numeric|max:1000000000',
+            'targetamount' => ['nullable', new IsValidPositiveAmount()],
             'startdate'    => 'date',
             'targetdate'   => 'date|nullable',
             'order'        => 'integer|min:1',
             'object_group' => 'min:0|max:255',
+            'notes'        => 'between:1,65536|nullable',
         ];
     }
 }

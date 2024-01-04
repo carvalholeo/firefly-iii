@@ -1,6 +1,5 @@
 <?php
 
-
 /*
  * CreateController.php
  * Copyright (c) 2023 james@firefly-iii.org
@@ -48,8 +47,6 @@ class CreateController extends Controller
 
     /**
      * CurrencyController constructor.
-     *
-
      */
     public function __construct()
     {
@@ -70,14 +67,12 @@ class CreateController extends Controller
     /**
      * Create a currency.
      *
-     * @param Request $request
-     *
-     * @return Factory|RedirectResponse|Redirector|View
+     * @return Factory|Redirector|RedirectResponse|View
      */
     public function create(Request $request)
     {
         /** @var User $user */
-        $user = auth()->user();
+        $user         = auth()->user();
         if (!$this->userRepository->hasRole($user, 'owner')) {
             $request->session()->flash('error', (string)trans('firefly.ask_site_owner', ['owner' => e(config('firefly.site_owner'))]));
 
@@ -101,23 +96,22 @@ class CreateController extends Controller
     /**
      * Store new currency.
      *
-     * @param CurrencyFormRequest $request
-     *
-     * @return $this|RedirectResponse|Redirector
+     * @return $this|Redirector|RedirectResponse
      */
     public function store(CurrencyFormRequest $request)
     {
         /** @var User $user */
-        $user = auth()->user();
-        $data = $request->getCurrencyData();
+        $user            = auth()->user();
+        $data            = $request->getCurrencyData();
         if (!$this->userRepository->hasRole($user, 'owner')) {
-            app('log')->error('User ' . auth()->user()->id . ' is not admin, but tried to store a currency.');
+            app('log')->error('User '.auth()->user()->id.' is not admin, but tried to store a currency.');
             Log::channel('audit')->info('Tried to create (POST) currency without admin rights.', $data);
 
             return redirect($this->getPreviousUrl('currencies.create.url'))->withInput();
         }
 
         $data['enabled'] = true;
+
         try {
             $currency = $this->repository->store($data);
         } catch (FireflyException $e) {
@@ -126,7 +120,7 @@ class CreateController extends Controller
             $request->session()->flash('error', (string)trans('firefly.could_not_store_currency'));
             $currency = null;
         }
-        $redirect = redirect($this->getPreviousUrl('currencies.create.url'));
+        $redirect        = redirect($this->getPreviousUrl('currencies.create.url'));
 
         if (null !== $currency) {
             $request->session()->flash('success', (string)trans('firefly.created_currency', ['name' => $currency->name]));

@@ -38,15 +38,13 @@ class JournalLinkRequest extends FormRequest
 
     /**
      * Returns the data required by the controller.
-     *
-     * @return array
      */
     public function getLinkInfo(): array
     {
         $return                           = [];
         $linkType                         = $this->get('link_type');
         $parts                            = explode('_', $linkType);
-        $return['link_type_id']           = (int)$parts[0];
+        $return['link_type_id']           = (int) $parts[0];
         $return['transaction_journal_id'] = $this->convertInteger('opposing');
         $return['notes']                  = $this->convertString('notes');
         $return['direction']              = $parts[1];
@@ -56,20 +54,19 @@ class JournalLinkRequest extends FormRequest
 
     /**
      * Rules for this request.
-     *
-     * @return array
      */
     public function rules(): array
     {
         // all possible combinations of link types and inward / outward:
         $combinations = [];
         $linkTypes    = LinkType::get(['id']);
+
         /** @var LinkType $type */
         foreach ($linkTypes as $type) {
             $combinations[] = sprintf('%d_inward', $type->id);
             $combinations[] = sprintf('%d_outward', $type->id);
         }
-        $string = implode(',', $combinations);
+        $string       = implode(',', $combinations);
 
         // fixed
         return [

@@ -33,9 +33,6 @@ use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use JsonException;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class CreateController
@@ -46,8 +43,6 @@ class CreateController extends Controller
 
     /**
      * CreateController constructor.
-     *
-
      */
     public function __construct()
     {
@@ -64,11 +59,6 @@ class CreateController extends Controller
         );
     }
 
-    /**
-     * @param Request $request
-     *
-     * @return JsonResponse
-     */
     public function cloneGroup(Request $request): JsonResponse
     {
         $groupId = (int)$request->get('id');
@@ -84,8 +74,8 @@ class CreateController extends Controller
 
                 app('preferences')->mark();
 
-                $title = $newGroup->title ?? $newGroup->transactionJournals->first()->description;
-                $link  = route('transactions.show', [$newGroup->id]);
+                $title    = $newGroup->title ?? $newGroup->transactionJournals->first()->description;
+                $link     = route('transactions.show', [$newGroup->id]);
                 session()->flash('success', trans('firefly.stored_journal', ['description' => $title]));
                 session()->flash('success_url', $link);
 
@@ -103,20 +93,16 @@ class CreateController extends Controller
     /**
      * Create a new transaction group.
      *
-     * @param string|null $objectType
-     *
      * @return Factory|View
+     *
      * @throws FireflyException
-     * @throws JsonException
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     */
+     *                                              */
     public function create(?string $objectType)
     {
         app('preferences')->mark();
 
-        $sourceId      = (int)request()->get('source');
-        $destinationId = (int)request()->get('destination');
+        $sourceId             = (int)request()->get('source');
+        $destinationId        = (int)request()->get('destination');
 
         /** @var AccountRepositoryInterface $accountRepository */
         $accountRepository    = app(AccountRepositoryInterface::class);

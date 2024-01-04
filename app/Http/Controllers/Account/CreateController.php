@@ -36,11 +36,8 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Redirector;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
 
 /**
- *
  * Class CreateController
  */
 class CreateController extends Controller
@@ -52,8 +49,6 @@ class CreateController extends Controller
 
     /**
      * CreateController constructor.
-     *
-
      */
     public function __construct()
     {
@@ -63,7 +58,7 @@ class CreateController extends Controller
         $this->middleware(
             function ($request, $next) {
                 app('view')->share('mainTitleIcon', 'fa-credit-card');
-                app('view')->share('title', (string)trans('firefly.accounts'));
+                app('view')->share('title', (string) trans('firefly.accounts'));
 
                 $this->repository  = app(AccountRepositoryInterface::class);
                 $this->attachments = app(AttachmentHelperInterface::class);
@@ -76,16 +71,13 @@ class CreateController extends Controller
     /**
      * Create a new account.
      *
-     * @param Request $request
-     * @param string  $objectType
-     *
      * @return Factory|View
      */
     public function create(Request $request, string $objectType)
     {
         $defaultCurrency     = app('amount')->getDefaultCurrency();
         $subTitleIcon        = config(sprintf('firefly.subIconsByIdentifier.%s', $objectType));
-        $subTitle            = (string)trans(sprintf('firefly.make_new_%s_account', $objectType));
+        $subTitle            = (string) trans(sprintf('firefly.make_new_%s_account', $objectType));
         $roles               = $this->getRoles();
         $liabilityTypes      = $this->getLiabilityTypes();
         $hasOldInput         = null !== $request->old('_token');
@@ -103,10 +95,10 @@ class CreateController extends Controller
         ];
 
         // interest calculation periods:
-        $interestPeriods = [
-            'daily'   => (string)trans('firefly.interest_calc_daily'),
-            'monthly' => (string)trans('firefly.interest_calc_monthly'),
-            'yearly'  => (string)trans('firefly.interest_calc_yearly'),
+        $interestPeriods     = [
+            'daily'   => (string) trans('firefly.interest_calc_daily'),
+            'monthly' => (string) trans('firefly.interest_calc_monthly'),
+            'yearly'  => (string) trans('firefly.interest_calc_yearly'),
         ];
 
         // pre fill some data
@@ -114,9 +106,14 @@ class CreateController extends Controller
             'preFilled',
             [
                 'currency_id'       => $defaultCurrency->id,
-                'include_net_worth' => $hasOldInput ? (bool)$request->old('include_net_worth') : true,
+                'include_net_worth' => $hasOldInput ? (bool) $request->old('include_net_worth') : true,
             ]
         );
+        // issue #8321
+        $showNetWorth        = true;
+        if ('liabilities' !== $objectType && 'asset' !== $objectType) {
+            $showNetWorth = false;
+        }
 
         // put previous url in session if not redirect from store (not "create another").
         if (true !== session('accounts.create.fromStore')) {
@@ -127,25 +124,22 @@ class CreateController extends Controller
 
         return view(
             'accounts.create',
-            compact('subTitleIcon', 'liabilityDirections', 'locations', 'objectType', 'interestPeriods', 'subTitle', 'roles', 'liabilityTypes')
+            compact('subTitleIcon', 'liabilityDirections', 'showNetWorth', 'locations', 'objectType', 'interestPeriods', 'subTitle', 'roles', 'liabilityTypes')
         );
     }
 
     /**
      * Store the new account.
      *
-     * @param AccountFormRequest $request
+     * @return Redirector|RedirectResponse
      *
-     * @return RedirectResponse|Redirector
      * @throws FireflyException
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
      */
     public function store(AccountFormRequest $request)
     {
-        $data    = $request->getAccountData();
-        $account = $this->repository->store($data);
-        $request->session()->flash('success', (string)trans('firefly.stored_new_account', ['name' => $account->name]));
+        $data      = $request->getAccountData();
+        $account   = $this->repository->store($data);
+        $request->session()->flash('success', (string) trans('firefly.stored_new_account', ['name' => $account->name]));
         app('preferences')->mark();
 
         Log::channel('audit')->info('Stored new account.', $data);
@@ -161,13 +155,14 @@ class CreateController extends Controller
         }
 
         // store attachment(s):
-        /** @var array|null $files */
-        $files = $request->hasFile('attachments') ? $request->file('attachments') : null;
+        /** @var null|array $files */
+        $files     = $request->hasFile('attachments') ? $request->file('attachments') : null;
         if (null !== $files && !auth()->user()->hasRole('demo')) {
             $this->attachments->saveAttachmentsForModel($account, $files);
         }
         if (null !== $files && auth()->user()->hasRole('demo')) {
-            session()->flash('info', (string)trans('firefly.no_att_demo_user'));
+            Log::channel('audit')->info(sprintf('The demo user is trying to upload attachments in %s.', __METHOD__));
+            session()->flash('info', (string) trans('firefly.no_att_demo_user'));
         }
 
         if (count($this->attachments->getMessages()->get('attachments')) > 0) {
@@ -175,8 +170,8 @@ class CreateController extends Controller
         }
 
         // redirect to previous URL.
-        $redirect = redirect($this->getPreviousUrl('accounts.create.url'));
-        if (1 === (int)$request->get('create_another')) {
+        $redirect  = redirect($this->getPreviousUrl('accounts.create.url'));
+        if (1 === (int) $request->get('create_another')) {
             // set value so create routine will not overwrite URL:
             $request->session()->put('accounts.create.fromStore', true);
 

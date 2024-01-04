@@ -25,7 +25,6 @@ namespace FireflyIII\Helpers\Webhook;
 
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\WebhookMessage;
-use JsonException;
 
 /**
  * Class Sha3SignatureGenerator
@@ -35,7 +34,6 @@ class Sha3SignatureGenerator implements SignatureGeneratorInterface
     private int $version = 1;
 
     /**
-     * @inheritDoc
      * @throws FireflyException
      */
     public function generate(WebhookMessage $message): string
@@ -44,15 +42,16 @@ class Sha3SignatureGenerator implements SignatureGeneratorInterface
         if (null === $message->webhook) {
             throw new FireflyException('Part of a deleted webhook.');
         }
-        $json = '';
+        $json      = '';
 
         try {
             $json = json_encode($message->message, JSON_THROW_ON_ERROR);
-        } catch (JsonException $e) {
+        } catch (\JsonException $e) {
             app('log')->error('Could not generate hash.');
             app('log')->error(sprintf('JSON value: %s', $json));
             app('log')->error($e->getMessage());
             app('log')->error($e->getTraceAsString());
+
             throw new FireflyException('Could not generate JSON for SHA3 hash.', 0, $e);
         }
 
@@ -73,9 +72,6 @@ class Sha3SignatureGenerator implements SignatureGeneratorInterface
         return sprintf('t=%s,v%d=%s', $timestamp, $this->getVersion(), $signature);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function getVersion(): int
     {
         return $this->version;

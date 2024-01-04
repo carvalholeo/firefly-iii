@@ -43,7 +43,6 @@ use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 /**
- *
  * Class BudgetLimitController
  */
 class BudgetLimitController extends Controller
@@ -76,10 +75,6 @@ class BudgetLimitController extends Controller
     }
 
     /**
-     * @param Budget $budget
-     * @param Carbon $start
-     * @param Carbon $end
-     *
      * @return Factory|View
      */
     public function create(Budget $budget, Carbon $start, Carbon $end)
@@ -88,7 +83,7 @@ class BudgetLimitController extends Controller
         $budgetLimits = $this->blRepository->getBudgetLimits($budget, $start, $end);
 
         // remove already budgeted currencies with the same date range
-        $currencies = $collection->filter(
+        $currencies   = $collection->filter(
             static function (TransactionCurrency $currency) use ($budgetLimits, $start, $end) {
                 /** @var BudgetLimit $limit */
                 foreach ($budgetLimits as $limit) {
@@ -106,9 +101,7 @@ class BudgetLimitController extends Controller
     }
 
     /**
-     * @param BudgetLimit $budgetLimit
-     *
-     * @return RedirectResponse|Redirector
+     * @return Redirector|RedirectResponse
      */
     public function delete(BudgetLimit $budgetLimit)
     {
@@ -121,12 +114,9 @@ class BudgetLimitController extends Controller
     /**
      * TODO why redirect AND json response?
      *
-     * @param Request $request
-     *
-     * @return RedirectResponse|JsonResponse
      * @throws FireflyException
      */
-    public function store(Request $request): RedirectResponse | JsonResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         app('log')->debug('Going to store new budget-limit.', $request->all());
         // first search for existing one and update it if necessary.
@@ -135,14 +125,14 @@ class BudgetLimitController extends Controller
         if (null === $currency || null === $budget) {
             throw new FireflyException('No valid currency or budget.');
         }
-        $start = Carbon::createFromFormat('Y-m-d', $request->get('start'));
-        $end   = Carbon::createFromFormat('Y-m-d', $request->get('end'));
+        $start    = Carbon::createFromFormat('Y-m-d', $request->get('start'));
+        $end      = Carbon::createFromFormat('Y-m-d', $request->get('end'));
 
         if (false === $start || false === $end) {
             return response()->json([]);
         }
 
-        $amount = (string)$request->get('amount');
+        $amount   = (string)$request->get('amount');
         $start->startOfDay();
         $end->startOfDay();
 
@@ -152,13 +142,14 @@ class BudgetLimitController extends Controller
 
         app('log')->debug(sprintf('Start: %s, end: %s', $start->format('Y-m-d'), $end->format('Y-m-d')));
 
-        $limit = $this->blRepository->find($budget, $currency, $start, $end);
+        $limit    = $this->blRepository->find($budget, $currency, $start, $end);
 
         // sanity check on amount:
         if (0 === bccomp($amount, '0')) {
             if (null !== $limit) {
                 $this->blRepository->destroyBudgetLimit($limit);
             }
+
             // return empty=ish array:
             return response()->json([]);
         }
@@ -186,15 +177,15 @@ class BudgetLimitController extends Controller
         }
 
         if ($request->expectsJson()) {
-            $array = $limit->toArray();
+            $array                           = $limit->toArray();
             // add some extra metadata:
-            $spentArr                  = $this->opsRepository->sumExpenses($limit->start_date, $limit->end_date, null, new Collection([$budget]), $currency);
-            $array['spent']            = $spentArr[$currency->id]['sum'] ?? '0';
-            $array['left_formatted']   = app('amount')->formatAnything($limit->transactionCurrency, bcadd($array['spent'], $array['amount']));
-            $array['amount_formatted'] = app('amount')->formatAnything($limit->transactionCurrency, $limit['amount']);
-            $array['days_left']        = (string)$this->activeDaysLeft($start, $end);
+            $spentArr                        = $this->opsRepository->sumExpenses($limit->start_date, $limit->end_date, null, new Collection([$budget]), $currency);
+            $array['spent']                  = $spentArr[$currency->id]['sum'] ?? '0';
+            $array['left_formatted']         = app('amount')->formatAnything($limit->transactionCurrency, bcadd($array['spent'], $array['amount']));
+            $array['amount_formatted']       = app('amount')->formatAnything($limit->transactionCurrency, $limit['amount']);
+            $array['days_left']              = (string)$this->activeDaysLeft($start, $end);
             // left per day:
-            $array['left_per_day'] = bcdiv(bcadd($array['spent'], $array['amount']), $array['days_left']);
+            $array['left_per_day']           = bcdiv(bcadd($array['spent'], $array['amount']), $array['days_left']);
 
             // left per day formatted.
             $array['left_per_day_formatted'] = app('amount')->formatAnything($limit->transactionCurrency, $array['left_per_day']);
@@ -205,15 +196,9 @@ class BudgetLimitController extends Controller
         return redirect(route('budgets.index'));
     }
 
-    /**
-     * @param Request     $request
-     * @param BudgetLimit $budgetLimit
-     *
-     * @return JsonResponse
-     */
     public function update(Request $request, BudgetLimit $budgetLimit): JsonResponse
     {
-        $amount = (string)$request->get('amount');
+        $amount                          = (string)$request->get('amount');
         if ('' === $amount) {
             $amount = '0';
         }
@@ -223,12 +208,13 @@ class BudgetLimitController extends Controller
             $budgetId = $budgetLimit->budget_id;
             $currency = $budgetLimit->transactionCurrency;
             $this->blRepository->destroyBudgetLimit($budgetLimit);
-            $array = [
+            $array    = [
                 'budget_id'               => $budgetId,
                 'left_formatted'          => app('amount')->formatAnything($currency, '0'),
                 'left_per_day_formatted'  => app('amount')->formatAnything($currency, '0'),
                 'transaction_currency_id' => $currency->id,
             ];
+
             return response()->json($array);
         }
         if ((int)$amount > 268435456) { // 268 million, intentional integer
@@ -238,23 +224,23 @@ class BudgetLimitController extends Controller
             $amount = bcmul($amount, '-1');
         }
 
-        $limit = $this->blRepository->update($budgetLimit, ['amount' => $amount]);
+        $limit                           = $this->blRepository->update($budgetLimit, ['amount' => $amount]);
         app('preferences')->mark();
-        $array = $limit->toArray();
+        $array                           = $limit->toArray();
 
-        $spentArr                  = $this->opsRepository->sumExpenses(
+        $spentArr                        = $this->opsRepository->sumExpenses(
             $limit->start_date,
             $limit->end_date,
             null,
             new Collection([$budgetLimit->budget]),
             $budgetLimit->transactionCurrency
         );
-        $array['spent']            = $spentArr[$budgetLimit->transactionCurrency->id]['sum'] ?? '0';
-        $array['left_formatted']   = app('amount')->formatAnything($limit->transactionCurrency, bcadd($array['spent'], $array['amount']));
-        $array['amount_formatted'] = app('amount')->formatAnything($limit->transactionCurrency, $limit['amount']);
-        $array['days_left']        = (string)$this->activeDaysLeft($limit->start_date, $limit->end_date);
+        $array['spent']                  = $spentArr[$budgetLimit->transactionCurrency->id]['sum'] ?? '0';
+        $array['left_formatted']         = app('amount')->formatAnything($limit->transactionCurrency, bcadd($array['spent'], $array['amount']));
+        $array['amount_formatted']       = app('amount')->formatAnything($limit->transactionCurrency, $limit['amount']);
+        $array['days_left']              = (string)$this->activeDaysLeft($limit->start_date, $limit->end_date);
         // left per day:
-        $array['left_per_day'] = bcdiv(bcadd($array['spent'], $array['amount']), $array['days_left']);
+        $array['left_per_day']           = bcdiv(bcadd($array['spent'], $array['amount']), $array['days_left']);
 
         // left per day formatted.
         $array['amount']                 = app('steam')->bcround($limit['amount'], $limit->transactionCurrency->decimal_places);

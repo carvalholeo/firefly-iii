@@ -39,31 +39,27 @@ class MoveDescriptionToNotes implements ActionInterface
 
     /**
      * TriggerInterface constructor.
-     *
-     *
-     * @param RuleAction $action
      */
     public function __construct(RuleAction $action)
     {
         $this->action = $action;
     }
 
-    /**
-     * @inheritDoc
-     */
     public function actOnArray(array $journal): bool
     {
-        /** @var TransactionJournal|null $object */
-        $object = TransactionJournal::where('user_id', $journal['user_id'])->find($journal['transaction_journal_id']);
+        /** @var null|TransactionJournal $object */
+        $object            = TransactionJournal::where('user_id', $journal['user_id'])->find($journal['transaction_journal_id']);
         if (null === $object) {
             app('log')->error(sprintf('No journal #%d belongs to user #%d.', $journal['transaction_journal_id'], $journal['user_id']));
             event(new RuleActionFailedOnArray($this->action, $journal, trans('rules.journal_other_user')));
+
             return false;
         }
-        /** @var Note|null $note */
-        $note = $object->notes()->first();
+
+        /** @var null|Note $note */
+        $note              = $object->notes()->first();
         if (null === $note) {
-            $note = new Note();
+            $note       = new Note();
             $note->noteable()->associate($object);
             $note->text = '';
         }
@@ -77,13 +73,14 @@ class MoveDescriptionToNotes implements ActionInterface
             $note->text          = (string)$object->description;
             $object->description = '(no description)';
         }
-        $after = $note->text;
+        $after             = $note->text;
 
         event(new TriggeredAuditLog($this->action->rule, $object, 'update_description', $beforeDescription, $object->description));
         event(new TriggeredAuditLog($this->action->rule, $object, 'update_notes', $before, $after));
 
         $note->save();
         $object->save();
+
         return true;
     }
 }

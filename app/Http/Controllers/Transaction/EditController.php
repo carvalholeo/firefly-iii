@@ -43,8 +43,6 @@ class EditController extends Controller
 
     /**
      * IndexController constructor.
-     *
-
      */
     public function __construct()
     {
@@ -64,9 +62,7 @@ class EditController extends Controller
     }
 
     /**
-     * @param TransactionGroup $transactionGroup
-     *
-     * @return Factory|View|RedirectResponse|Redirector
+     * @return Factory|Redirector|RedirectResponse|View
      */
     public function edit(TransactionGroup $transactionGroup)
     {
@@ -82,14 +78,13 @@ class EditController extends Controller
         $accountToTypes       = config('firefly.account_to_transaction');
         $expectedSourceTypes  = config('firefly.expected_source_types');
         $allowedSourceDests   = config('firefly.source_dests');
-        //
 
-        $defaultCurrency = app('amount')->getDefaultCurrency();
-        $cash            = $repository->getCashAccount();
-        $previousUrl     = $this->rememberPreviousUrl('transactions.edit.url');
-        $parts           = parse_url($previousUrl);
-        $search          = sprintf('?%s', $parts['query'] ?? '');
-        $previousUrl     = str_replace($search, '', $previousUrl);
+        $defaultCurrency      = app('amount')->getDefaultCurrency();
+        $cash                 = $repository->getCashAccount();
+        $previousUrl          = $this->rememberPreviousUrl('transactions.edit.url');
+        $parts                = parse_url($previousUrl);
+        $search               = sprintf('?%s', $parts['query'] ?? '');
+        $previousUrl          = str_replace($search, '', $previousUrl);
 
         return view(
             'transactions.edit',
@@ -106,14 +101,10 @@ class EditController extends Controller
         );
     }
 
-    /**
-     * @param TransactionJournal $journal
-     *
-     * @return JsonResponse
-     */
     public function unreconcile(TransactionJournal $journal): JsonResponse
     {
         $this->repository->unreconcileById($journal->id);
+
         return response()->json([], 204);
     }
 }

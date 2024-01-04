@@ -1,6 +1,5 @@
 <?php
 
-
 /*
  * ShowController.php
  * Copyright (c) 2023 james@firefly-iii.org
@@ -40,9 +39,6 @@ class ShowController extends Controller
 {
     private UserGroupRepositoryInterface $repository;
 
-    /**
-     *
-     */
     public function __construct()
     {
         parent::__construct();
@@ -55,13 +51,10 @@ class ShowController extends Controller
         );
     }
 
-    /**
-     * @return JsonResponse
-     */
     public function index(): JsonResponse
     {
-        $collection = new Collection();
-        $pageSize   = $this->parameters->get('limit');
+        $collection  = new Collection();
+        $pageSize    = $this->parameters->get('limit');
         // if the user has the system owner role, get all. Otherwise, get only the users' groups.
         if (!auth()->user()->hasRole('owner')) {
             $collection = $this->repository->get();
@@ -69,8 +62,8 @@ class ShowController extends Controller
         if (auth()->user()->hasRole('owner')) {
             $collection = $this->repository->getAll();
         }
-        $count      = $collection->count();
-        $userGroups = $collection->slice(($this->parameters->get('page') - 1) * $pageSize, $pageSize);
+        $count       = $collection->count();
+        $userGroups  = $collection->slice(($this->parameters->get('page') - 1) * $pageSize, $pageSize);
 
         $paginator   = new LengthAwarePaginator($userGroups, $count, $pageSize, $this->parameters->get('page'));
         $transformer = new UserGroupTransformer();
@@ -78,14 +71,10 @@ class ShowController extends Controller
 
         return response()
             ->json($this->jsonApiList('user-groups', $paginator, $transformer))
-            ->header('Content-Type', self::CONTENT_TYPE);
+            ->header('Content-Type', self::CONTENT_TYPE)
+        ;
     }
 
-    /**
-     * @param UserGroup $userGroup
-     *
-     * @return JsonResponse
-     */
     public function show(UserGroup $userGroup): JsonResponse
     {
         $transformer = new UserGroupTransformer();
@@ -93,6 +82,7 @@ class ShowController extends Controller
 
         return response()
             ->api($this->jsonApiObject('user-groups', $userGroup, $transformer))
-            ->header('Content-Type', self::CONTENT_TYPE);
+            ->header('Content-Type', self::CONTENT_TYPE)
+        ;
     }
 }

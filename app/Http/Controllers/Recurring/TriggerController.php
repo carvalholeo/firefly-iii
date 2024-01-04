@@ -1,6 +1,5 @@
 <?php
 
-
 /*
  * TriggerController.php
  * Copyright (c) 2023 james@firefly-iii.org
@@ -39,31 +38,27 @@ use Illuminate\Support\Collection;
  */
 class TriggerController extends Controller
 {
-    /**
-     * @param Recurrence               $recurrence
-     * @param TriggerRecurrenceRequest $request
-     *
-     * @return RedirectResponse
-     */
     public function trigger(Recurrence $recurrence, TriggerRecurrenceRequest $request): RedirectResponse
     {
-        $all  = $request->getAll();
-        $date = $all['date'];
+        $all                     = $request->getAll();
+        $date                    = $all['date'];
 
         // grab the date from the last time the recurrence fired:
-        $backupDate = $recurrence->latest_date;
+        $backupDate              = $recurrence->latest_date;
 
         // fire the recurring cron job on the given date, then post-date the created transaction.
         app('log')->info(sprintf('Trigger: will now fire recurring cron job task for date "%s".', $date->format('Y-m-d H:i:s')));
+
         /** @var CreateRecurringTransactions $job */
-        $job = app(CreateRecurringTransactions::class);
+        $job                     = app(CreateRecurringTransactions::class);
         $job->setRecurrences(new Collection([$recurrence]));
         $job->setDate($date);
         $job->setForce(false);
         $job->handle();
         app('log')->debug('Done with recurrence.');
 
-        $groups = $job->getGroups();
+        $groups                  = $job->getGroups();
+
         /** @var TransactionGroup $group */
         foreach ($groups as $group) {
             /** @var TransactionJournal $journal */
@@ -85,7 +80,6 @@ class TriggerController extends Controller
             $request->session()->flash('success', (string)trans('firefly.stored_journal_no_descr'));
             $request->session()->flash('success_url', route('transactions.show', [$first->id]));
         }
-
 
         return redirect(route('recurring.show', [$recurrence->id]));
     }

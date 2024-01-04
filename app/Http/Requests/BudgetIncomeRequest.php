@@ -23,13 +23,12 @@ declare(strict_types=1);
 
 namespace FireflyIII\Http\Requests;
 
+use FireflyIII\Rules\IsValidPositiveAmount;
 use FireflyIII\Support\Request\ChecksLogin;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
  * Class BudgetIncomeRequest.
- *
-
  */
 class BudgetIncomeRequest extends FormRequest
 {
@@ -37,14 +36,12 @@ class BudgetIncomeRequest extends FormRequest
 
     /**
      * Rules for this request.
-     *
-     * @return array
      */
     public function rules(): array
     {
         // fixed
         return [
-            'amount' => 'numeric|required|min:0|max:1000000000',
+            'amount' => ['required', new IsValidPositiveAmount()],
             'start'  => 'required|date|before:end',
             'end'    => 'required|date|after:start',
         ];

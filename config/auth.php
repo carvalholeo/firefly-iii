@@ -22,7 +22,7 @@
 declare(strict_types=1);
 
 if ('ldap' === strtolower((string)env('AUTHENTICATION_GUARD'))) {
-    die('LDAP is no longer supported by Firefly III v5.7+. Sorry about that. You will have to switch to "remote_user_guard", and use tools like Authelia or Keycloak to use LDAP together with Firefly III.');
+    exit('LDAP is no longer supported by Firefly III v5.7+. Sorry about that. You will have to switch to "remote_user_guard", and use tools like Authelia or Keycloak to use LDAP together with Firefly III.');
 }
 
 return [
@@ -37,12 +37,12 @@ return [
     |
     */
 
-    'defaults'     => [
+    'defaults'         => [
         'guard'     => envNonEmpty('AUTHENTICATION_GUARD', 'web'),
         'passwords' => 'users',
     ],
-    'guard_header' => envNonEmpty('AUTHENTICATION_GUARD_HEADER', 'REMOTE_USER'),
-    'guard_email'  => envNonEmpty('AUTHENTICATION_GUARD_EMAIL', null),
+    'guard_header'     => envNonEmpty('AUTHENTICATION_GUARD_HEADER', 'REMOTE_USER'),
+    'guard_email'      => envNonEmpty('AUTHENTICATION_GUARD_EMAIL', null),
 
     /*
     |--------------------------------------------------------------------------
@@ -61,7 +61,7 @@ return [
     |
     */
 
-    'guards' => [
+    'guards'           => [
         'web'               => [
             'driver'   => 'session',
             'provider' => 'users',
@@ -93,7 +93,7 @@ return [
     |
     */
 
-    'providers' => [
+    'providers'        => [
         'users'                => [
             'driver' => 'eloquent',
             'model'  => FireflyIII\User::class,
@@ -119,7 +119,7 @@ return [
     |
     */
 
-    'passwords' => [
+    'passwords'        => [
         'users' => [
             'provider' => 'users',
             'table'    => 'password_resets',
@@ -139,5 +139,4 @@ return [
     */
 
     'password_timeout' => 10800,
-
 ];

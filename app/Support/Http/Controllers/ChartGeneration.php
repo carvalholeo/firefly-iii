@@ -30,7 +30,6 @@ use FireflyIII\Models\Account;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use FireflyIII\Support\CacheProperties;
 use Illuminate\Support\Collection;
-use JsonException;
 
 /**
  * Trait ChartGeneration
@@ -40,18 +39,12 @@ trait ChartGeneration
     /**
      * Shows an overview of the account balances for a set of accounts.
      *
-     * @param Collection $accounts
-     * @param Carbon     $start
-     * @param Carbon     $end
-     *
-     * @return array
      * @throws FireflyException
-     * @throws JsonException
      */
     protected function accountBalanceChart(Collection $accounts, Carbon $start, Carbon $end): array // chart helper method.
     {
         // chart properties for cache:
-        $cache = new CacheProperties();
+        $cache        = new CacheProperties();
         $cache->addProperty($start);
         $cache->addProperty($end);
         $cache->addProperty('chart.account.account-balance-chart');
@@ -60,23 +53,25 @@ trait ChartGeneration
             return $cache->get();
         }
         app('log')->debug('Regenerate chart.account.account-balance-chart from scratch.');
-        $locale = app('steam')->getLocale();
+        $locale       = app('steam')->getLocale();
+
         /** @var GeneratorInterface $generator */
-        $generator = app(GeneratorInterface::class);
+        $generator    = app(GeneratorInterface::class);
 
         /** @var AccountRepositoryInterface $accountRepos */
         $accountRepos = app(AccountRepositoryInterface::class);
 
-        $default   = app('amount')->getDefaultCurrency();
-        $chartData = [];
+        $default      = app('amount')->getDefaultCurrency();
+        $chartData    = [];
+
         /** @var Account $account */
         foreach ($accounts as $account) {
             // TODO we can use getAccountCurrency instead.
-            $currency = $accountRepos->getAccountCurrency($account);
+            $currency     = $accountRepos->getAccountCurrency($account);
             if (null === $currency) {
                 $currency = $default;
             }
-            $currentSet = [
+            $currentSet   = [
                 'label'           => $account->name,
                 'currency_symbol' => $currency->symbol,
                 'entries'         => [],
@@ -86,16 +81,16 @@ trait ChartGeneration
             $range        = app('steam')->balanceInRange($account, $start, clone $end);
             $previous     = array_values($range)[0];
             while ($currentStart <= $end) {
-                $format   = $currentStart->format('Y-m-d');
-                $label    = trim($currentStart->isoFormat((string)trans('config.month_and_day_js', [], $locale)));
-                $balance  = $range[$format] ?? $previous;
-                $previous = $balance;
+                $format                        = $currentStart->format('Y-m-d');
+                $label                         = trim($currentStart->isoFormat((string)trans('config.month_and_day_js', [], $locale)));
+                $balance                       = $range[$format] ?? $previous;
+                $previous                      = $balance;
                 $currentStart->addDay();
                 $currentSet['entries'][$label] = $balance;
             }
-            $chartData[] = $currentSet;
+            $chartData[]  = $currentSet;
         }
-        $data = $generator->multiSet($chartData);
+        $data         = $generator->multiSet($chartData);
         $cache->store($data);
 
         return $data;

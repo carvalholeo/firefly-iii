@@ -40,20 +40,12 @@ use FireflyIII\Models\RecurrenceTransaction;
 use FireflyIII\Models\RecurrenceTransactionMeta;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use FireflyIII\Validation\AccountValidator;
-use JsonException;
 
 /**
  * Trait RecurringTransactionTrait
- *
  */
 trait RecurringTransactionTrait
 {
-    /**
-     * @param Recurrence $recurrence
-     * @param string     $note
-     *
-     * @return bool
-     */
     public function updateNote(Recurrence $recurrence, string $note): bool
     {
         if ('' === $note) {
@@ -64,7 +56,7 @@ trait RecurringTransactionTrait
 
             return true;
         }
-        $dbNote = $recurrence->notes()->first();
+        $dbNote       = $recurrence->notes()->first();
         if (null === $dbNote) {
             $dbNote = new Note();
             $dbNote->noteable()->associate($recurrence);
@@ -75,10 +67,6 @@ trait RecurringTransactionTrait
         return true;
     }
 
-    /**
-     * @param Recurrence $recurrence
-     * @param array      $repetitions
-     */
     protected function createRepetitions(Recurrence $recurrence, array $repetitions): void
     {
         /** @var array $array */
@@ -98,21 +86,19 @@ trait RecurringTransactionTrait
     /**
      * Store transactions of a recurring transactions. It's complex but readable.
      *
-     * @param Recurrence $recurrence
-     * @param array      $transactions
-     *
      * @throws FireflyException
-     * @throws JsonException
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     protected function createTransactions(Recurrence $recurrence, array $transactions): void
     {
         app('log')->debug('Now in createTransactions()');
         foreach ($transactions as $index => $array) {
             app('log')->debug(sprintf('Now at transaction #%d', $index));
-            $sourceTypes = config(sprintf('firefly.expected_source_types.source.%s', $recurrence->transactionType->type));
-            $destTypes   = config(sprintf('firefly.expected_source_types.destination.%s', $recurrence->transactionType->type));
-            $source      = $this->findAccount($sourceTypes, $array['source_id'], null);
-            $destination = $this->findAccount($destTypes, $array['destination_id'], null);
+            $sourceTypes     = config(sprintf('firefly.expected_source_types.source.%s', $recurrence->transactionType->type));
+            $destTypes       = config(sprintf('firefly.expected_source_types.destination.%s', $recurrence->transactionType->type));
+            $source          = $this->findAccount($sourceTypes, $array['source_id'], null);
+            $destination     = $this->findAccount($destTypes, $array['destination_id'], null);
 
             /** @var TransactionCurrencyFactory $factory */
             $factory         = app(TransactionCurrencyFactory::class);
@@ -128,7 +114,7 @@ trait RecurringTransactionTrait
 
             // once the accounts have been determined, we still verify their validity:
             /** @var AccountValidator $validator */
-            $validator = app(AccountValidator::class);
+            $validator       = app(AccountValidator::class);
             $validator->setUser($recurrence->user);
             $validator->setTransactionType($recurrence->transactionType->type);
 
@@ -139,11 +125,11 @@ trait RecurringTransactionTrait
             if (!$validator->validateDestination(['id' => $destination->id])) {
                 throw new FireflyException(sprintf('Destination invalid: %s', $validator->destError));
             }
-            if (array_key_exists('foreign_amount', $array) && '' === (string)$array['foreign_amount']) {
+            if (array_key_exists('foreign_amount', $array) && '' === (string) $array['foreign_amount']) {
                 unset($array['foreign_amount']);
             }
             // TODO typeOverrule. The account validator may have a different opinion on the type of the transaction.
-            $transaction = new RecurrenceTransaction(
+            $transaction     = new RecurrenceTransaction(
                 [
                     'recurrence_id'           => $recurrence->id,
                     'transaction_currency_id' => $currency->id,
@@ -151,25 +137,25 @@ trait RecurringTransactionTrait
                     'source_id'               => $source->id,
                     'destination_id'          => $destination->id,
                     'amount'                  => $array['amount'],
-                    'foreign_amount'          => array_key_exists('foreign_amount', $array) ? (string)$array['foreign_amount'] : null,
+                    'foreign_amount'          => array_key_exists('foreign_amount', $array) ? (string) $array['foreign_amount'] : null,
                     'description'             => $array['description'],
                 ]
             );
             $transaction->save();
 
             if (array_key_exists('budget_id', $array)) {
-                $this->setBudget($transaction, (int)$array['budget_id']);
+                $this->setBudget($transaction, (int) $array['budget_id']);
             }
             if (array_key_exists('bill_id', $array)) {
-                $this->setBill($transaction, (int)$array['bill_id']);
+                $this->setBill($transaction, (int) $array['bill_id']);
             }
             if (array_key_exists('category_id', $array)) {
-                $this->setCategory($transaction, (int)$array['category_id']);
+                $this->setCategory($transaction, (int) $array['category_id']);
             }
 
             // same for piggy bank
             if (array_key_exists('piggy_bank_id', $array)) {
-                $this->updatePiggyBank($transaction, (int)$array['piggy_bank_id']);
+                $this->updatePiggyBank($transaction, (int) $array['piggy_bank_id']);
             }
 
             if (array_key_exists('tags', $array) && is_array($array['tags'])) {
@@ -178,40 +164,35 @@ trait RecurringTransactionTrait
         }
     }
 
-    /**
-     * @param array       $expectedTypes
-     * @param int|null    $accountId
-     * @param string|null $accountName
-     *
-     * @return Account
-     * @throws JsonException
-     */
     protected function findAccount(array $expectedTypes, ?int $accountId, ?string $accountName): Account
     {
-        $result      = null;
-        $accountId   = (int)$accountId;
-        $accountName = (string)$accountName;
+        $result       = null;
+        $accountId    = (int) $accountId;
+        $accountName  = (string) $accountName;
+
         /** @var AccountRepositoryInterface $repository */
-        $repository = app(AccountRepositoryInterface::class);
+        $repository   = app(AccountRepositoryInterface::class);
         $repository->setUser($this->user);
 
         // if user has submitted an account ID, search for it.
-        $result = $repository->find($accountId);
+        $result       = $repository->find($accountId);
         if (null !== $result) {
             return $result;
         }
 
         // if user has submitted a name, search for it:
-        $result = $repository->findByName($accountName, $expectedTypes);
+        $result       = $repository->findByName($accountName, $expectedTypes);
         if (null !== $result) {
             return $result;
         }
 
         // maybe we can create it? Try to avoid LOAN and other asset types.
         $cannotCreate = [AccountType::ASSET, AccountType::DEBT, AccountType::LOAN, AccountType::MORTGAGE, AccountType::CREDITCARD];
+
         /** @var AccountFactory $factory */
-        $factory = app(AccountFactory::class);
+        $factory      = app(AccountFactory::class);
         $factory->setUser($this->user);
+
         /** @var string $expectedType */
         foreach ($expectedTypes as $expectedType) {
             if (in_array($expectedType, $cannotCreate, true)) {
@@ -229,92 +210,15 @@ trait RecurringTransactionTrait
         return $result ?? $repository->getCashAccount();
     }
 
-    /**
-     * @param RecurrenceTransaction $transaction
-     * @param int                   $budgetId
-     */
-    private function setBudget(RecurrenceTransaction $transaction, int $budgetId): void
-    {
-        $budgetFactory = app(BudgetFactory::class);
-        $budgetFactory->setUser($transaction->recurrence->user);
-        $budget = $budgetFactory->find($budgetId, null);
-        if (null === $budget) {
-            return;
-        }
-
-        $meta = $transaction->recurrenceTransactionMeta()->where('name', 'budget_id')->first();
-        if (null === $meta) {
-            $meta        = new RecurrenceTransactionMeta();
-            $meta->rt_id = $transaction->id;
-            $meta->name  = 'budget_id';
-        }
-        $meta->value = $budget->id;
-        $meta->save();
-    }
-
-    /**
-     * @param RecurrenceTransaction $transaction
-     * @param int                   $billId
-     */
-    private function setBill(RecurrenceTransaction $transaction, int $billId): void
-    {
-        $billFactory = app(BillFactory::class);
-        $billFactory->setUser($transaction->recurrence->user);
-        $bill = $billFactory->find($billId, null);
-        if (null === $bill) {
-            return;
-        }
-
-        $meta = $transaction->recurrenceTransactionMeta()->where('name', 'bill_id')->first();
-        if (null === $meta) {
-            $meta        = new RecurrenceTransactionMeta();
-            $meta->rt_id = $transaction->id;
-            $meta->name  = 'bill_id';
-        }
-        $meta->value = $bill->id;
-        $meta->save();
-    }
-
-    /**
-     * @param RecurrenceTransaction $transaction
-     * @param int                   $categoryId
-     */
-    private function setCategory(RecurrenceTransaction $transaction, int $categoryId): void
-    {
-        $categoryFactory = app(CategoryFactory::class);
-        $categoryFactory->setUser($transaction->recurrence->user);
-        $category = $categoryFactory->findOrCreate($categoryId, null);
-        if (null === $category) {
-            // remove category:
-            $transaction->recurrenceTransactionMeta()->where('name', 'category_id')->delete();
-            $transaction->recurrenceTransactionMeta()->where('name', 'category_name')->delete();
-
-            return;
-        }
-        $transaction->recurrenceTransactionMeta()->where('name', 'category_name')->delete();
-        $meta = $transaction->recurrenceTransactionMeta()->where('name', 'category_id')->first();
-        if (null === $meta) {
-            $meta        = new RecurrenceTransactionMeta();
-            $meta->rt_id = $transaction->id;
-            $meta->name  = 'category_id';
-        }
-        $meta->value = $category->id;
-        $meta->save();
-    }
-
-    /**
-     * @param RecurrenceTransaction $transaction
-     * @param int                   $piggyId
-     */
     protected function updatePiggyBank(RecurrenceTransaction $transaction, int $piggyId): void
     {
         /** @var PiggyBankFactory $factory */
-        $factory = app(PiggyBankFactory::class);
+        $factory   = app(PiggyBankFactory::class);
         $factory->setUser($transaction->recurrence->user);
         $piggyBank = $factory->find($piggyId, null);
         if (null !== $piggyBank) {
-            /** @var RecurrenceMeta|null $entry */
-            $entry = $transaction->recurrenceTransactionMeta()->where('name', 'piggy_bank_id')->first();
+            /** @var null|RecurrenceMeta $entry */
+            $entry        = $transaction->recurrenceTransactionMeta()->where('name', 'piggy_bank_id')->first();
             if (null === $entry) {
                 $entry = RecurrenceTransactionMeta::create(['rt_id' => $transaction->id, 'name' => 'piggy_bank_id', 'value' => $piggyBank->id]);
             }
@@ -327,15 +231,11 @@ trait RecurringTransactionTrait
         }
     }
 
-    /**
-     * @param RecurrenceTransaction $transaction
-     * @param array                 $tags
-     */
     protected function updateTags(RecurrenceTransaction $transaction, array $tags): void
     {
         if (0 !== count($tags)) {
-            /** @var RecurrenceMeta|null $entry */
-            $entry = $transaction->recurrenceTransactionMeta()->where('name', 'tags')->first();
+            /** @var null|RecurrenceMeta $entry */
+            $entry        = $transaction->recurrenceTransactionMeta()->where('name', 'tags')->first();
             if (null === $entry) {
                 $entry = RecurrenceTransactionMeta::create(['rt_id' => $transaction->id, 'name' => 'tags', 'value' => json_encode($tags)]);
             }
@@ -348,29 +248,81 @@ trait RecurringTransactionTrait
         }
     }
 
-    /**
-     * @param Recurrence $recurrence
-     *
-
-     */
     protected function deleteRepetitions(Recurrence $recurrence): void
     {
         $recurrence->recurrenceRepetitions()->delete();
     }
 
-    /**
-     * @param Recurrence $recurrence
-     *
-
-     */
     protected function deleteTransactions(Recurrence $recurrence): void
     {
         app('log')->debug('deleteTransactions()');
+
         /** @var RecurrenceTransaction $transaction */
         foreach ($recurrence->recurrenceTransactions as $transaction) {
             $transaction->recurrenceTransactionMeta()->delete();
 
             $transaction->delete();
         }
+    }
+
+    private function setBudget(RecurrenceTransaction $transaction, int $budgetId): void
+    {
+        $budgetFactory = app(BudgetFactory::class);
+        $budgetFactory->setUser($transaction->recurrence->user);
+        $budget        = $budgetFactory->find($budgetId, null);
+        if (null === $budget) {
+            return;
+        }
+
+        $meta          = $transaction->recurrenceTransactionMeta()->where('name', 'budget_id')->first();
+        if (null === $meta) {
+            $meta        = new RecurrenceTransactionMeta();
+            $meta->rt_id = $transaction->id;
+            $meta->name  = 'budget_id';
+        }
+        $meta->value   = $budget->id;
+        $meta->save();
+    }
+
+    private function setBill(RecurrenceTransaction $transaction, int $billId): void
+    {
+        $billFactory = app(BillFactory::class);
+        $billFactory->setUser($transaction->recurrence->user);
+        $bill        = $billFactory->find($billId, null);
+        if (null === $bill) {
+            return;
+        }
+
+        $meta        = $transaction->recurrenceTransactionMeta()->where('name', 'bill_id')->first();
+        if (null === $meta) {
+            $meta        = new RecurrenceTransactionMeta();
+            $meta->rt_id = $transaction->id;
+            $meta->name  = 'bill_id';
+        }
+        $meta->value = $bill->id;
+        $meta->save();
+    }
+
+    private function setCategory(RecurrenceTransaction $transaction, int $categoryId): void
+    {
+        $categoryFactory = app(CategoryFactory::class);
+        $categoryFactory->setUser($transaction->recurrence->user);
+        $category        = $categoryFactory->findOrCreate($categoryId, null);
+        if (null === $category) {
+            // remove category:
+            $transaction->recurrenceTransactionMeta()->where('name', 'category_id')->delete();
+            $transaction->recurrenceTransactionMeta()->where('name', 'category_name')->delete();
+
+            return;
+        }
+        $transaction->recurrenceTransactionMeta()->where('name', 'category_name')->delete();
+        $meta            = $transaction->recurrenceTransactionMeta()->where('name', 'category_id')->first();
+        if (null === $meta) {
+            $meta        = new RecurrenceTransactionMeta();
+            $meta->rt_id = $transaction->id;
+            $meta->name  = 'category_id';
+        }
+        $meta->value     = $category->id;
+        $meta->save();
     }
 }

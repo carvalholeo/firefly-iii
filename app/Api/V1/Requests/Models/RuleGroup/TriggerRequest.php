@@ -37,9 +37,6 @@ class TriggerRequest extends FormRequest
     use ChecksLogin;
     use ConvertsDataTypes;
 
-    /**
-     * @return array
-     */
     public function getTriggerParameters(): array
     {
         return [
@@ -49,14 +46,17 @@ class TriggerRequest extends FormRequest
         ];
     }
 
-    /**
-     * @param string $field
-     *
-     * @return Carbon|null
-     */
+    public function rules(): array
+    {
+        return [
+            'start' => 'date',
+            'end'   => 'date|after_or_equal:start',
+        ];
+    }
+
     private function getDate(string $field): ?Carbon
     {
-        $value = $this->query($field);
+        $value  = $this->query($field);
         if (is_array($value)) {
             return null;
         }
@@ -65,25 +65,12 @@ class TriggerRequest extends FormRequest
         if (false === $result) {
             return null;
         }
+
         return $result;
     }
 
-    /**
-     * @return array
-     */
     private function getAccounts(): array
     {
         return $this->get('accounts');
-    }
-
-    /**
-     * @return array
-     */
-    public function rules(): array
-    {
-        return [
-            'start' => 'date',
-            'end'   => 'date|after_or_equal:start',
-        ];
     }
 }

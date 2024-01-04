@@ -31,12 +31,6 @@ use Illuminate\Support\Collection;
  */
 class TransactionTypeRepository implements TransactionTypeRepositoryInterface
 {
-    /**
-     * @param TransactionType|null $type
-     * @param string|null          $typeString
-     *
-     * @return TransactionType
-     */
     public function findTransactionType(?TransactionType $type, ?string $typeString): TransactionType
     {
         app('log')->debug('Now looking for a transaction type.');
@@ -46,7 +40,7 @@ class TransactionTypeRepository implements TransactionTypeRepositoryInterface
             return $type;
         }
         $typeString ??= TransactionType::WITHDRAWAL;
-        $search     = $this->findByType($typeString);
+        $search = $this->findByType($typeString);
         if (null === $search) {
             $search = $this->findByType(TransactionType::WITHDRAWAL);
         }
@@ -55,11 +49,6 @@ class TransactionTypeRepository implements TransactionTypeRepositoryInterface
         return $search;
     }
 
-    /**
-     * @param string $type
-     *
-     * @return TransactionType|null
-     */
     public function findByType(string $type): ?TransactionType
     {
         $search = ucfirst($type);
@@ -67,12 +56,6 @@ class TransactionTypeRepository implements TransactionTypeRepositoryInterface
         return TransactionType::whereType($search)->first();
     }
 
-    /**
-     * @param string $query
-     * @param int    $limit
-     *
-     * @return Collection
-     */
     public function searchTypes(string $query, int $limit): Collection
     {
         if ('' === $query) {

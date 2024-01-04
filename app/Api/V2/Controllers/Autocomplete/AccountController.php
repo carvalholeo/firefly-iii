@@ -56,7 +56,7 @@ class AccountController extends Controller
                 $this->repository      = app(AccountRepositoryInterface::class);
                 $this->adminRepository = app(AdminAccountRepositoryInterface::class);
 
-                $userGroup = $this->validateUserGroup($request);
+                $userGroup             = $this->validateUserGroup($request);
                 if (null !== $userGroup) {
                     $this->adminRepository->setUserGroup($userGroup);
                 }
@@ -64,7 +64,7 @@ class AccountController extends Controller
                 return $next($request);
             }
         );
-        $this->balanceTypes = [AccountType::ASSET, AccountType::LOAN, AccountType::DEBT, AccountType::MORTGAGE,];
+        $this->balanceTypes = [AccountType::ASSET, AccountType::LOAN, AccountType::DEBT, AccountType::MORTGAGE];
     }
 
     /**
@@ -76,9 +76,6 @@ class AccountController extends Controller
      * 4. Endpoint is documented.
      * 5. Collector uses user_group_id
      *
-     * @param AutocompleteRequest $request
-     *
-     * @return JsonResponse
      * @throws FireflyException
      * @throws FireflyException
      */
@@ -92,6 +89,7 @@ class AccountController extends Controller
         $defaultCurrency = app('amount')->getDefaultCurrency();
         $groupedResult   = [];
         $allItems        = [];
+
         /** @var Account $account */
         foreach ($result as $account) {
             $nameWithBalance = $account->name;
@@ -101,12 +99,12 @@ class AccountController extends Controller
                 $balance         = app('steam')->balance($account, $date);
                 $nameWithBalance = sprintf('%s (%s)', $account->name, app('amount')->formatAnything($currency, $balance, false));
             }
-            $type                 = (string)trans(sprintf('firefly.%s', $account->accountType->type));
+            $type            = (string)trans(sprintf('firefly.%s', $account->accountType->type));
             $groupedResult[$type] ??= [
                 'group ' => $type,
                 'items'  => [],
             ];
-            $allItems[]           = [
+            $allItems[]      = [
                 'id'                      => (string)$account->id,
                 'value'                   => (string)$account->id,
                 'name'                    => $account->name,
@@ -131,6 +129,7 @@ class AccountController extends Controller
                 return $posLeft - $posRight;
             }
         );
+
         return response()->json($allItems);
     }
 }

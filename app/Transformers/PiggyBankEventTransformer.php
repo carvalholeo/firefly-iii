@@ -27,7 +27,6 @@ use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\PiggyBankEvent;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use FireflyIII\Repositories\PiggyBank\PiggyBankRepositoryInterface;
-use JsonException;
 
 /**
  * Class PiggyBankEventTransformer
@@ -39,8 +38,6 @@ class PiggyBankEventTransformer extends AbstractTransformer
 
     /**
      * PiggyBankEventTransformer constructor.
-     *
-
      */
     public function __construct()
     {
@@ -51,23 +48,19 @@ class PiggyBankEventTransformer extends AbstractTransformer
     /**
      * Convert piggy bank event.
      *
-     * @param PiggyBankEvent $event
-     *
-     * @return array
      * @throws FireflyException
-     * @throws JsonException
      */
     public function transform(PiggyBankEvent $event): array
     {
         // get account linked to piggy bank
-        $account = $event->piggyBank->account;
+        $account   = $event->piggyBank->account;
 
         // set up repositories.
         $this->repository->setUser($account->user);
         $this->piggyRepos->setUser($account->user);
 
         // get associated currency or fall back to the default:
-        $currency = $this->repository->getAccountCurrency($account) ?? app('amount')->getDefaultCurrencyByUserGroup($account->user->userGroup);
+        $currency  = $this->repository->getAccountCurrency($account) ?? app('amount')->getDefaultCurrencyByUserGroup($account->user->userGroup);
 
         // get associated journal and transaction, if any:
         $journalId = $event->transaction_journal_id;
@@ -91,7 +84,7 @@ class PiggyBankEventTransformer extends AbstractTransformer
             'links'                   => [
                 [
                     'rel' => 'self',
-                    'uri' => '/piggy_bank_events/' . $event->id,
+                    'uri' => '/piggy_bank_events/'.$event->id,
                 ],
             ],
         ];

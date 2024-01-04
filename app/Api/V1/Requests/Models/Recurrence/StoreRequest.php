@@ -25,6 +25,7 @@ namespace FireflyIII\Api\V1\Requests\Models\Recurrence;
 
 use FireflyIII\Rules\BelongsUser;
 use FireflyIII\Rules\IsBoolean;
+use FireflyIII\Rules\IsValidPositiveAmount;
 use FireflyIII\Support\Request\ChecksLogin;
 use FireflyIII\Support\Request\ConvertsDataTypes;
 use FireflyIII\Support\Request\GetRecurrenceData;
@@ -48,8 +49,6 @@ class StoreRequest extends FormRequest
 
     /**
      * Get all data from the request.
-     *
-     * @return array
      */
     public function getAll(): array
     {
@@ -74,20 +73,81 @@ class StoreRequest extends FormRequest
     }
 
     /**
+     * The rules that the incoming request must be matched against.
+     */
+    public function rules(): array
+    {
+        return [
+            'type'                                 => 'required|in:withdrawal,transfer,deposit',
+            'title'                                => 'required|between:1,255|uniqueObjectForUser:recurrences,title',
+            'description'                          => 'between:1,65000',
+            'first_date'                           => 'required|date',
+            'apply_rules'                          => [new IsBoolean()],
+            'active'                               => [new IsBoolean()],
+            'repeat_until'                         => 'nullable|date',
+            'nr_of_repetitions'                    => 'nullable|numeric|between:1,31',
+
+            'repetitions.*.type'                   => 'required|in:daily,weekly,ndom,monthly,yearly',
+            'repetitions.*.moment'                 => 'between:0,10',
+            'repetitions.*.skip'                   => 'nullable|numeric|between:0,31',
+            'repetitions.*.weekend'                => 'numeric|min:1|max:4',
+
+            'transactions.*.description'           => 'required|between:1,255',
+            'transactions.*.amount'                => ['required', new IsValidPositiveAmount()],
+            'transactions.*.foreign_amount'        => ['nullable', new IsValidPositiveAmount()],
+            'transactions.*.currency_id'           => 'nullable|numeric|exists:transaction_currencies,id',
+            'transactions.*.currency_code'         => 'nullable|min:3|max:51|exists:transaction_currencies,code',
+            'transactions.*.foreign_currency_id'   => 'nullable|numeric|exists:transaction_currencies,id',
+            'transactions.*.foreign_currency_code' => 'nullable|min:3|max:51|exists:transaction_currencies,code',
+            'transactions.*.source_id'             => ['numeric', 'nullable', new BelongsUser()],
+            'transactions.*.source_name'           => 'between:1,255|nullable',
+            'transactions.*.destination_id'        => ['numeric', 'nullable', new BelongsUser()],
+            'transactions.*.destination_name'      => 'between:1,255|nullable',
+
+            // new and updated fields:
+            'transactions.*.budget_id'             => ['nullable', 'mustExist:budgets,id', new BelongsUser()],
+            'transactions.*.budget_name'           => ['between:1,255', 'nullable', new BelongsUser()],
+            'transactions.*.category_id'           => ['nullable', 'mustExist:categories,id', new BelongsUser()],
+            'transactions.*.category_name'         => 'between:1,255|nullable',
+            'transactions.*.piggy_bank_id'         => ['nullable', 'numeric', 'mustExist:piggy_banks,id', new BelongsUser()],
+            'transactions.*.piggy_bank_name'       => ['between:1,255', 'nullable', new BelongsUser()],
+            'transactions.*.tags'                  => 'nullable|between:1,255',
+        ];
+    }
+
+    /**
+     * Configure the validator instance.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(
+            function (Validator $validator): void {
+                $this->validateRecurringConfig($validator);
+                $this->validateOneRecurrenceTransaction($validator);
+                $this->validateOneRepetition($validator);
+                $this->validateRecurrenceRepetition($validator);
+                $this->validateRepetitionMoment($validator);
+                $this->validateForeignCurrencyInformation($validator);
+                $this->validateAccountInformation($validator);
+            }
+        );
+    }
+
+    /**
      * Returns the transaction data as it is found in the submitted data. It's a complex method according to code
      * standards but it just has a lot of ??-statements because of the fields that may or may not exist.
-     *
-     * @return array
      */
     private function getTransactionData(): array
     {
-        $return = [];
+        $return       = [];
+
         // transaction data:
-        /** @var array|null $transactions */
+        /** @var null|array $transactions */
         $transactions = $this->get('transactions');
         if (null === $transactions) {
             return [];
         }
+
         /** @var array $transaction */
         foreach ($transactions as $transaction) {
             $return[] = $this->getSingleTransactionData($transaction);
@@ -98,21 +158,21 @@ class StoreRequest extends FormRequest
 
     /**
      * Returns the repetition data as it is found in the submitted data.
-     *
-     * @return array
      */
     private function getRepetitionData(): array
     {
-        $return = [];
+        $return      = [];
+
         // repetition data:
-        /** @var array|null $repetitions */
+        /** @var null|array $repetitions */
         $repetitions = $this->get('repetitions');
         if (null === $repetitions) {
             return [];
         }
+
         /** @var array $repetition */
         foreach ($repetitions as $repetition) {
-            $current = [];
+            $current  = [];
             if (array_key_exists('type', $repetition)) {
                 $current['type'] = $repetition['type'];
             }
@@ -130,72 +190,5 @@ class StoreRequest extends FormRequest
         }
 
         return $return;
-    }
-
-    /**
-     * The rules that the incoming request must be matched against.
-     *
-     * @return array
-     */
-    public function rules(): array
-    {
-        return [
-            'type'              => 'required|in:withdrawal,transfer,deposit',
-            'title'             => 'required|between:1,255|uniqueObjectForUser:recurrences,title',
-            'description'       => 'between:1,65000',
-            'first_date'        => 'required|date',
-            'apply_rules'       => [new IsBoolean()],
-            'active'            => [new IsBoolean()],
-            'repeat_until'      => 'nullable|date',
-            'nr_of_repetitions' => 'nullable|numeric|between:1,31',
-
-            'repetitions.*.type'    => 'required|in:daily,weekly,ndom,monthly,yearly',
-            'repetitions.*.moment'  => 'between:0,10',
-            'repetitions.*.skip'    => 'nullable|numeric|between:0,31',
-            'repetitions.*.weekend' => 'numeric|min:1|max:4',
-
-            'transactions.*.description'           => 'required|between:1,255',
-            'transactions.*.amount'                => 'required|numeric|gt:0',
-            'transactions.*.foreign_amount'        => 'nullable|numeric|gt:0',
-            'transactions.*.currency_id'           => 'nullable|numeric|exists:transaction_currencies,id',
-            'transactions.*.currency_code'         => 'nullable|min:3|max:51|exists:transaction_currencies,code',
-            'transactions.*.foreign_currency_id'   => 'nullable|numeric|exists:transaction_currencies,id',
-            'transactions.*.foreign_currency_code' => 'nullable|min:3|max:51|exists:transaction_currencies,code',
-            'transactions.*.source_id'             => ['numeric', 'nullable', new BelongsUser()],
-            'transactions.*.source_name'           => 'between:1,255|nullable',
-            'transactions.*.destination_id'        => ['numeric', 'nullable', new BelongsUser()],
-            'transactions.*.destination_name'      => 'between:1,255|nullable',
-
-            // new and updated fields:
-            'transactions.*.budget_id'             => ['nullable', 'mustExist:budgets,id', new BelongsUser()],
-            'transactions.*.budget_name'           => ['between:1,255', 'nullable', new BelongsUser()],
-            'transactions.*.category_id'           => ['nullable', 'mustExist:categories,id', new BelongsUser()],
-            'transactions.*.category_name'         => 'between:1,255|nullable',
-            'transactions.*.piggy_bank_id'         => ['nullable', 'numeric', 'mustExist:piggy_banks,id', new BelongsUser()],
-            'transactions.*.piggy_bank_name'       => ['between:1,255', 'nullable', new BelongsUser()],
-            'transactions.*.tags'                  => 'nullable|between:1,64000',
-        ];
-    }
-
-    /**
-     * Configure the validator instance.
-     *
-     * @param Validator $validator
-     *
-     * @return void
-     */
-    public function withValidator(Validator $validator): void
-    {
-        $validator->after(
-            function (Validator $validator) {
-                $this->validateRecurringConfig($validator);
-                $this->validateOneRecurrenceTransaction($validator);
-                $this->validateOneRepetition($validator);
-                $this->validateRecurrenceRepetition($validator);
-                $this->validateRepetitionMoment($validator);
-                $this->validateForeignCurrencyInformation($validator);
-                $this->validateAccountInformation($validator);
-            }
-        );
     }
 }

@@ -43,9 +43,6 @@ class NetWorthController extends Controller
     private NetWorthInterface          $netWorth;
     private AccountRepositoryInterface $repository;
 
-    /**
-     *
-     */
     public function __construct()
     {
         parent::__construct();
@@ -54,7 +51,7 @@ class NetWorthController extends Controller
                 $this->netWorth   = app(NetWorthInterface::class);
                 $this->repository = app(AccountRepositoryInterface::class);
                 // new way of user group validation
-                $userGroup = $this->validateUserGroup($request);
+                $userGroup        = $this->validateUserGroup($request);
                 if (null !== $userGroup) {
                     $this->netWorth->setUserGroup($userGroup);
                     $this->repository->setUserGroup($userGroup);
@@ -68,10 +65,6 @@ class NetWorthController extends Controller
     /**
      * This endpoint is documented at:
      * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v2)#/net-worth/getNetWorth
-     *
-     * @param SingleDateRequest $request
-     *
-     * @return JsonResponse
      */
     public function get(SingleDateRequest $request): JsonResponse
     {
@@ -88,7 +81,7 @@ class NetWorthController extends Controller
         );
 
         // skip accounts that should not be in the net worth
-        $result = $this->netWorth->byAccounts($filtered, $date);
+        $result   = $this->netWorth->byAccounts($filtered, $date);
 
         return response()->api($result);
     }

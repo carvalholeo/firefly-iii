@@ -32,18 +32,15 @@ use FireflyIII\Models\Rule;
 use FireflyIII\Models\RuleTrigger;
 use FireflyIII\Support\Http\Controllers\RuleManagement;
 use FireflyIII\TransactionRules\Engine\RuleEngineInterface;
-use FireflyIII\TransactionRules\TransactionMatcher;
 use FireflyIII\User;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
-use Throwable;
 
 /**
  * Class SelectController.
- *
  */
 class SelectController extends Controller
 {
@@ -68,20 +65,15 @@ class SelectController extends Controller
 
     /**
      * Execute the given rule on a set of existing transactions.
-     *
-     * @param SelectTransactionsRequest $request
-     * @param Rule                      $rule
-     *
-     * @return RedirectResponse
      */
     public function execute(SelectTransactionsRequest $request, Rule $rule): RedirectResponse
     {
         // Get parameters specified by the user
         /** @var User $user */
-        $user      = auth()->user();
-        $accounts  = implode(',', $request->get('accounts'));
-        $startDate = new Carbon($request->get('start'));
-        $endDate   = new Carbon($request->get('end'));
+        $user          = auth()->user();
+        $accounts      = implode(',', $request->get('accounts'));
+        $startDate     = new Carbon($request->get('start'));
+        $endDate       = new Carbon($request->get('end'));
 
         // create new rule engine:
         $newRuleEngine = app(RuleEngineInterface::class);
@@ -95,7 +87,7 @@ class SelectController extends Controller
         // set rules:
         $newRuleEngine->setRules(new Collection([$rule]));
         $newRuleEngine->fire();
-        $resultCount = $newRuleEngine->getResults();
+        $resultCount   = $newRuleEngine->getResults();
 
         session()->flash('success', trans_choice('firefly.applied_rule_selection', $resultCount, ['title' => $rule->title]));
 
@@ -104,12 +96,8 @@ class SelectController extends Controller
 
     /**
      * View to select transactions by a rule.
-     *
-     * @param Rule $rule
-     *
-     * @return Factory|View|RedirectResponse
      */
-    public function selectTransactions(Rule $rule): Factory | View | RedirectResponse
+    public function selectTransactions(Rule $rule): Factory|RedirectResponse|View
     {
         if (false === $rule->active) {
             session()->flash('warning', trans('firefly.cannot_fire_inactive_rules'));
@@ -128,21 +116,19 @@ class SelectController extends Controller
      * This method allows the user to test a certain set of rule triggers. The rule triggers are passed along
      * using the URL parameters (GET), and are usually put there using a Javascript thing.
      *
-     * @param TestRuleFormRequest $request
-     *
-     * @return JsonResponse
      * @throws FireflyException
      */
     public function testTriggers(TestRuleFormRequest $request): JsonResponse
     {
         // build fake rule
-        $rule = new Rule();
+        $rule               = new Rule();
+
         /** @var \Illuminate\Database\Eloquent\Collection<int, RuleTrigger> $triggers */
-        $triggers     = new Collection();
-        $rule->strict = '1' === $request->get('strict');
+        $triggers           = new Collection();
+        $rule->strict       = '1' === $request->get('strict');
 
         // build trigger array from response
-        $textTriggers = $this->getValidTriggerList($request);
+        $textTriggers       = $this->getValidTriggerList($request);
 
         // warn if nothing.
         if (0 === count($textTriggers)) {
@@ -164,28 +150,30 @@ class SelectController extends Controller
 
         // create new rule engine:
         /** @var RuleEngineInterface $newRuleEngine */
-        $newRuleEngine = app(RuleEngineInterface::class);
+        $newRuleEngine      = app(RuleEngineInterface::class);
 
         // set rules:
         $newRuleEngine->setRules(new Collection([$rule]));
         $newRuleEngine->setRefreshTriggers(false);
-        $collection = $newRuleEngine->find();
-        $collection = $collection->slice(0, 20);
+        $collection         = $newRuleEngine->find();
+        $collection         = $collection->slice(0, 20);
 
         // Warn the user if only a subset of transactions is returned
-        $warning = '';
+        $warning            = '';
         if (0 === count($collection)) {
             $warning = (string)trans('firefly.warning_no_matching_transactions');
         }
 
         // Return json response
-        $view = 'ERROR, see logs.';
+        $view               = 'ERROR, see logs.';
+
         try {
             $view = view('list.journals-array-tiny', ['groups' => $collection])->render();
-        } catch (Throwable $exception) {
+        } catch (\Throwable $exception) {
             app('log')->error(sprintf('Could not render view in testTriggers(): %s', $exception->getMessage()));
             app('log')->error($exception->getTraceAsString());
             $view = sprintf('Could not render list.journals-tiny: %s', $exception->getMessage());
+
             throw new FireflyException($view, 0, $exception);
         }
 
@@ -196,14 +184,11 @@ class SelectController extends Controller
      * This method allows the user to test a certain set of rule triggers. The rule triggers are grabbed from
      * the rule itself.
      *
-     * @param Rule $rule
-     *
-     * @return JsonResponse
      * @throws FireflyException
      */
     public function testTriggersByRule(Rule $rule): JsonResponse
     {
-        $triggers = $rule->ruleTriggers;
+        $triggers      = $rule->ruleTriggers;
 
         if (0 === count($triggers)) {
             return response()->json(['html' => '', 'warning' => (string)trans('firefly.warning_no_valid_triggers')]);
@@ -213,22 +198,24 @@ class SelectController extends Controller
 
         // set rules:
         $newRuleEngine->setRules(new Collection([$rule]));
-        $collection = $newRuleEngine->find();
-        $collection = $collection->slice(0, 20);
+        $collection    = $newRuleEngine->find();
+        $collection    = $collection->slice(0, 20);
 
-        $warning = '';
+        $warning       = '';
         if (0 === count($collection)) {
             $warning = (string)trans('firefly.warning_no_matching_transactions');
         }
 
         // Return json response
-        $view = 'ERROR, see logs.';
+        $view          = 'ERROR, see logs.';
+
         try {
             $view = view('list.journals-array-tiny', ['groups' => $collection])->render();
-        } catch (Throwable $exception) {
+        } catch (\Throwable $exception) {
             $message = sprintf('Could not render view in testTriggersByRule(): %s', $exception->getMessage());
             app('log')->error($message);
             app('log')->error($exception->getTraceAsString());
+
             throw new FireflyException($message, 0, $exception);
         }
 

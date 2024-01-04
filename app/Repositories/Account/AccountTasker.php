@@ -32,7 +32,6 @@ use FireflyIII\Repositories\UserGroups\Currency\CurrencyRepositoryInterface;
 use FireflyIII\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
-use JsonException;
 
 /**
  * Class AccountTasker.
@@ -42,35 +41,29 @@ class AccountTasker implements AccountTaskerInterface
     private User $user;
 
     /**
-     * @param Collection $accounts
-     * @param Carbon     $start
-     * @param Carbon     $end
-     *
-     * @return array
      * @throws FireflyException
-     * @throws JsonException
      */
     public function getAccountReport(Collection $accounts, Carbon $start, Carbon $end): array
     {
-        $yesterday = clone $start;
+        $yesterday       = clone $start;
         $yesterday->subDay();
-        $startSet = app('steam')->balancesByAccounts($accounts, $yesterday);
-        $endSet   = app('steam')->balancesByAccounts($accounts, $end);
+        $startSet        = app('steam')->balancesByAccounts($accounts, $yesterday);
+        $endSet          = app('steam')->balancesByAccounts($accounts, $end);
         app('log')->debug('Start of accountreport');
 
         /** @var AccountRepositoryInterface $repository */
         $repository      = app(AccountRepositoryInterface::class);
         $defaultCurrency = app('amount')->getDefaultCurrencyByUserGroup($this->user->userGroup);
 
-        $return = [
+        $return          = [
             'accounts' => [],
             'sums'     => [],
         ];
 
         /** @var Account $account */
         foreach ($accounts as $account) {
-            $id                            = $account->id;
-            $currency                      = $repository->getAccountCurrency($account) ?? $defaultCurrency;
+            $id                                     = $account->id;
+            $currency                               = $repository->getAccountCurrency($account) ?? $defaultCurrency;
             $return['sums'][$currency->id] ??= [
                 'start'                   => '0',
                 'end'                     => '0',
@@ -81,7 +74,7 @@ class AccountTasker implements AccountTaskerInterface
                 'currency_name'           => $currency->name,
                 'currency_decimal_places' => $currency->decimal_places,
             ];
-            $entry                         = [
+            $entry                                  = [
                 'name'                    => $account->name,
                 'id'                      => $account->id,
                 'currency_id'             => $currency->id,
@@ -92,9 +85,9 @@ class AccountTasker implements AccountTaskerInterface
             ];
 
             // get first journal date:
-            $first                  = $repository->oldestJournal($account);
-            $entry['start_balance'] = $startSet[$account->id] ?? '0';
-            $entry['end_balance']   = $endSet[$account->id] ?? '0';
+            $first                                  = $repository->oldestJournal($account);
+            $entry['start_balance']                 = $startSet[$account->id] ?? '0';
+            $entry['end_balance']                   = $endSet[$account->id] ?? '0';
 
             // first journal exists, and is on start, then this is the actual opening balance:
             if (null !== $first && $first->date->isSameDay($start) && TransactionType::OPENING_BALANCE === $first->transactionType->type) {
@@ -115,13 +108,7 @@ class AccountTasker implements AccountTaskerInterface
     }
 
     /**
-     * @param Carbon     $start
-     * @param Carbon     $end
-     * @param Collection $accounts
-     *
-     * @return array
      * @throws FireflyException
-     * @throws JsonException
      */
     public function getExpenseReport(Carbon $start, Carbon $end, Collection $accounts): array
     {
@@ -135,13 +122,13 @@ class AccountTasker implements AccountTaskerInterface
         $collector->setSourceAccounts($accounts)->setRange($start, $end);
         $collector->excludeDestinationAccounts($accounts);
         $collector->setTypes([TransactionType::WITHDRAWAL, TransactionType::TRANSFER])->withAccountInformation();
-        $journals = $collector->getExtractedJournals();
+        $journals  = $collector->getExtractedJournals();
 
-        $report = $this->groupExpenseByDestination($journals);
+        $report    = $this->groupExpenseByDestination($journals);
 
         // sort the result
         // Obtain a list of columns
-        $sum = [];
+        $sum       = [];
         foreach ($report['accounts'] as $accountId => $row) {
             $sum[$accountId] = (float)$row['sum']; // intentional float
         }
@@ -152,19 +139,51 @@ class AccountTasker implements AccountTaskerInterface
     }
 
     /**
-     * @param array $array
-     *
-     * @return array
      * @throws FireflyException
-     * @throws JsonException
+     */
+    public function getIncomeReport(Carbon $start, Carbon $end, Collection $accounts): array
+    {
+        // get all incomes for the given accounts in the given period!
+        // also transfers!
+        // get all transactions:
+
+        /** @var GroupCollectorInterface $collector */
+        $collector = app(GroupCollectorInterface::class);
+        $collector->setDestinationAccounts($accounts)->setRange($start, $end);
+        $collector->excludeSourceAccounts($accounts);
+        $collector->setTypes([TransactionType::DEPOSIT, TransactionType::TRANSFER])->withAccountInformation();
+        $report    = $this->groupIncomeBySource($collector->getExtractedJournals());
+
+        // sort the result
+        // Obtain a list of columns
+        $sum       = [];
+        foreach ($report['accounts'] as $accountId => $row) {
+            $sum[$accountId] = (float)$row['sum']; // intentional float
+        }
+
+        array_multisort($sum, SORT_DESC, $report['accounts']);
+
+        return $report;
+    }
+
+    public function setUser(null|Authenticatable|User $user): void
+    {
+        if ($user instanceof User) {
+            $this->user = $user;
+        }
+    }
+
+    /**
+     * @throws FireflyException
      */
     private function groupExpenseByDestination(array $array): array
     {
         $defaultCurrency = app('amount')->getDefaultCurrencyByUserGroup($this->user->userGroup);
+
         /** @var CurrencyRepositoryInterface $currencyRepos */
-        $currencyRepos = app(CurrencyRepositoryInterface::class);
-        $currencies    = [$defaultCurrency->id => $defaultCurrency,];
-        $report        = [
+        $currencyRepos   = app(CurrencyRepositoryInterface::class);
+        $currencies      = [$defaultCurrency->id => $defaultCurrency];
+        $report          = [
             'accounts' => [],
             'sums'     => [],
         ];
@@ -174,8 +193,8 @@ class AccountTasker implements AccountTaskerInterface
             $sourceId                        = (int)$journal['destination_account_id'];
             $currencyId                      = (int)$journal['currency_id'];
             $key                             = sprintf('%s-%s', $sourceId, $currencyId);
-            $currencies[$currencyId]         ??= $currencyRepos->find($currencyId);
-            $report['accounts'][$key]        ??= [
+            $currencies[$currencyId]  ??= $currencyRepos->find($currencyId);
+            $report['accounts'][$key] ??= [
                 'id'                      => $sourceId,
                 'name'                    => $journal['destination_account_name'],
                 'sum'                     => '0',
@@ -200,7 +219,7 @@ class AccountTasker implements AccountTaskerInterface
                 $report['accounts'][$key]['average'] = bcdiv($report['accounts'][$key]['sum'], (string)$report['accounts'][$key]['count']);
             }
             $currencyId                         = $report['accounts'][$key]['currency_id'];
-            $report['sums'][$currencyId]        ??= [
+            $report['sums'][$currencyId] ??= [
                 'sum'                     => '0',
                 'currency_id'             => $report['accounts'][$key]['currency_id'],
                 'currency_name'           => $report['accounts'][$key]['currency_name'],
@@ -215,64 +234,27 @@ class AccountTasker implements AccountTaskerInterface
     }
 
     /**
-     * @param Carbon     $start
-     * @param Carbon     $end
-     * @param Collection $accounts
-     *
-     * @return array
      * @throws FireflyException
-     * @throws JsonException
-     */
-    public function getIncomeReport(Carbon $start, Carbon $end, Collection $accounts): array
-    {
-        // get all incomes for the given accounts in the given period!
-        // also transfers!
-        // get all transactions:
-
-        /** @var GroupCollectorInterface $collector */
-        $collector = app(GroupCollectorInterface::class);
-        $collector->setDestinationAccounts($accounts)->setRange($start, $end);
-        $collector->excludeSourceAccounts($accounts);
-        $collector->setTypes([TransactionType::DEPOSIT, TransactionType::TRANSFER])->withAccountInformation();
-        $report = $this->groupIncomeBySource($collector->getExtractedJournals());
-
-        // sort the result
-        // Obtain a list of columns
-        $sum = [];
-        foreach ($report['accounts'] as $accountId => $row) {
-            $sum[$accountId] = (float)$row['sum']; // intentional float
-        }
-
-        array_multisort($sum, SORT_DESC, $report['accounts']);
-
-        return $report;
-    }
-
-    /**
-     * @param array $array
-     *
-     * @return array
-     * @throws FireflyException
-     * @throws JsonException
      */
     private function groupIncomeBySource(array $array): array
     {
         $defaultCurrency = app('amount')->getDefaultCurrencyByUserGroup($this->user->userGroup);
+
         /** @var CurrencyRepositoryInterface $currencyRepos */
-        $currencyRepos = app(CurrencyRepositoryInterface::class);
-        $currencies    = [$defaultCurrency->id => $defaultCurrency,];
-        $report        = [
+        $currencyRepos   = app(CurrencyRepositoryInterface::class);
+        $currencies      = [$defaultCurrency->id => $defaultCurrency];
+        $report          = [
             'accounts' => [],
             'sums'     => [],
         ];
 
         /** @var array $journal */
         foreach ($array as $journal) {
-            $sourceId   = (int)$journal['source_account_id'];
-            $currencyId = (int)$journal['currency_id'];
-            $key        = sprintf('%s-%s', $sourceId, $currencyId);
+            $sourceId                        = (int)$journal['source_account_id'];
+            $currencyId                      = (int)$journal['currency_id'];
+            $key                             = sprintf('%s-%s', $sourceId, $currencyId);
             if (!array_key_exists($key, $report['accounts'])) {
-                $currencies[$currencyId]  ??= $currencyRepos->find($currencyId);
+                $currencies[$currencyId] ??= $currencyRepos->find($currencyId);
                 $report['accounts'][$key] = [
                     'id'                      => $sourceId,
                     'name'                    => $journal['source_account_name'],
@@ -296,7 +278,7 @@ class AccountTasker implements AccountTaskerInterface
                 $report['accounts'][$key]['average'] = bcdiv($report['accounts'][$key]['sum'], (string)$report['accounts'][$key]['count']);
             }
             $currencyId                         = $report['accounts'][$key]['currency_id'];
-            $report['sums'][$currencyId]        ??= [
+            $report['sums'][$currencyId] ??= [
                 'sum'                     => '0',
                 'currency_id'             => $report['accounts'][$key]['currency_id'],
                 'currency_name'           => $report['accounts'][$key]['currency_name'],
@@ -308,15 +290,5 @@ class AccountTasker implements AccountTaskerInterface
         }
 
         return $report;
-    }
-
-    /**
-     * @param User|Authenticatable|null $user
-     */
-    public function setUser(User | Authenticatable | null $user): void
-    {
-        if ($user instanceof User) {
-            $this->user = $user;
-        }
     }
 }

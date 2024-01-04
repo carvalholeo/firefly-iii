@@ -40,10 +40,9 @@ class ForceMigration extends Command
     use ShowsFriendlyMessages;
     use VerifiesAccessToken;
 
-
     protected $description = 'This command will force-run all database migrations.';
 
-    protected $signature = 'firefly-iii:force-migrations
+    protected $signature   = 'firefly-iii:force-migrations
                             {--user=1 : The user ID.}
                             {--token= : The user\'s access token.}';
 
@@ -74,9 +73,6 @@ class ForceMigration extends Command
         return 0;
     }
 
-    /**
-     * @return void
-     */
     private function forceMigration(): void
     {
         DB::commit();

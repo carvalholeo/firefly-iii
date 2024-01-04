@@ -1,6 +1,5 @@
 <?php
 
-
 /*
  * ShowController.php
  * Copyright (c) 2023 james@firefly-iii.org
@@ -49,7 +48,7 @@ class ShowController extends Controller
                 $this->repository = app(BillRepositoryInterface::class);
 
                 // new way of user group validation
-                $userGroup = $this->validateUserGroup($request);
+                $userGroup        = $this->validateUserGroup($request);
                 if (null !== $userGroup) {
                     $this->repository->setUserGroup($userGroup);
                 }
@@ -69,6 +68,7 @@ class ShowController extends Controller
 
         return response()
             ->api($this->jsonApiObject('subscriptions', $bill, $transformer))
-            ->header('Content-Type', self::CONTENT_TYPE);
+            ->header('Content-Type', self::CONTENT_TYPE)
+        ;
     }
 }

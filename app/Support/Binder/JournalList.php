@@ -34,17 +34,12 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 class JournalList implements BinderInterface
 {
     /**
-     * @param string $value
-     * @param Route  $route
-     *
-     * @return array
-     *
      * @throws NotFoundHttpException
      */
     public static function routeBinder(string $value, Route $route): array
     {
         if (auth()->check()) {
-            $list = self::parseList($value);
+            $list      = self::parseList($value);
 
             // get the journals by using the collector.
             /** @var GroupCollectorInterface $collector */
@@ -52,21 +47,17 @@ class JournalList implements BinderInterface
             $collector->setTypes([TransactionType::WITHDRAWAL, TransactionType::DEPOSIT, TransactionType::TRANSFER, TransactionType::RECONCILIATION]);
             $collector->withCategoryInformation()->withBudgetInformation()->withTagInformation()->withAccountInformation();
             $collector->setJournalIds($list);
-            $result = $collector->getExtractedJournals();
+            $result    = $collector->getExtractedJournals();
             if (0 === count($result)) {
                 throw new NotFoundHttpException();
             }
 
             return $result;
         }
+
         throw new NotFoundHttpException();
     }
 
-    /**
-     * @param string $value
-     *
-     * @return array
-     */
     protected static function parseList(string $value): array
     {
         $list = array_unique(array_map('\intval', explode(',', $value)));

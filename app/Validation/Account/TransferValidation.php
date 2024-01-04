@@ -30,11 +30,6 @@ use FireflyIII\Models\Account;
  */
 trait TransferValidation
 {
-    /**
-     * @param array $array
-     *
-     * @return bool
-     */
     protected function validateTransferDestination(array $array): bool
     {
         $accountId   = array_key_exists('id', $array) ? $array['id'] : null;
@@ -42,7 +37,7 @@ trait TransferValidation
         $accountIban = array_key_exists('iban', $array) ? $array['iban'] : null;
         app('log')->debug('Now in validateTransferDestination', $array);
         // source can be any of the following types.
-        $validTypes = $this->combinations[$this->transactionType][$this->source->accountType->type] ?? [];
+        $validTypes  = $this->combinations[$this->transactionType][$this->source->accountType->type] ?? [];
         if (null === $accountId && null === $accountName && null === $accountIban && false === $this->canCreateTypes($validTypes)) {
             // if both values are NULL we return false,
             // because the destination of a transfer can't be created.
@@ -53,7 +48,7 @@ trait TransferValidation
         }
 
         // or try to find the account:
-        $search = $this->findExistingAccount($validTypes, $array);
+        $search      = $this->findExistingAccount($validTypes, $array);
         if (null === $search) {
             $this->destError = (string)trans('validation.transfer_dest_bad_data', ['id' => $accountId, 'name' => $accountName]);
 
@@ -72,26 +67,10 @@ trait TransferValidation
         return true;
     }
 
-    /**
-     * @param array $accountTypes
-     *
-     * @return bool
-     */
     abstract protected function canCreateTypes(array $accountTypes): bool;
 
-    /**
-     * @param array $validTypes
-     * @param array $data
-     *
-     * @return Account|null
-     */
     abstract protected function findExistingAccount(array $validTypes, array $data): ?Account;
 
-    /**
-     * @param array $array
-     *
-     * @return bool
-     */
     protected function validateTransferSource(array $array): bool
     {
         $accountId     = array_key_exists('id', $array) ? $array['id'] : null;
@@ -100,7 +79,7 @@ trait TransferValidation
         $accountNumber = array_key_exists('number', $array) ? $array['number'] : null;
         app('log')->debug('Now in validateTransferSource', $array);
         // source can be any of the following types.
-        $validTypes = array_keys($this->combinations[$this->transactionType]);
+        $validTypes    = array_keys($this->combinations[$this->transactionType]);
         if (null === $accountId && null === $accountName
             && null === $accountIban && null === $accountNumber
             && false === $this->canCreateTypes($validTypes)) {
@@ -113,7 +92,7 @@ trait TransferValidation
         }
 
         // otherwise try to find the account:
-        $search = $this->findExistingAccount($validTypes, $array);
+        $search        = $this->findExistingAccount($validTypes, $array);
         if (null === $search) {
             $this->sourceError = (string)trans('validation.transfer_source_bad_data', ['id' => $accountId, 'name' => $accountName]);
             app('log')->warning('Not a valid source, cant find it.', $validTypes);

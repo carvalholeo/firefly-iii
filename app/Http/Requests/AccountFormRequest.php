@@ -26,6 +26,7 @@ namespace FireflyIII\Http\Requests;
 use FireflyIII\Enums\UserRoleEnum;
 use FireflyIII\Models\Account;
 use FireflyIII\Models\Location;
+use FireflyIII\Rules\IsValidAmount;
 use FireflyIII\Rules\UniqueIban;
 use FireflyIII\Support\Request\AppendsLocationData;
 use FireflyIII\Support\Request\ChecksLogin;
@@ -45,8 +46,6 @@ class AccountFormRequest extends FormRequest
 
     /**
      * Get all data.
-     *
-     * @return array
      */
     public function getAccountData(): array
     {
@@ -95,8 +94,6 @@ class AccountFormRequest extends FormRequest
 
     /**
      * Rules for this request.
-     *
-     * @return array
      */
     public function rules(): array
     {
@@ -105,29 +102,30 @@ class AccountFormRequest extends FormRequest
         $ccPaymentTypes = implode(',', array_keys(config('firefly.ccTypes')));
         $rules          = [
             'name'                               => 'required|max:1024|min:1|uniqueAccountForUser',
-            'opening_balance'                    => 'numeric|nullable|max:1000000000',
+            'opening_balance'                    => ['nullable', new IsValidAmount()],
             'opening_balance_date'               => 'date|required_with:opening_balance|nullable',
             'iban'                               => ['iban', 'nullable', new UniqueIban(null, $this->convertString('objectType'))],
             'BIC'                                => 'bic|nullable',
-            'virtual_balance'                    => 'numeric|nullable|max:1000000000',
+            'virtual_balance'                    => ['nullable', new IsValidAmount()],
             'currency_id'                        => 'exists:transaction_currencies,id',
             'account_number'                     => 'between:1,255|uniqueAccountNumberForUser|nullable',
-            'account_role'                       => 'in:' . $accountRoles,
+            'account_role'                       => 'in:'.$accountRoles,
             'active'                             => 'boolean',
-            'cc_type'                            => 'in:' . $ccPaymentTypes,
+            'cc_type'                            => 'in:'.$ccPaymentTypes,
             'amount_currency_id_opening_balance' => 'exists:transaction_currencies,id',
             'amount_currency_id_virtual_balance' => 'exists:transaction_currencies,id',
-            'what'                               => 'in:' . $types,
+            'what'                               => 'in:'.$types,
             'interest_period'                    => 'in:daily,monthly,yearly',
+            'notes'                              => 'between:1,65536|nullable',
         ];
         $rules          = Location::requestRules($rules);
 
-        /** @var Account|null $account */
-        $account = $this->route()->parameter('account');
+        /** @var null|Account $account */
+        $account        = $this->route()->parameter('account');
         if (null !== $account) {
             // add rules:
             $rules['id']   = 'belongsToUser:accounts';
-            $rules['name'] = 'required|max:1024|min:1|uniqueAccountForUser:' . $account->id;
+            $rules['name'] = 'required|max:1024|min:1|uniqueAccountForUser:'.$account->id;
             $rules['iban'] = ['iban', 'nullable', new UniqueIban($account, $account->accountType->type)];
         }
 

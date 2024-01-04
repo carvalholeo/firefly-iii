@@ -37,7 +37,6 @@ use Illuminate\View\View;
 
 /**
  * Class AttachmentController.
- *
  */
 class AttachmentController extends Controller
 {
@@ -45,8 +44,6 @@ class AttachmentController extends Controller
 
     /**
      * AttachmentController constructor.
-     *
-
      */
     public function __construct()
     {
@@ -67,8 +64,6 @@ class AttachmentController extends Controller
     /**
      * Form to delete an attachment.
      *
-     * @param Attachment $attachment
-     *
      * @return Factory|View
      */
     public function delete(Attachment $attachment)
@@ -84,10 +79,7 @@ class AttachmentController extends Controller
     /**
      * Destroy attachment.
      *
-     * @param Request    $request
-     * @param Attachment $attachment
-     *
-     * @return RedirectResponse|Redirector
+     * @return Redirector|RedirectResponse
      */
     public function destroy(Request $request, Attachment $attachment)
     {
@@ -104,8 +96,6 @@ class AttachmentController extends Controller
     /**
      * Download attachment to PC.
      *
-     * @param Attachment $attachment
-     *
      * @return LaravelResponse
      *
      * @throws FireflyException
@@ -113,32 +103,31 @@ class AttachmentController extends Controller
     public function download(Attachment $attachment)
     {
         if ($this->repository->exists($attachment)) {
-            $content = $this->repository->getContent($attachment);
-            $quoted  = sprintf('"%s"', addcslashes(basename($attachment->filename), '"\\'));
+            $content  = $this->repository->getContent($attachment);
+            $quoted   = sprintf('"%s"', addcslashes(basename($attachment->filename), '"\\'));
 
             /** @var LaravelResponse $response */
             $response = response($content);
             $response
                 ->header('Content-Description', 'File Transfer')
                 ->header('Content-Type', 'application/octet-stream')
-                ->header('Content-Disposition', 'attachment; filename=' . $quoted)
+                ->header('Content-Disposition', 'attachment; filename='.$quoted)
                 ->header('Content-Transfer-Encoding', 'binary')
                 ->header('Connection', 'Keep-Alive')
                 ->header('Expires', '0')
                 ->header('Cache-Control', 'must-revalidate, post-check=0, pre-check=0')
                 ->header('Pragma', 'public')
-                ->header('Content-Length', (string)strlen($content));
+                ->header('Content-Length', (string)strlen($content))
+            ;
 
             return $response;
         }
+
         throw new FireflyException('Could not find the indicated attachment. The file is no longer there.');
     }
 
     /**
      * Edit an attachment.
-     *
-     * @param Request    $request
-     * @param Attachment $attachment
      *
      * @return Factory|View
      */
@@ -152,7 +141,7 @@ class AttachmentController extends Controller
             $this->rememberPreviousUrl('attachments.edit.url');
         }
         $request->session()->forget('attachments.edit.fromUpdate');
-        $preFilled = [
+        $preFilled    = [
             'notes' => $this->repository->getNoteText($attachment),
         ];
         $request->session()->flash('preFilled', $preFilled);
@@ -181,15 +170,10 @@ class AttachmentController extends Controller
 
     /**
      * Update attachment.
-     *
-     * @param AttachmentFormRequest $request
-     * @param Attachment            $attachment
-     *
-     * @return RedirectResponse
      */
     public function update(AttachmentFormRequest $request, Attachment $attachment): RedirectResponse
     {
-        $data = $request->getAttachmentData();
+        $data     = $request->getAttachmentData();
         $this->repository->update($attachment, $data);
 
         $request->session()->flash('success', (string)trans('firefly.attachment_updated', ['name' => $attachment->filename]));
@@ -209,9 +193,6 @@ class AttachmentController extends Controller
     /**
      * View attachment in browser.
      *
-     * @param Attachment $attachment
-     *
-     * @return LaravelResponse
      * @throws FireflyException
      * @throws BindingResolutionException
      */
@@ -221,7 +202,7 @@ class AttachmentController extends Controller
             $content = $this->repository->getContent($attachment);
 
             // prevent XSS by adding a new secure header.
-            $csp = [
+            $csp     = [
                 "default-src 'none'",
                 "object-src 'none'",
                 "script-src 'none'",
@@ -239,10 +220,11 @@ class AttachmentController extends Controller
                 [
                     'Content-Security-Policy' => implode('; ', $csp),
                     'Content-Type'            => $attachment->mime,
-                    'Content-Disposition'     => 'inline; filename="' . $attachment->filename . '"',
+                    'Content-Disposition'     => 'inline; filename="'.$attachment->filename.'"',
                 ]
             );
         }
+
         throw new FireflyException('Could not find the indicated attachment. The file is no longer there.');
     }
 }

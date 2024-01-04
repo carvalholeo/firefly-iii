@@ -23,7 +23,6 @@ declare(strict_types=1);
 
 namespace FireflyIII\Http\Controllers\System;
 
-use Artisan;
 use Cache;
 use Exception;
 use FireflyIII\Exceptions\FireflyException;
@@ -38,8 +37,6 @@ use phpseclib3\Crypt\RSA;
 
 /**
  * Class InstallController
- *
-
  */
 class InstallController extends Controller
 {
@@ -70,7 +67,7 @@ class InstallController extends Controller
             'firefly-iii:verify-security-alerts' => [],
         ];
 
-        $this->lastError = '';
+        $this->lastError       = '';
     }
 
     /**
@@ -90,11 +87,6 @@ class InstallController extends Controller
         return view('install.index');
     }
 
-    /**
-     * @param Request $request
-     *
-     * @return JsonResponse
-     */
     public function runCommand(Request $request): JsonResponse
     {
         $requestIndex = (int)$request->get('index');
@@ -107,11 +99,12 @@ class InstallController extends Controller
         ];
 
         app('log')->debug(sprintf('Will now run commands. Request index is %d', $requestIndex));
-        $indexes = array_values(array_keys($this->upgradeCommands));
+        $indexes      = array_values(array_keys($this->upgradeCommands));
         if (array_key_exists($requestIndex, $indexes)) {
-            $command    = $indexes[$requestIndex];
-            $parameters = $this->upgradeCommands[$command];
+            $command                    = $indexes[$requestIndex];
+            $parameters                 = $this->upgradeCommands[$command];
             app('log')->debug(sprintf('Will now execute command "%s" with parameters', $command), $parameters);
+
             try {
                 $result = $this->executeCommand($command, $parameters);
             } catch (FireflyException $e) {
@@ -126,40 +119,14 @@ class InstallController extends Controller
             if (false === $result) {
                 $response['errorMessage'] = $this->lastError;
                 $response['error']        = true;
+
                 return response()->json($response);
             }
             $response['hasNextCommand'] = array_key_exists($requestIndex + 1, $indexes);
             $response['previous']       = $command;
         }
+
         return response()->json($response);
-    }
-
-    /**
-     * @param string $command
-     * @param array  $args
-     *
-     * @return bool
-     * @throws FireflyException
-     */
-    private function executeCommand(string $command, array $args): bool
-    {
-        app('log')->debug(sprintf('Will now call command %s with args.', $command), $args);
-        try {
-            if ('generate-keys' === $command) {
-                $this->keys();
-            }
-            if ('generate-keys' !== $command) {
-                Artisan::call($command, $args);
-                app('log')->debug(Artisan::output());
-            }
-        } catch (Exception $e) { // intentional generic exception
-            throw new FireflyException($e->getMessage(), 0, $e);
-        }
-        // clear cache as well.
-        Cache::clear();
-        app('preferences')->mark();
-
-        return true;
     }
 
     /**
@@ -167,8 +134,7 @@ class InstallController extends Controller
      */
     public function keys(): void
     {
-
-        $key = RSA::createKey(4096);
+        $key                      = RSA::createKey(4096);
 
         [$publicKey, $privateKey] = [
             Passport::keyPath('oauth-public.key'),
@@ -181,5 +147,30 @@ class InstallController extends Controller
 
         file_put_contents($publicKey, (string)$key->getPublicKey());
         file_put_contents($privateKey, $key->toString('PKCS1'));
+    }
+
+    /**
+     * @throws FireflyException
+     */
+    private function executeCommand(string $command, array $args): bool
+    {
+        app('log')->debug(sprintf('Will now call command %s with args.', $command), $args);
+
+        try {
+            if ('generate-keys' === $command) {
+                $this->keys();
+            }
+            if ('generate-keys' !== $command) {
+                \Artisan::call($command, $args);
+                app('log')->debug(\Artisan::output());
+            }
+        } catch (\Exception $e) { // intentional generic exception
+            throw new FireflyException($e->getMessage(), 0, $e);
+        }
+        // clear cache as well.
+        \Cache::clear();
+        app('preferences')->mark();
+
+        return true;
     }
 }
